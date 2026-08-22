@@ -17,13 +17,17 @@ import type {
   HealthReport,
   IdGenerator,
   Repositories,
+  UnitOfWork,
 } from '../ports.ts';
 import type { Database } from '../persistence/db.ts';
-import { createSqlRepositories } from '../persistence/repositories.ts';
+import { createSqlRepositories, withTransaction } from '../persistence/repositories.ts';
 import { appliedMigrations } from '../persistence/migrate.ts';
 import type { BlobStore } from '../blob/blob-store.ts';
 import { HealthController } from './health.controller.ts';
 import { ProjectsController } from './projects.controller.ts';
+import { SourcesController } from './sources.controller.ts';
+import { SourceViewerController } from './source-viewer.controller.ts';
+import { EvidenceController } from './evidence.controller.ts';
 import { ActorGuard } from './actor.guard.ts';
 import { CorrelationInterceptor } from './correlation.interceptor.ts';
 import {
@@ -34,6 +38,7 @@ import {
   DEPENDENCY_PROBE,
   ID_GENERATOR,
   REPOSITORIES,
+  UNIT_OF_WORK,
 } from './tokens.ts';
 
 export interface AppDependencies {
@@ -44,6 +49,8 @@ export interface AppDependencies {
   readonly ids: IdGenerator;
   /** Overrides the derived repository set — used by tests. */
   readonly repositories?: Repositories;
+  /** Overrides the derived transaction boundary — used by tests. */
+  readonly unitOfWork?: UnitOfWork;
 }
 
 /**
@@ -84,13 +91,31 @@ export class AppModule {
    */
   static forRoot(deps: AppDependencies): DynamicModule {
     const repositories = deps.repositories ?? createSqlRepositories(deps.database);
+    // When repositories are substituted, the transaction must be substituted too,
+    // or the unit of work would commit against a different set than the one the
+    // controllers read from.
+    const unitOfWork: UnitOfWork =
+      deps.unitOfWork ??
+      (deps.repositories === undefined
+        ? { run: (fn) => withTransaction(deps.database, fn) }
+        : { run: (fn) => fn(repositories) });
+
     return {
       module: AppModule,
-      controllers: [HealthController, ProjectsController],
+      controllers: [
+        HealthController,
+        ProjectsController,
+        // Order matters: the viewer's routes are more specific than
+        // SourcesController's `:sourceId`, so they are registered first.
+        SourceViewerController,
+        SourcesController,
+        EvidenceController,
+      ],
       providers: [
         { provide: CONFIG, useValue: deps.config },
         { provide: DATABASE, useValue: deps.database },
         { provide: REPOSITORIES, useValue: repositories },
+        { provide: UNIT_OF_WORK, useValue: unitOfWork },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },
         { provide: ID_GENERATOR, useValue: deps.ids },

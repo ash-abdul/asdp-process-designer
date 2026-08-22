@@ -29,6 +29,12 @@ export interface Config {
   /** Replica count. >1 with a filesystem blob store is refused at startup. */
   readonly replicaCount: number;
   readonly objectStoreEndpoint?: string;
+  /**
+   * Maximum accepted source size (V1 intake). Bounded because an unbounded
+   * upload is a denial-of-service surface, and because a document larger than
+   * this is almost certainly the wrong file rather than a very long BRD.
+   */
+  readonly maxSourceBytes: number;
   readonly camundaTargetProfileId: string;
   readonly rulePackVersion: string;
   readonly rafVersion: string;
@@ -85,6 +91,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     blobRoot: env.ASDP_BLOB_ROOT,
     replicaCount: num(env.ASDP_REPLICA_COUNT, 1, 'ASDP_REPLICA_COUNT'),
     objectStoreEndpoint: env.ASDP_OBJECT_STORE_ENDPOINT,
+    maxSourceBytes: num(env.ASDP_MAX_SOURCE_BYTES, 10 * 1024 * 1024, 'ASDP_MAX_SOURCE_BYTES'),
     camundaTargetProfileId: env.ASDP_CAMUNDA_TARGET_PROFILE ?? 'camunda-8x-baseline',
     rulePackVersion: env.ASDP_RULE_PACK_VERSION ?? 'rp-1.2',
     rafVersion: env.ASDP_RAF_VERSION ?? 'raf-1.1',
@@ -96,6 +103,12 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     shutdownGraceMs: num(env.ASDP_SHUTDOWN_GRACE_MS, 10_000, 'ASDP_SHUTDOWN_GRACE_MS'),
   };
 
+  if (config.maxSourceBytes <= 0) {
+    throw new ConfigError(
+      `ASDP_MAX_SOURCE_BYTES must be positive, got ${config.maxSourceBytes}; there is no ` +
+        '"unlimited" value because an unbounded upload is a denial-of-service surface',
+    );
+  }
   if (config.repository === 'postgres' && (config.databaseUrl ?? '') === '') {
     throw new ConfigError('ASDP_DATABASE_URL is required when ASDP_REPOSITORY=postgres');
   }

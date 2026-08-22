@@ -11,9 +11,13 @@ import type {
   Approval,
   AuditEvent,
   Baseline,
+  EvidenceItem,
   Gate,
   GateCode,
   Project,
+  Source,
+  SourceStatus,
+  SourceUnit,
 } from '@asdp/schemas';
 
 /** Optimistic-concurrency token. */
@@ -61,6 +65,83 @@ export interface AuditRepository {
   count(): Promise<number>;
 }
 
+// ---------------------------------------------------------------------------
+// Intake and evidence
+// ---------------------------------------------------------------------------
+
+/** The canonical NFC text of a source. Immutable once written. */
+export interface SourceTextRecord {
+  readonly sourceId: string;
+  /** NFC, logical order. What every anchor resolves against. */
+  readonly text: string;
+  readonly sha256: string;
+  /** Length in code points, not UTF-16 units. */
+  readonly codePointLength: number;
+}
+
+/**
+ * Sources.
+ *
+ * The content-identifying fields are write-once: there is no method that changes
+ * `sha256`, `blobRef` or `byteSize`, because a corrected document is a NEW source
+ * that supersedes the old one. Old anchors stay valid against the old bytes
+ * (provenance-and-anchoring.md §7). Exactly two mutators exist, for the two
+ * fields that legitimately change.
+ */
+export interface SourceRepository {
+  /**
+   * Insert a source together with its canonical text.
+   *
+   * One method rather than two, so a source can never exist without the text its
+   * anchors resolve against — which would make every unit unverifiable.
+   */
+  insert(source: Source, text: SourceTextRecord): Promise<void>;
+  get(id: string): Promise<Source | undefined>;
+  /** Deduplication lookup: the same bytes are ingested once per project. */
+  getByHash(projectId: string, sha256: string): Promise<Source | undefined>;
+  /** Inventory order: authority rank descending, then upload time ascending. */
+  list(projectId: string): Promise<readonly Source[]>;
+  getText(sourceId: string): Promise<string | undefined>;
+  /** Human-set authority ranking (ADR-0012). One of two mutable fields. */
+  setAuthorityRank(sourceId: string, rank: number): Promise<void>;
+  setStatus(sourceId: string, status: SourceStatus, parseError?: string): Promise<void>;
+}
+
+/** Insert-only. Units are re-extracted under a new extractor version, never edited. */
+export interface SourceUnitRepository {
+  insertAll(units: readonly SourceUnit[]): Promise<void>;
+  get(id: string): Promise<SourceUnit | undefined>;
+  listForSource(sourceId: string): Promise<readonly SourceUnit[]>;
+  listForProject(projectId: string): Promise<readonly SourceUnit[]>;
+}
+
+/**
+ * Insert-only (invariants D1 and D8). There is deliberately no update and no
+ * delete: an EvidenceItem is immutable and is only ever re-extracted.
+ */
+export interface EvidenceRepository {
+  insert(item: EvidenceItem): Promise<void>;
+  get(id: string): Promise<EvidenceItem | undefined>;
+  listForProject(projectId: string): Promise<readonly EvidenceItem[]>;
+  listForSource(sourceId: string): Promise<readonly EvidenceItem[]>;
+}
+
+/**
+ * A transactional unit of work.
+ *
+ * Ingesting a source writes four things — the source row, its canonical text, its
+ * units and an audit event — and they are one act. Without atomicity a crash
+ * between the source insert and the unit insert leaves a source whose text
+ * exists but whose units do not, which reads downstream as a document that was
+ * read and found to contain nothing.
+ *
+ * Expressed as a port rather than as a `Database` parameter so the command layer
+ * stays free of driver and persistence types (ADR-0035 §4).
+ */
+export interface UnitOfWork {
+  run<T>(fn: (repos: Repositories) => Promise<T>): Promise<T>;
+}
+
 export interface Clock {
   nowIso(): string;
 }
@@ -75,6 +156,9 @@ export interface Repositories {
   readonly baselines: BaselineRepository;
   readonly approvals: ApprovalRepository;
   readonly audit: AuditRepository;
+  readonly sources: SourceRepository;
+  readonly sourceUnits: SourceUnitRepository;
+  readonly evidence: EvidenceRepository;
 }
 
 /** Blob storage lives in its own module; re-exported so the port set is one import. */

@@ -7,7 +7,10 @@
 
 ## 1. Repository layout (planned)
 
-Not yet created. This is the target structure for Phase 1.
+The target structure. Ten packages exist as of Phase 2 V1 — `schemas`, `text`, `provenance`,
+`raf`, `domain`, `ingestion`, `validation`, `ai`, `eval` and `apps/api`. The rest are created by
+the slice that needs them. See [phase-2-status.md](../60-plan/phase-2-status.md) for what is
+built today.
 
 ```
 asdp-process-designer/

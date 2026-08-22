@@ -34,6 +34,12 @@ const ALLOWED_DEPS = {
   '@asdp/provenance': ['@asdp/schemas', '@asdp/text'],
   '@asdp/raf': ['@asdp/schemas'],
   '@asdp/domain': ['@asdp/schemas', '@asdp/text', '@asdp/provenance', '@asdp/raf'],
+  // Intake adapters mint provenance, so they need text and provenance. They do
+  // NOT get @asdp/domain: intake reads sources, it does not decide governance.
+  '@asdp/ingestion': ['@asdp/schemas', '@asdp/text', '@asdp/provenance'],
+  // Rule packs are pure functions from state to findings. No domain, so a rule
+  // can never mutate what it judges.
+  '@asdp/validation': ['@asdp/schemas', '@asdp/text', '@asdp/provenance'],
   // ADR-0004 / invariant I1: the AI layer cannot reach domain state.
   '@asdp/ai': ['@asdp/schemas', '@asdp/raf', '@asdp/text'],
   '@asdp/eval': ['@asdp/schemas', '@asdp/ai', '@asdp/text', '@asdp/provenance'],
@@ -43,6 +49,8 @@ const ALLOWED_DEPS = {
     '@asdp/provenance',
     '@asdp/raf',
     '@asdp/domain',
+    '@asdp/ingestion',
+    '@asdp/validation',
     '@asdp/ai',
     '@asdp/eval',
   ],
@@ -121,6 +129,15 @@ const HTTP_INDEPENDENT_FILES = [
   'apps/api/src/ports.ts',
   'apps/api/src/repo-memory.ts',
 ];
+
+/**
+ * Directories under the same C3 obligation.
+ *
+ * Added in V1: intake commands live in `commands/`, and listing files one by one
+ * means the rule silently stops covering the next command file someone adds. A
+ * directory rule cannot be outgrown.
+ */
+const HTTP_INDEPENDENT_DIRS = ['apps/api/src/commands/', 'apps/api/src/persistence/'];
 
 const TRANSPORT_MODULES = ['node:http', 'node:https', 'node:http2', './http.ts', './http'];
 
@@ -324,7 +341,11 @@ export function evaluateRules(files) {
 
     // --- ADR-0033 C3: HTTP independence ---------------------------------
     const normalisedPath = f.path.split(sep).join('/');
-    if (HTTP_INDEPENDENT_FILES.includes(normalisedPath) || f.cls === 'pure') {
+    const httpIndependent =
+      HTTP_INDEPENDENT_FILES.includes(normalisedPath) ||
+      HTTP_INDEPENDENT_DIRS.some((dir) => normalisedPath.startsWith(dir)) ||
+      f.cls === 'pure';
+    if (httpIndependent) {
       for (const spec of imports) {
         if (TRANSPORT_MODULES.includes(spec)) {
           violations.push({
@@ -547,6 +568,12 @@ const SELF_TEST_CASES = [
     rule: 'env-branching',
     file: { path: 'apps/api/src/bad2.ts', pkg: '@asdp/api', cls: 'application',
             text: `if (NODE_ENV === 'production') {}\n` },
+  },
+  {
+    name: 'a NEW command file importing node:http is rejected (ADR-0033 C3)',
+    rule: 'http-independence',
+    file: { path: 'apps/api/src/commands/intake.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { createServer } from 'node:http';\n` },
   },
   {
     name: 'command layer importing node:http is rejected (ADR-0033 C3)',

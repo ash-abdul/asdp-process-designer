@@ -534,20 +534,26 @@ describe('HTTP surface over NestJS + PGlite (ADR-0034, ADR-0035)', () => {
     const running = await startServer();
     try {
       const r = await call(running, 'GET', '/projects');
-      assert.equal(r.status, 403, 'an unauthenticated request must be refused');
+      // 401, not 403. V1 settled the posture: absent credentials are an
+      // AUTHENTICATION failure, and 403 is reserved for an authenticated caller
+      // who lacks the role. Phase 1 returned 403 for both, which conflated two
+      // different facts and told the caller to go looking for the wrong problem.
+      assert.equal(r.status, 401, 'an unauthenticated request must be refused');
       assert.match(String(r.json.error), /unauthenticated/);
     } finally {
       await running.close();
     }
   });
 
-  test('a caller with no roles is refused', async () => {
+  test('a caller with no roles is refused as unauthenticated', async () => {
     const running = await startServer();
     try {
       const r = await call(running, 'GET', '/projects', undefined, {
         'x-asdp-subject': 'u-x',
       });
-      assert.equal(r.status, 403);
+      // A subject with no roles cannot be authenticated at all in header mode:
+      // there is no identity to authorise. 401, not 403.
+      assert.equal(r.status, 401);
     } finally {
       await running.close();
     }
@@ -637,15 +643,14 @@ describe('HTTP surface over NestJS + PGlite (ADR-0034, ADR-0035)', () => {
     }
   });
 
-  test('BEHAVIOUR CHANGE (ADR-0034): an unknown route 404s before authentication', async () => {
+  test('SETTLED POSTURE: an unknown route 404s before authentication', async () => {
     // Phase 1 ran authentication before routing, so an anonymous request to an
     // unknown path was refused with 403 and route existence was not disclosed.
     // NestJS routes first, so an unmatched path 404s before the guard runs.
     //
-    // Recorded as a deliberate posture change rather than quietly updated: it is
-    // standard framework behaviour, route names are not secrets in a documented
-    // API, and restoring the old order would mean fighting the composition layer
-    // (ADR-0034 N1). Flagged for review.
+    // Reviewed and ACCEPTED: route names are not secrets in a documented API, and
+    // restoring the old order would mean fighting the composition layer
+    // (ADR-0034 N1). The Phase 1 behaviour must not be restored — CLAUDE.md §12.
     const running = await startServer();
     try {
       const res = await fetch(`http://127.0.0.1:${running.port}/nope`);
@@ -662,7 +667,7 @@ describe('HTTP surface over NestJS + PGlite (ADR-0034, ADR-0035)', () => {
     const running = await startServer();
     try {
       const res = await fetch(`http://127.0.0.1:${running.port}/projects`);
-      assert.equal(res.status, 403);
+      assert.equal(res.status, 401, 'unauthenticated, not unauthorised');
       const body = (await res.json()) as { error: string };
       assert.match(body.error, /unauthenticated/);
     } finally {

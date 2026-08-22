@@ -2,9 +2,10 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0 complete** · **V1 approved, not started**
-> Application code and dependencies now exist: 8 packages, a compiled TypeScript build, a NestJS
-> composition layer, durable PGlite persistence. **288 tests pass, none skipped.**
+> **Phase 2 V0 and V1 complete** · V2 not started
+> Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
+> composition layer, durable PGlite persistence, and text intake with resolvable provenance.
+> **415 tests pass, none skipped.**
 > No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-22
 > **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)
@@ -88,10 +89,14 @@ Start here: **[`docs/README.md`](docs/README.md)** — the full index.
 **Phase 0** (architecture and specification) and **Phase 1** (foundations) are complete.
 **Phase 2 V0** — compiled build toolchain, NestJS composition layer, PGlite persistence,
 development BlobStore — is complete at commit `8f2a665`.
-**V1**, text intake and provenance end to end, is **approved but not started**.
+**Phase 2 V1** — text intake and provenance end to end — is complete and awaiting review.
+**V2** has not started, and its scope is provisional.
 
 The application runs, persists durable state across restarts, enforces authentication and gate
-read-locks, and shuts down gracefully. **288 tests pass; none are skipped or suppressed.**
+read-locks, and shuts down gracefully. It ingests UTF-8 free text and Markdown behind a
+content-sniffing guard, anchors every extracted unit to the exact region it came from in Arabic and
+English, serves RTL-correct highlight ranges for a read-only source viewer, and implements the ten
+catalogued `L0-ING` ingestion rules. **415 tests pass; none are skipped or suppressed.**
 
 **No generation capability exists.** BPMN, DMN and form generation, Process IR compilation, the
 Specification Studio, and any graphical designer are out of scope for Phase 2.

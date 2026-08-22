@@ -21,6 +21,8 @@
     { "path": "../../packages/provenance" },
     { "path": "../../packages/raf" },
     { "path": "../../packages/domain" },
+    { "path": "../../packages/ingestion" },
+    { "path": "../../packages/validation" },
     { "path": "../../packages/ai" },
     { "path": "../../packages/eval" }
   ]

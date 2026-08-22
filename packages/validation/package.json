@@ -1,0 +1,16 @@
+{
+  "name": "@asdp/validation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Validation rule packs L0–L6 with stable rule ids. PURE: a rule is a function from state to findings and can never mutate what it judges.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "asdp": {
+    "class": "pure"
+  }
+}

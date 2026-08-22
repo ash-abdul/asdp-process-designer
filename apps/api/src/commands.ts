@@ -75,6 +75,16 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   { name: 'evaluateGate', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect', 'TechnicalApprover'], stage: null, mutatesArtifact: false },
   { name: 'approveGate', requiredRoles: ['BusinessApprover', 'TechnicalApprover', 'ProcessArchitect'], stage: null, mutatesArtifact: false },
   { name: 'enterStage', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: null, mutatesArtifact: false },
+
+  // --- V1 intake ---------------------------------------------------------
+  // `Contributor` may upload a source, because gathering material is not an
+  // analytical act. Ranking authority and recording evidence are, so they need
+  // an analyst or an architect: authority ranking is the deterministic input to
+  // conflict precedence (ADR-0012) and must not be set casually.
+  { name: 'ingestSource', requiredRoles: ['Contributor', 'BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  { name: 'setSourceAuthorityRank', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  { name: 'recordEvidence', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  { name: 'validateIntake', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer'], stage: null, mutatesArtifact: false },
 ];
 
 export function commandDescriptor(name: string): CommandDescriptor {

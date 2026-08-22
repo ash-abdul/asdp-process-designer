@@ -301,17 +301,23 @@ are in [docs/60-plan/phase-2-plan.md](docs/60-plan/phase-2-plan.md).
 
 ## 12. HTTP status semantics
 
-Settled posture — do not change it without an ADR:
+Settled posture, implemented in V1 — do not change it without an ADR:
 
 | Status | Meaning |
 |---|---|
 | **401** | Unauthenticated, or invalid authentication, where authentication applies |
 | **403** | Authenticated but not authorised |
 | **404** | Unknown route, or resource not found |
+| **503** | The service cannot perform the authentication mechanism it is configured to require |
 
 An unknown route returns **404 before authentication** — NestJS routes before guards, and route
 names are not treated as secrets. Known protected routes continue to reject anonymous callers.
 This supersedes the Phase 1 behaviour, which returned 403 before route resolution.
+
+Keep 401 and 403 distinct. A caller who gets 403 goes looking for a permissions problem; one who
+gets 401 goes looking for a credentials problem. Returning the wrong one sends them to the wrong
+place. Absent or unusable credentials are **always** 401, never 403 — Phase 1 returned 403 for
+both, and V1 corrected it.
 
 ---
 

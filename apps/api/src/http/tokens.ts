@@ -13,3 +13,5 @@ export const BLOB_STORE = Symbol('ASDP_BLOB_STORE');
 export const CLOCK = Symbol('ASDP_CLOCK');
 export const ID_GENERATOR = Symbol('ASDP_ID_GENERATOR');
 export const DEPENDENCY_PROBE = Symbol('ASDP_DEPENDENCY_PROBE');
+/** Transaction boundary (V1). A port, so controllers never see a driver. */
+export const UNIT_OF_WORK = Symbol('ASDP_UNIT_OF_WORK');

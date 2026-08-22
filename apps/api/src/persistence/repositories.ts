@@ -32,6 +32,7 @@ import {
   type Versioned,
 } from '../ports.ts';
 import { UniqueViolationError, type Database, type Db } from './db.ts';
+import { createSqlIntakeRepositories } from './intake-repositories.ts';
 
 // ---------------------------------------------------------------------------
 // Row mapping. Hand-written, because ADR-0035 chose plain SQL over an ORM — so
@@ -388,6 +389,9 @@ export function createSqlRepositories(db: Db): Repositories {
     baselines: new SqlBaselineRepository(db),
     approvals: new SqlApprovalRepository(db),
     audit: new SqlAuditRepository(db),
+    // Intake repositories live in their own module but share this handle, so a
+    // transaction spans governance and intake writes alike.
+    ...createSqlIntakeRepositories(db),
   };
 }
 

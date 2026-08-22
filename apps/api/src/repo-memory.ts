@@ -10,9 +10,13 @@ import type {
   Approval,
   AuditEvent,
   Baseline,
+  EvidenceItem,
   Gate,
   GateCode,
   Project,
+  Source,
+  SourceStatus,
+  SourceUnit,
 } from '@asdp/schemas';
 import {
   ConcurrencyError,
@@ -22,11 +26,15 @@ import {
   type BaselineRepository,
   type Clock,
   type DependencyProbe,
+  type EvidenceRepository,
   type GateRepository,
   type HealthReport,
   type IdGenerator,
   type ProjectRepository,
   type Repositories,
+  type SourceRepository,
+  type SourceTextRecord,
+  type SourceUnitRepository,
   type Versioned,
 } from './ports.ts';
 
@@ -141,6 +149,127 @@ class MemoryAuditRepository implements AuditRepository {
   }
 }
 
+/**
+ * Sources. Content-identifying fields are write-once, as in SQL: the only
+ * mutators are the two the port exposes.
+ */
+class MemorySourceRepository implements SourceRepository {
+  private readonly byId = new Map<string, Source>();
+  private readonly text = new Map<string, string>();
+
+  async insert(source: Source, text: SourceTextRecord): Promise<void> {
+    if (this.byId.has(source.id)) throw new Error(`source ${source.id} already exists`);
+    for (const existing of this.byId.values()) {
+      if (existing.projectId === source.projectId && existing.sha256 === source.sha256) {
+        throw new Error(
+          `a source with hash ${source.sha256.slice(0, 12)}… already exists in project ` +
+            `${source.projectId}; identical bytes are ingested once`,
+        );
+      }
+    }
+    this.byId.set(source.id, source);
+    this.text.set(text.sourceId, text.text);
+  }
+  async get(id: string): Promise<Source | undefined> {
+    return this.byId.get(id);
+  }
+  async getByHash(projectId: string, sha256: string): Promise<Source | undefined> {
+    for (const s of this.byId.values()) {
+      if (s.projectId === projectId && s.sha256 === sha256) return s;
+    }
+    return undefined;
+  }
+  async list(projectId: string): Promise<readonly Source[]> {
+    return [...this.byId.values()]
+      .filter((s) => s.projectId === projectId)
+      .sort(
+        (a, b) =>
+          b.authorityRank - a.authorityRank ||
+          (a.uploadedAt < b.uploadedAt ? -1 : a.uploadedAt > b.uploadedAt ? 1 : 0) ||
+          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      );
+  }
+  async getText(sourceId: string): Promise<string | undefined> {
+    return this.text.get(sourceId);
+  }
+  async setAuthorityRank(sourceId: string, rank: number): Promise<void> {
+    const held = this.byId.get(sourceId);
+    if (held === undefined) throw new NotFoundError(`unknown source ${sourceId}`);
+    this.byId.set(sourceId, { ...held, authorityRank: rank });
+  }
+  async setStatus(sourceId: string, status: SourceStatus, parseError?: string): Promise<void> {
+    const held = this.byId.get(sourceId);
+    if (held === undefined) throw new NotFoundError(`unknown source ${sourceId}`);
+    const next: Source = { ...held, status };
+    if (parseError === undefined) delete (next as { parseError?: string }).parseError;
+    else (next as { parseError?: string }).parseError = parseError;
+    this.byId.set(sourceId, next);
+  }
+}
+
+/** Insert-only: units are re-extracted under a new version, never edited. */
+class MemorySourceUnitRepository implements SourceUnitRepository {
+  private readonly byId = new Map<string, SourceUnit>();
+
+  async insertAll(units: readonly SourceUnit[]): Promise<void> {
+    for (const unit of units) {
+      if (this.byId.has(unit.id)) {
+        throw new Error(`source unit ${unit.id} already exists; units are insert-only`);
+      }
+      this.byId.set(unit.id, unit);
+    }
+  }
+  async get(id: string): Promise<SourceUnit | undefined> {
+    return this.byId.get(id);
+  }
+  async listForSource(sourceId: string): Promise<readonly SourceUnit[]> {
+    return [...this.byId.values()]
+      .filter((u) => u.sourceId === sourceId)
+      .sort((a, b) => a.ordinal - b.ordinal);
+  }
+  async listForProject(projectId: string): Promise<readonly SourceUnit[]> {
+    return [...this.byId.values()]
+      .filter((u) => u.projectId === projectId)
+      .sort(
+        (a, b) =>
+          (a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0) ||
+          a.ordinal - b.ordinal,
+      );
+  }
+}
+
+/** Insert-only (invariants D1, D8). No update, no delete. */
+class MemoryEvidenceRepository implements EvidenceRepository {
+  private readonly byId = new Map<string, EvidenceItem>();
+
+  async insert(item: EvidenceItem): Promise<void> {
+    if (this.byId.has(item.id)) {
+      throw new Error(`evidence ${item.id} already exists; evidence is insert-only`);
+    }
+    // Invariant D1, mirrored from the SQL check constraint: an unverified anchor
+    // is not persistable in either adapter.
+    if (!item.anchorVerified) {
+      throw new Error(
+        `evidence ${item.id} has anchorVerified=false; invariant D1 requires a verified anchor`,
+      );
+    }
+    this.byId.set(item.id, item);
+  }
+  async get(id: string): Promise<EvidenceItem | undefined> {
+    return this.byId.get(id);
+  }
+  async listForProject(projectId: string): Promise<readonly EvidenceItem[]> {
+    return [...this.byId.values()]
+      .filter((e) => e.projectId === projectId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+  }
+  async listForSource(sourceId: string): Promise<readonly EvidenceItem[]> {
+    return [...this.byId.values()]
+      .filter((e) => e.sourceId === sourceId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+  }
+}
+
 export function createMemoryRepositories(): Repositories {
   return {
     projects: new MemoryProjectRepository(),
@@ -148,6 +277,9 @@ export function createMemoryRepositories(): Repositories {
     baselines: new MemoryBaselineRepository(),
     approvals: new MemoryApprovalRepository(),
     audit: new MemoryAuditRepository(),
+    sources: new MemorySourceRepository(),
+    sourceUnits: new MemorySourceUnitRepository(),
+    evidence: new MemoryEvidenceRepository(),
   };
 }
 

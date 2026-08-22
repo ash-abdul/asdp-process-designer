@@ -11,11 +11,11 @@
  */
 
 import type { Config } from './config.ts';
-import type { Clock, IdGenerator, Repositories } from './ports.ts';
+import type { Clock, IdGenerator, Repositories, UnitOfWork } from './ports.ts';
 import type { Database } from './persistence/db.ts';
 import { createPgliteDatabase } from './persistence/pglite-database.ts';
 import { migrate } from './persistence/migrate.ts';
-import { createSqlRepositories } from './persistence/repositories.ts';
+import { createSqlRepositories, withTransaction } from './persistence/repositories.ts';
 import type { BlobStore } from './blob/blob-store.ts';
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
 import { counterIdGenerator, createMemoryRepositories, systemClock } from './repo-memory.ts';
@@ -24,9 +24,21 @@ export interface Adapters {
   readonly database?: Database;
   readonly repositories: Repositories;
   readonly blobStore: BlobStore;
+  readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   close(): Promise<void>;
+}
+
+/**
+ * A pass-through unit of work for the in-memory adapter.
+ *
+ * Honest about what it is: the in-memory repositories have no transaction to
+ * join, so this runs the work directly and does NOT roll back. Tests that assert
+ * rollback behaviour must run against PGlite, where the transaction is real.
+ */
+export function passThroughUnitOfWork(repositories: Repositories): UnitOfWork {
+  return { run: (fn) => fn(repositories) };
 }
 
 export class UnsupportedAdapterError extends Error {}
@@ -59,9 +71,11 @@ export async function createAdapters(
         })();
 
   if (config.repository === 'memory') {
+    const repositories = createMemoryRepositories();
     return {
-      repositories: createMemoryRepositories(),
+      repositories,
       blobStore,
+      unitOfWork: passThroughUnitOfWork(repositories),
       clock,
       ids,
       close: async () => undefined,
@@ -83,6 +97,9 @@ export async function createAdapters(
     database,
     repositories: createSqlRepositories(database),
     blobStore,
+    // A real transaction: the ingest of a source, its text and its units either
+    // all commit or none do.
+    unitOfWork: { run: (fn) => withTransaction(database, fn) },
     clock,
     ids,
     close: () => database.close(),

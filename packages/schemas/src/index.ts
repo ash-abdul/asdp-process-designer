@@ -12,4 +12,5 @@
 export * from './primitives.ts';
 export * from './validation.ts';
 export * from './governance.ts';
+export * from './intake.ts';
 export * from './ai.ts';
