@@ -1,0 +1,13 @@
+{
+  "name": "@asdp/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain entities, invariants, canonical serialisation, baselines, gate state machine, computed confidence. PURE: no I/O.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "asdp": {
+    "class": "pure"
+  }
+}

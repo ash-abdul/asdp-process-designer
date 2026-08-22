@@ -1,0 +1,123 @@
+# ASDP Process Designer — development environment (ADR-0028).
+#
+# NOT YET RUN-VERIFIED: Docker is unavailable in the Phase 1 development
+# environment. Reviewed deliverable, not a tested artifact. See infra/README.md.
+#
+# Services deliberately separated from day one so a future Kubernetes topology
+# needs no re-architecture:
+#   api      stateless HTTP
+#   worker   stateless job consumer (same image, different entrypoint)
+#   migrate  one-shot task — migrations never run on service start (K7)
+#   postgres domain, evidence, trace graph, audit
+#   minio    S3-compatible object store: source blobs, page images, artifacts
+#   oidc     standards-compliant dev identity provider (ADR-0027 — there is NO
+#            skip-auth mode; local development authenticates for real)
+
+name: asdp
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["node", "apps/api/src/main.ts"]
+    environment:
+      PORT: "3000"
+      ASDP_DATABASE_URL: "postgres://asdp:asdp@postgres:5432/asdp"
+      ASDP_OBJECT_STORE_ENDPOINT: "http://minio:9000"
+      ASDP_OBJECT_STORE_BUCKET: "asdp"
+      ASDP_OIDC_ISSUER_URL: "http://oidc:8080/realms/asdp"
+      ASDP_OIDC_CLIENT_ID: "asdp-web"
+      ASDP_OIDC_AUDIENCE: "asdp-api"
+      ASDP_OIDC_CLAIM_GROUPS: "groups"
+      ASDP_AI_ROUTING_FILE: "/app/config/ai-routing.json"
+      ASDP_EGRESS_POLICY_FILE: "/app/config/egress-policy.json"
+      ASDP_CAMUNDA_TARGET_PROFILE: "camunda-8x-baseline"
+      ASDP_LOG_LEVEL: "info"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["node", "apps/api/src/worker.ts"]
+    environment:
+      ASDP_DATABASE_URL: "postgres://asdp:asdp@postgres:5432/asdp"
+      ASDP_OBJECT_STORE_ENDPOINT: "http://minio:9000"
+      ASDP_OBJECT_STORE_BUCKET: "asdp"
+      ASDP_WORKER_CONCURRENCY: "4"
+      ASDP_LOG_LEVEL: "info"
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    restart: unless-stopped
+
+  # Migrations as a one-shot task, never on service start-up (ADR-0028 K7).
+  migrate:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["node", "apps/api/src/migrate.ts"]
+    environment:
+      ASDP_DATABASE_URL: "postgres://asdp:asdp@postgres:5432/asdp"
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  postgres:
+    # ICU collation is required, not optional: Arabic and English must sort
+    # predictably (ADR-0023). pgvector is used only for near-duplicate
+    # detection, never for context assembly (ADR-0022).
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: asdp
+      POSTGRES_PASSWORD: asdp
+      POSTGRES_DB: asdp
+      # Deterministic, locale-explicit collation — never a byte-order default.
+      POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=und-u-co-standard --encoding=UTF8"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asdp -d asdp"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: asdp
+      MINIO_ROOT_PASSWORD: asdp-dev-secret
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  oidc:
+    image: quay.io/keycloak/keycloak:latest
+    command: ["start-dev", "--http-port=8080", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./oidc-realm:/opt/keycloak/data/import:ro
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:
+  minio-data:

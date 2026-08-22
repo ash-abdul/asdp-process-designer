@@ -1,0 +1,125 @@
+total 48
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 .
+drwxr-xr-x  18 akotb  staff    576 Aug 22 16:02 ..
+-rw-r--r--@  1 akotb  staff  10244 Aug 22 15:37 .DS_Store
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:38 00-product
+drwxr-xr-x@ 10 akotb  staff    320 Aug 22 15:36 10-architecture
+drwxr-xr-x@  9 akotb  staff    288 Aug 22 15:48 20-domain
+drwxr-xr-x@  9 akotb  staff    288 Aug 22 15:49 30-generation
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:48 40-quality
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:48 50-governance
+drwxr-xr-x@  5 akotb  staff    160 Aug 22 15:49 60-plan
+drwxr-xr-x@ 35 akotb  staff   1120 Aug 22 15:38 adr
+-rw-r--r--@  1 akotb  staff    760 Aug 22 16:23 directory.txt
+-rw-r--r--   1 akotb  staff      0 Aug 22 16:28 docs.txt
+-rw-r--r--@  1 akotb  staff   5993 Aug 22 15:48 README.md
+
+./00-product:
+total 64
+drwxr-xr-x@  6 akotb  staff   192 Aug 22 15:38 .
+drwxr-xr-x@ 14 akotb  staff   448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff  7102 Aug 22 15:38 mvp-scope.md
+-rw-r--r--@  1 akotb  staff  8166 Aug 22 14:25 personas-and-journey.md
+-rw-r--r--@  1 akotb  staff  6654 Aug 22 15:38 product-boundary.md
+-rw-r--r--@  1 akotb  staff  5915 Aug 22 14:25 product-charter.md
+
+./10-architecture:
+total 208
+drwxr-xr-x@ 10 akotb  staff    320 Aug 22 15:36 .
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff  16645 Aug 22 14:29 ai-provider-abstraction.md
+-rw-r--r--@  1 akotb  staff  12828 Aug 22 14:27 architecture-overview.md
+-rw-r--r--@  1 akotb  staff   9384 Aug 22 14:29 data-governance.md
+-rw-r--r--@  1 akotb  staff   8651 Aug 22 14:32 deployment-architecture.md
+-rw-r--r--@  1 akotb  staff   5940 Aug 22 14:31 identity-and-access.md
+-rw-r--r--@  1 akotb  staff   9224 Aug 22 15:36 module-map.md
+-rw-r--r--@  1 akotb  staff  12002 Aug 22 14:30 multilingual-architecture.md
+-rw-r--r--@  1 akotb  staff   9047 Aug 22 15:36 technology-stack.md
+
+./20-domain:
+total 208
+drwxr-xr-x@  9 akotb  staff    288 Aug 22 15:48 .
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff   9889 Aug 22 14:43 artifact-model.md
+-rw-r--r--@  1 akotb  staff  24857 Aug 22 15:48 domain-model.md
+-rw-r--r--@  1 akotb  staff   7639 Aug 22 14:40 epistemic-model.md
+-rw-r--r--@  1 akotb  staff   9092 Aug 22 14:40 provenance-and-anchoring.md
+-rw-r--r--@  1 akotb  staff  16491 Aug 22 15:30 requirement-analysis-frame.md
+-rw-r--r--@  1 akotb  staff  11016 Aug 22 14:42 traceability-model.md
+-rw-r--r--@  1 akotb  staff   8758 Aug 22 14:44 versioning-and-baselines.md
+
+./30-generation:
+total 200
+drwxr-xr-x@  9 akotb  staff    288 Aug 22 15:49 .
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff   8337 Aug 22 15:38 decision-generation.md
+-rw-r--r--@  1 akotb  staff   6710 Aug 22 14:51 form-generation.md
+-rw-r--r--@  1 akotb  staff  10287 Aug 22 15:33 generation-directives.md
+-rw-r--r--@  1 akotb  staff  10701 Aug 22 15:49 generation-pipeline.md
+-rw-r--r--@  1 akotb  staff  12085 Aug 22 15:34 layout-architecture.md
+-rw-r--r--@  1 akotb  staff   9534 Aug 22 15:35 pattern-mapping.md
+-rw-r--r--@  1 akotb  staff  31586 Aug 22 15:32 process-ir.md
+
+./40-quality:
+total 104
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:48 .
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff   9073 Aug 22 14:53 ai-evaluation-framework.md
+-rw-r--r--@  1 akotb  staff   5700 Aug 22 14:53 test-scenario-model.md
+-rw-r--r--@  1 akotb  staff  14506 Aug 22 15:47 validation-architecture.md
+-rw-r--r--@  1 akotb  staff  15815 Aug 22 15:48 validation-rule-catalog.md
+
+./50-governance:
+total 88
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:48 .
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff   7988 Aug 22 14:56 audit-and-compliance.md
+-rw-r--r--@  1 akotb  staff  10166 Aug 22 14:55 camunda-integration.md
+-rw-r--r--@  1 akotb  staff  10009 Aug 22 15:48 governance-and-gates.md
+-rw-r--r--@  1 akotb  staff   8594 Aug 22 14:56 handoff-and-divergence.md
+
+./60-plan:
+total 80
+drwxr-xr-x@  5 akotb  staff    160 Aug 22 15:49 .
+drwxr-xr-x@ 14 akotb  staff    448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff   9257 Aug 22 15:37 open-decisions.md
+-rw-r--r--@  1 akotb  staff  14392 Aug 22 15:49 phase-0-tasks.md
+-rw-r--r--@  1 akotb  staff  11367 Aug 22 15:49 roadmap.md
+
+./adr:
+total 312
+drwxr-xr-x@ 35 akotb  staff  1120 Aug 22 15:38 .
+drwxr-xr-x@ 14 akotb  staff   448 Aug 22 16:28 ..
+-rw-r--r--@  1 akotb  staff  3419 Aug 22 15:00 ADR-0001-requirements-driven-product-boundary.md
+-rw-r--r--@  1 akotb  staff  3241 Aug 22 15:01 ADR-0002-spec-layer-editing.md
+-rw-r--r--@  1 akotb  staff  2733 Aug 22 15:01 ADR-0003-no-override-editor.md
+-rw-r--r--@  1 akotb  staff  2847 Aug 22 15:01 ADR-0004-ai-proposes-code-commits.md
+-rw-r--r--@  1 akotb  staff  2670 Aug 22 15:01 ADR-0005-ir-first-compilation.md
+-rw-r--r--@  1 akotb  staff  3913 Aug 22 15:37 ADR-0006-correct-by-construction-ir.md
+-rw-r--r--@  1 akotb  staff  3156 Aug 22 15:02 ADR-0007-epistemic-ladder.md
+-rw-r--r--@  1 akotb  staff  3520 Aug 22 15:02 ADR-0008-resolvable-anchors.md
+-rw-r--r--@  1 akotb  staff  3021 Aug 22 15:02 ADR-0009-technology-neutral-bps.md
+-rw-r--r--@  1 akotb  staff  3171 Aug 22 15:38 ADR-0010-raf-deterministic-schema.md
+-rw-r--r--@  1 akotb  staff  3067 Aug 22 15:02 ADR-0011-computed-confidence.md
+-rw-r--r--@  1 akotb  staff  2843 Aug 22 15:03 ADR-0012-deterministic-conflict-precedence.md
+-rw-r--r--@  1 akotb  staff  5468 Aug 22 15:35 ADR-0013-generation-directives.md
+-rw-r--r--@  1 akotb  staff  6220 Aug 22 15:34 ADR-0014-layout-safety-critical.md
+-rw-r--r--@  1 akotb  staff  3235 Aug 22 15:04 ADR-0015-read-only-viewers.md
+-rw-r--r--@  1 akotb  staff  3191 Aug 22 15:04 ADR-0016-immutable-content-addressed-artifacts.md
+-rw-r--r--@  1 akotb  staff  3002 Aug 22 15:04 ADR-0017-approval-as-baseline-signature.md
+-rw-r--r--@  1 akotb  staff  3341 Aug 22 15:04 ADR-0018-handoff-ownership-boundary.md
+-rw-r--r--@  1 akotb  staff  3575 Aug 22 15:05 ADR-0019-divergence-via-observation.md
+-rw-r--r--@  1 akotb  staff  4019 Aug 22 15:05 ADR-0020-ai-provider-abstraction.md
+-rw-r--r--@  1 akotb  staff  4525 Aug 22 15:05 ADR-0021-data-classification-egress-policy.md
+-rw-r--r--@  1 akotb  staff  4491 Aug 22 15:05 ADR-0022-capability-negotiation.md
+-rw-r--r--@  1 akotb  staff  4931 Aug 22 15:06 ADR-0023-unicode-bilingual-architecture.md
+-rw-r--r--@  1 akotb  staff  3851 Aug 22 15:06 ADR-0024-ascii-identifiers-unicode-names.md
+-rw-r--r--@  1 akotb  staff  3728 Aug 22 15:06 ADR-0025-camunda-version-profiles.md
+-rw-r--r--@  1 akotb  staff  3594 Aug 22 15:07 ADR-0026-static-validation-first.md
+-rw-r--r--@  1 akotb  staff  3106 Aug 22 15:07 ADR-0027-abstract-oidc-identity.md
+-rw-r--r--@  1 akotb  staff  3802 Aug 22 15:08 ADR-0028-containerised-compose-first.md
+-rw-r--r--@  1 akotb  staff  3627 Aug 22 15:08 ADR-0029-modular-monolith.md
+-rw-r--r--@  1 akotb  staff  2837 Aug 22 15:08 ADR-0030-typescript-end-to-end.md
+-rw-r--r--@  1 akotb  staff  4067 Aug 22 15:08 ADR-0031-corpus-as-data.md
+-rw-r--r--@  1 akotb  staff  3352 Aug 22 15:09 ADR-0032-retain-everything.md
+-rw-r--r--@  1 akotb  staff  5566 Aug 22 15:37 README.md

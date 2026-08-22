@@ -1,0 +1,32 @@
+{
+  "name": "asdp-process-designer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ASDP Process Designer — requirements-driven Camunda 8 process application generator",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck",
+    "test": "node --test \"packages/*/src/**/*.test.ts\" \"apps/*/src/**/*.test.ts\"",
+    "test:only": "node --test",
+    "check:arch": "node tools/check-architecture.mjs",
+    "check:arch:selftest": "node tools/check-architecture.mjs --self-test",
+    "verify": "npm run typecheck && npm run check:arch && npm run check:arch:selftest && npm test",
+    "start": "node apps/api/src/main.ts",
+    "start:worker": "node apps/api/src/worker.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}

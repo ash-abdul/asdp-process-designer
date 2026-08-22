@@ -1,0 +1,16 @@
+{
+  "name": "@asdp/schemas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Single source of truth for entity shapes, API contracts and AI output contracts. Zod schemas derive TS types and JSON Schema.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "asdp": {
+    "class": "contract"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}

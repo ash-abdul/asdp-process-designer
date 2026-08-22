@@ -1,0 +1,13 @@
+{
+  "name": "@asdp/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ASDP HTTP service and worker. Owns transactions, gate guards, RBAC and audit interception.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "asdp": {
+    "class": "application"
+  }
+}

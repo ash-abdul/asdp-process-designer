@@ -1,0 +1,14 @@
+total 40
+drwxr-xr-x@ 13 akotb  staff    416 Aug 22 16:23 .
+drwxr-xr-x  18 akotb  staff    576 Aug 22 16:02 ..
+-rw-r--r--@  1 akotb  staff  10244 Aug 22 15:37 .DS_Store
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:38 00-product
+drwxr-xr-x@ 10 akotb  staff    320 Aug 22 15:36 10-architecture
+drwxr-xr-x@  9 akotb  staff    288 Aug 22 15:48 20-domain
+drwxr-xr-x@  9 akotb  staff    288 Aug 22 15:49 30-generation
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:48 40-quality
+drwxr-xr-x@  6 akotb  staff    192 Aug 22 15:48 50-governance
+drwxr-xr-x@  5 akotb  staff    160 Aug 22 15:49 60-plan
+drwxr-xr-x@ 35 akotb  staff   1120 Aug 22 15:38 adr
+-rw-r--r--   1 akotb  staff      0 Aug 22 16:23 directory.txt
+-rw-r--r--@  1 akotb  staff   5993 Aug 22 15:48 README.md

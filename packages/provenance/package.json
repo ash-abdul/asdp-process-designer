@@ -1,0 +1,13 @@
+{
+  "name": "@asdp/provenance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Provenance anchors: minting, resolution with checksum verification, deterministic quote location. PURE: no I/O.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "asdp": {
+    "class": "pure"
+  }
+}

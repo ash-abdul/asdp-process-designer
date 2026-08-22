@@ -1,0 +1,95 @@
+# Implementation Roadmap
+
+> **Status:** Approved (Phase 0) · **Version:** 1.0 · **Updated:** 2026-08-22
+> **Related:** [phase-0-tasks.md](phase-0-tasks.md), [mvp-scope.md](../00-product/mvp-scope.md)
+
+Durations are engineering estimates for a small focused team, not commitments.
+
+---
+
+## 1. Phases
+
+| Phase | Wks | Content | Exit criterion |
+|---|---|---|---|
+| **P0** Foundations & spikes | 4 | Monorepo, CI with dependency-rule linting, containerised api/worker, OIDC, projects, RBAC, artifact repository with canonical hashing, gate state machine, audit log, **AI provider port + two adapters + null adapter**, evaluation harness skeleton, corpus registry. **Six spikes (§2)** | Governance spine works with zero AI; all six spikes resolved or their risks re-scoped |
+| **P1** Multimodal intake | 5 | Ingest guard, classification, all MVP adapters, **Arabic-capable text pipeline**, anchoring with verification, rasterisation, source inventory, authority ranking, source viewer with RTL-safe highlighting, structural BPMN/DMN/Form import, L0 validation | A real bilingual 40-page BRD + screenshots + a legacy BPMN ingest; every unit highlights correctly in both directions |
+| **P2** AI analysis & structured requirements | 6 | Analysis Frame v1, passes P0–P6, **egress policy gate**, provider routing and degradation ladder, evidence store, requirement model, epistemic ladder, computed confidence, clarification queue, conflict resolution, coverage dashboard, requirements workspace, **G1** | On a real BRD: cited requirements with resolvable anchors, real gaps and conflicts surfaced, G1 reachable only after genuine human resolution. Degradation ladder exercised end to end against the private-endpoint adapter |
+| **P3** Specification Studio | 5 | Domain Model Registry (bilingual), BPS editor, DecisionSpec editor with completeness/overlap analysis, FormSpec editor, ServiceInterface editor, generation directives, P7 decomposition proposal, **`L4-SPEC-*` incremental validation**, traceability enforcement, **impact analysis engine**, **G2** | Approved requirements → reviewed specifications with zero `L4-SPEC-*` errors; impact analysis verified against hand-derived sets |
+| **P4** IR, compilers, layout ⚠️ *riskiest* | 5–7 | Correct-by-construction IR with all **28 invariants** (incl. event handlers, compensation, multiple triggers, scope-local outcomes), pattern mapping, three compilers, Camunda target profile mechanism, **ecosystem auto-layout integration + bilingual label measurement + quality rules + golden-layout corpus**, directive application and rejection | Approved specifications → legible, statically-valid BPMN/DMN/Forms; layout within thresholds on the full golden corpus, including Arabic-labelled processes. Range reflects the S4 tier outcome |
+| **P5** Viewer framework | 5 | Viewer shell, three renderers, four-part inspector, five overlays, compare view, outline / path table / decision matrix / variable-flow views, accessibility, RTL rendering, AI explanation | An architect new to a project can explain any element and its origin without asking anyone; full keyboard and screen-reader navigation |
+| **P6** Interfaces & validation | 5 | Interface Registry, connector allow-list, **full L0–L6 rule packs**, cross-artifact dependency validation, variable contract alignment, waivers, **G3** | Zero-error validation on a complete design; every dependency resolved within the baseline |
+| **P7** Tests, packaging, handoff | 4 | Path/rule enumeration, scenario authoring, coverage, package assembly, generated bilingual documentation, traceability matrix, **AI-disclosure report**, directive log, **G4**, handoff records, permanent freeze, A↔C comparison | Exported archive opens in Camunda Modeler and passes static validation; matrix traces every element to a source region |
+| **P8** Divergence & second cycle | 4 | Observation re-import, **A↔B↔C classification**, divergence report with required dispositions, deviation log, requirements-v2 flow end to end | Requirements v2 → candidate → divergence report correctly classifies preserve / supersede / conflict per element; `camunda_only` changes provably never reverted |
+| **P9** Hardening & pilot | 5 | Prompt evaluation in CI, provider drift detection, cost/cache dashboards, performance, optional sandbox dry-run adapter if a cluster appears, **real ASDP corpora introduced**, pilot on two real services | Two real services delivered end to end by actual analysts, not the build team |
+
+**Total ≈ 50 weeks** to a pilot-ready MVP including second-cycle capability.
+Core single-cycle MVP (P0–P7) ≈ 41 weeks.
+
+The increase over the earlier estimate is attributable to three Phase 0 decisions, and is
+deliberate: the provider abstraction with a working degradation ladder (~3 wks), the Arabic text
+and RTL rendering pipeline (~3 wks), and the data-governance policy layer (~2 wks).
+
+## 2. Phase 0 spikes
+
+Detailed in [phase-0-tasks.md](phase-0-tasks.md). Summary:
+
+| # | Spike | Risk addressed |
+|---|---|---|
+| **S1** | Read-only viewer shell: `bpmn-js` NavigatedViewer + overlays + inspector | Viewer integration effort; overlay API adequacy |
+| **S2** | **Arabic PDF extraction — library-first**: measure the standard PDF stack before building custom reordering; anchor round-trip | The highest-uncertainty engineering task in the project |
+| **S3** | **Arabic diagram-label rendering** in the BPMN viewer, and RTL layout viability | Whether native renderer text is adequate or an overlay text layer is required |
+| **S4** | **Automatic layout — a measurement** of candidate ecosystem auto-layout tools on 6 processes incl. Arabic labels | The largest product risk: unrepairable bad layout. Determines which layout tier is needed |
+| **S5** | **Provider abstraction**: one task, two adapters, degradation ladder incl. `post_hoc` citation location | Whether the abstraction holds without leaking vendor concepts |
+| **S6** | **Egress policy gate**: transport-boundary assertion that restricted content cannot leave | Correctness of the central governance guarantee |
+
+**Recommendation:** run a vertical slice **P0 → P2 → P4** on one real service before committing
+P5–P8 scope. This tests the two hypotheses everything else depends on — that AI reads real
+bilingual documents accurately with resolvable provenance, and that generation plus layout
+produces artifacts an architect accepts *without being able to touch them*.
+
+## 3. Sequencing dependencies
+
+```
+P0 ──▶ P1 ──▶ P2 ──▶ P3 ──▶ P4 ──▶ P5
+                        │       │
+                        └───────┴──▶ P6 ──▶ P7 ──▶ P8 ──▶ P9
+
+S2 (Arabic PDF) gates P1.
+S4 (layout) gates P4 — and if it fails, P4 scope must be re-planned before P3 completes.
+S5/S6 (provider + egress) gate P2.
+The evaluation harness (P0) gates any prompt work in P2.
+```
+
+## 4. Risk register
+
+| # | Risk | Sev | Mitigation | Phase |
+|---|---|---|---|---|
+| R1 | **Provenance drift** — anchors that do not resolve or resolve wrongly | Critical | L0 hard errors; quote + checksum verification; per-adapter round-trip tests; visible highlighting so users detect errors immediately | P1 |
+| R2 | **Rubber-stamp approval** — humans approve AI output unread | Critical | Diff-centric review; L3 content marked and counted; AI-disclosure report; blocking questions; segregation of duties; **edit-rate monitoring where 100% raw acceptance is a warning** | P2, P9 |
+| R3 | **Unrepairable bad layout** | Critical | S4 as a **measurement of ecosystem tooling**, not an implementation; the IR region tree guarantees well-structured input; quality validation with two blocking rules; golden corpus in CI; subprocess-extraction escalation. ASDP builds no layout engine ([ADR-0014](../adr/ADR-0014-layout-safety-critical.md) v2.0) | P0, P4 |
+| R4 | **Arabic PDF extraction unreliable** | High | S2; documented fallback to page-image + vision with `image_region` anchors; never a silent degradation | P0, P1 |
+| R5 | **Confident wrong extraction**, especially from diagram images | High | Citation-or-flag; computed confidence; per-source-type confidence ceilings; diagram images capped at L2 with element-wise confirmation | P2 |
+| R6 | **Cross-source reconciliation is genuinely hard** | High | Deterministic precedence from human authority ranking; conflicts block G1; human always decides | P2 |
+| R7 | **Provider abstraction leaks** — a vendor concept becomes load-bearing | High | S5; dependency-rule linting; conformance suite per adapter; two adapters from P0 | P0, P2 |
+| R8 | **Degradation quietly reduces quality** | High | Degradations recorded on every proposal, propagated into confidence, surfaced in the UI and the disclosure report | P2 |
+| R9 | **Egress policy gap** | High | S6; transport-boundary assertions in CI; no provider reachable outside the broker | P0, P2 |
+| R10 | **Camunda 8.x churn** | High | Version-agnostic IR; profiles as data; pinned lint per profile; golden fixtures per profile; opt-in migration | P4 |
+| R11 | **Scope creep toward becoming Camunda Modeler** | High | Explicit non-goal; boundary test cases in [product-boundary.md](../00-product/product-boundary.md) §7; every request adjudicated against them | All |
+| R12 | **Bilingual retrofit cost** if any of the Unicode/anchor/identifier rules are skipped | High | Those rules are Phase 0 binding, not phased ([multilingual-architecture.md](../10-architecture/multilingual-architecture.md) §9) | P0, P1 |
+| R13 | **Analysis Frame rigidity** — some service does not fit the 27 slots | Medium | Versioned and extensible frame; profile slots; `unclassified` bucket with review flag, never silent loss | P2 |
+| R14 | **Synthetic-corpus over-fitting** | Medium | Corpus tiers; synthetic-only metrics labelled and down-weighted; held-out corpora; full prompt-history re-run when real material arrives | P0, P9 |
+| R15 | **Directive vocabulary creep** into a de-facto editor | Medium | Closed vocabulary; high bar for additions; periodic review of the vocabulary size | All |
+| R16 | **Gate rigidity** drives users around the tool | Medium | Configurable strictness, justified waivers, fast paths, clear impact diffs, advisory G0 | P2, P9 |
+| R17 | **Prompt regression** — improving one pass degrades another | Medium | Versioned prompts; recorded-fixture evaluation in CI; acceptance-rate monitoring per version | P2 onward |
+| R18 | **No sandbox ever materialises** | Medium | Static validation is sufficient for G3; the L3 qualifier is honest; the port is ready if a cluster appears | P9 |
+| R19 | **Cost of whole-corpus context** at scale | Low–Med | Caching where supported; batch where supported; per-project budgets and alerts; chunked degradation available | P2 |
+
+## 5. Post-MVP
+
+| Phase | Content |
+|---|---|
+| **P10** | Sandbox `DeploymentValidator` adapter; automated `CamundaObservationSource`; git / Web Modeler publishing; worker stub scaffolding from interface contracts |
+| **P11** | Executable test generation; sandbox scenario execution; coverage from real runs |
+| **P12** | Full Arabic UI localisation; RTL-optimised diagram conventions |
+| **P13** | Cross-project pattern library and reuse; multi-process hierarchies |
+| **P14** | Runtime KPI feedback against `SpecKpi`; process-improvement backlog generation |

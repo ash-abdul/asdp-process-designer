@@ -1,0 +1,13 @@
+{
+  "name": "@asdp/eval",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Evaluation harness: corpus registry, response record/replay, extraction and provenance metrics.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "asdp": {
+    "class": "adapter"
+  }
+}

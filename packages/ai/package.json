@@ -1,0 +1,13 @@
+{
+  "name": "@asdp/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI provider abstraction: port, capability descriptors, egress policy gate, routing, degradation ladder, proposal broker. Holds NO write authority (ADR-0004).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "asdp": {
+    "class": "adapter"
+  }
+}
