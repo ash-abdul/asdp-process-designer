@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Provenance anchors: minting, resolution with checksum verification, deterministic quote location. PURE: no I/O.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "asdp": {
     "class": "pure"

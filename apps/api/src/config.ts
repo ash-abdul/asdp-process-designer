@@ -12,9 +12,22 @@
 export interface Config {
   readonly port: number;
   readonly logLevel: 'debug' | 'info' | 'warn' | 'error';
-  /** Repository adapter. `memory` is the Phase 1 implementation. */
-  readonly repository: 'memory' | 'postgres';
+  /**
+   * Persistence adapter (ADR-0035). `pglite` is development and CI; `postgres`
+   * is production. `memory` remains for unit tests that need no SQL.
+   */
+  readonly repository: 'memory' | 'pglite' | 'postgres';
   readonly databaseUrl?: string;
+  /** PGlite data directory. Omitted ⇒ in-memory, which tests rely on. */
+  readonly databaseDir?: string;
+  /**
+   * Blob adapter (A6). MUST be selected explicitly — there is no silent default
+   * to `filesystem`, because that would let a dev adapter reach production.
+   */
+  readonly blobStore: 'filesystem' | 's3';
+  readonly blobRoot?: string;
+  /** Replica count. >1 with a filesystem blob store is refused at startup. */
+  readonly replicaCount: number;
   readonly objectStoreEndpoint?: string;
   readonly camundaTargetProfileId: string;
   readonly rulePackVersion: string;
@@ -60,8 +73,17 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
   const config: Config = {
     port: num(env.PORT, 3000, 'PORT'),
     logLevel: oneOf(env.ASDP_LOG_LEVEL, ['debug', 'info', 'warn', 'error'] as const, 'info', 'ASDP_LOG_LEVEL'),
-    repository: oneOf(env.ASDP_REPOSITORY, ['memory', 'postgres'] as const, 'memory', 'ASDP_REPOSITORY'),
+    repository: oneOf(
+      env.ASDP_REPOSITORY,
+      ['memory', 'pglite', 'postgres'] as const,
+      'pglite',
+      'ASDP_REPOSITORY',
+    ),
     databaseUrl: env.ASDP_DATABASE_URL,
+    databaseDir: env.ASDP_DATABASE_DIR,
+    blobStore: oneOf(env.ASDP_BLOB_STORE, ['filesystem', 's3'] as const, 'filesystem', 'ASDP_BLOB_STORE'),
+    blobRoot: env.ASDP_BLOB_ROOT,
+    replicaCount: num(env.ASDP_REPLICA_COUNT, 1, 'ASDP_REPLICA_COUNT'),
     objectStoreEndpoint: env.ASDP_OBJECT_STORE_ENDPOINT,
     camundaTargetProfileId: env.ASDP_CAMUNDA_TARGET_PROFILE ?? 'camunda-8x-baseline',
     rulePackVersion: env.ASDP_RULE_PACK_VERSION ?? 'rp-1.2',
@@ -76,6 +98,20 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
 
   if (config.repository === 'postgres' && (config.databaseUrl ?? '') === '') {
     throw new ConfigError('ASDP_DATABASE_URL is required when ASDP_REPOSITORY=postgres');
+  }
+  if (config.blobStore === 's3' && (config.objectStoreEndpoint ?? '') === '') {
+    throw new ConfigError('ASDP_OBJECT_STORE_ENDPOINT is required when ASDP_BLOB_STORE=s3');
+  }
+  if (config.blobStore === 'filesystem' && (config.blobRoot ?? '') === '') {
+    throw new ConfigError('ASDP_BLOB_ROOT is required when ASDP_BLOB_STORE=filesystem');
+  }
+  // A6 guard 2: a filesystem blob store behind several replicas silently loses
+  // blobs — exactly the failure ADR-0028 K2 exists to prevent.
+  if (config.blobStore === 'filesystem' && config.replicaCount > 1) {
+    throw new ConfigError(
+      `ASDP_BLOB_STORE=filesystem is single-node only, but ASDP_REPLICA_COUNT=${config.replicaCount}. ` +
+        'Use ASDP_BLOB_STORE=s3 for any multi-replica deployment (ADR-0028 K2).',
+    );
   }
   if (config.authMode === 'oidc') {
     for (const [key, value] of [

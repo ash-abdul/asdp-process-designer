@@ -125,21 +125,66 @@ const HTTP_INDEPENDENT_FILES = [
 const TRANSPORT_MODULES = ['node:http', 'node:https', 'node:http2', './http.ts', './http'];
 
 /**
- * C2: the typed router must not evolve into a custom application framework.
- * These shapes are the early signs of exactly that.
+ * ADR-0033 C2, reconciled with ADR-0034.
+ *
+ * C2 was written to stop the hand-written router growing into a framework. NestJS
+ * is now the approved framework, so decorators, controller classes and module
+ * classes are EXPECTED inside the composition layer (`apps/api/src/http/`) — and
+ * are still forbidden in commands and persistence, enforced by
+ * `nest-domain-purity`.
+ *
+ * What remains prohibited everywhere is building a SECOND framework alongside
+ * NestJS: our own DI container, our own middleware pipeline, our own router.
  */
+const COMPOSITION_LAYER = 'apps/api/src/http/';
+
 const FRAMEWORK_CREEP_PATTERNS = [
-  { re: /^\s*@[A-Z][A-Za-z]*\s*\(/m, why: 'decorator syntax (controller/DI style)' },
-  { re: /\bclass\s+\w*Controller\b/, why: 'controller base class or hierarchy' },
-  { re: /\b(createContainer|DIContainer|ServiceContainer|Injectable|inject)\s*[(<]/, why: 'dependency-injection container' },
-  { re: /\bclass\s+\w*Module\b/, why: 'module abstraction (NestJS-shaped)' },
-  { re: /\b(use|applyMiddleware)\s*\(\s*(?:async\s*)?\(\s*req\s*,\s*res\s*,\s*next\b/, why: 'middleware pipeline abstraction' },
-  { re: /\bMiddlewareStack\b|\bcomposeMiddleware\b/, why: 'middleware composition infrastructure' },
+  { re: /\b(createContainer|DIContainer|ServiceContainer|ServiceLocator)\s*[(<]/, why: 'a hand-rolled dependency-injection container — use NestJS providers' },
+  { re: /\bMiddlewareStack\b|\bcomposeMiddleware\b|\bmiddlewarePipeline\b/, why: 'hand-rolled middleware composition — use NestJS interceptors and guards' },
+  { re: /\b(use|applyMiddleware)\s*\(\s*(?:async\s*)?\(\s*req\s*,\s*res\s*,\s*next\b/, why: 'a hand-rolled middleware pipeline — use NestJS interceptors and guards' },
+  { re: /\bclass\s+\w*Router\b|\bcreateRouter\s*\(/, why: 'a hand-rolled router — use NestJS controllers' },
 ];
 
-/** C5: the route budget is a tripwire, not a guideline. */
-const ROUTE_BUDGET = 20;
-const ROUTER_FILE = 'apps/api/src/http.ts';
+// The ADR-0033 C5 route budget is DISCHARGED by ADR-0034: NestJS is adopted, so
+// the tripwire has served its purpose and is retired. `framework-creep` remains,
+// and now prevents building a SECOND framework alongside NestJS.
+
+// --- ADR-0034 / ADR-0036: NestJS confinement -------------------------------
+
+const NEST_PACKAGES = ['@nestjs/core', '@nestjs/common', '@nestjs/platform-express', 'rxjs', 'reflect-metadata'];
+
+/**
+ * N5: no pure or contract package may import NestJS. `erasableSyntaxOnly` makes a
+ * decorator a compile error there; this catches a non-decorator import too.
+ */
+function isNestPackage(spec) {
+  return NEST_PACKAGES.some((p) => spec === p || spec.startsWith(`${p}/`));
+}
+
+/**
+ * N2/N4: the command and persistence layers stay framework-free, so business
+ * logic and governance are independent of the HTTP/composition layer.
+ */
+const FRAMEWORK_FREE_DIRS = ['apps/api/src/commands/', 'apps/api/src/persistence/'];
+const FRAMEWORK_FREE_FILES = ['apps/api/src/commands.ts', 'apps/api/src/ports.ts'];
+
+/** N3: a controller parses, delegates, maps. It holds no business logic. */
+const CONTROLLER_MAX_LINES = 220;
+
+// --- ADR-0035: persistence confinement and SQL safety ----------------------
+
+const PERSISTENCE_PACKAGES = ['@electric-sql/pglite', 'pg'];
+const PERSISTENCE_DIR = 'apps/api/src/persistence/';
+
+/**
+ * Plain SQL means parameterisation discipline is a review obligation, so it is
+ * mechanised: a template literal or concatenation reaching a query call is a
+ * build failure.
+ */
+const SQL_INTERPOLATION_PATTERNS = [
+  { re: /\.(?:query|exec)\s*\(\s*`[^`]*\$\{/, why: 'template-literal interpolation into SQL — use a parameter array ($1, $2)' },
+  { re: /\.(?:query|exec)\s*\(\s*['"][^'"]*['"]\s*\+/, why: 'string concatenation into SQL — use a parameter array' },
+];
 
 // ---------------------------------------------------------------------------
 // Pure rule evaluation (used by both the real check and the self-test)
@@ -293,33 +338,102 @@ export function evaluateRules(files) {
       }
     }
 
-    // --- ADR-0033 C2: no custom application framework -------------------
+    // --- ADR-0033 C2 (reconciled with ADR-0034): no SECOND framework ----
     if (f.pkg === '@asdp/api' && !f.path.endsWith('.test.ts')) {
       for (const { re, why } of FRAMEWORK_CREEP_PATTERNS) {
         if (re.test(f.text)) {
           violations.push({
             rule: 'framework-creep',
             file: f.path,
-            detail:
-              `${why} — the typed router must not evolve into a custom framework. ` +
-              'Recommend migration to NestJS instead (ADR-0033 C2/C5).',
+            detail: `${why} (ADR-0033 C2, reconciled with ADR-0034)`,
           });
         }
       }
     }
 
-    // --- ADR-0033 C5: route budget tripwire -----------------------------
-    if (normalisedPath === ROUTER_FILE) {
-      const routeCount = (f.text.match(/method === '(?:GET|POST|PUT|PATCH|DELETE)'/g) ?? []).length;
-      if (routeCount > ROUTE_BUDGET) {
+    // --- ADR-0034 N5 / ADR-0036: NestJS confinement ---------------------
+    if (f.cls === 'pure' || f.cls === 'contract') {
+      for (const spec of imports) {
+        if (isNestPackage(spec)) {
+          violations.push({
+            rule: 'nest-confinement',
+            file: f.path,
+            detail:
+              `${f.cls} package ${f.pkg} may not import '${spec}': NestJS is the application ` +
+              'composition layer only (ADR-0034 N5)',
+          });
+        }
+      }
+    }
+
+    // --- ADR-0034 N2/N4: command and persistence layers stay framework-free
+    const isFrameworkFree =
+      FRAMEWORK_FREE_FILES.includes(normalisedPath) ||
+      FRAMEWORK_FREE_DIRS.some((d) => normalisedPath.startsWith(d));
+    if (isFrameworkFree) {
+      for (const spec of imports) {
+        if (isNestPackage(spec)) {
+          violations.push({
+            rule: 'nest-domain-purity',
+            file: f.path,
+            detail:
+              `must not import '${spec}': command, governance and persistence logic stay ` +
+              'independent of the composition layer (ADR-0034 N2/N4)',
+          });
+        }
+      }
+      if (/^\s*@[A-Z][A-Za-z]*\s*\(/m.test(f.text)) {
         violations.push({
-          rule: 'route-budget',
+          rule: 'nest-domain-purity',
+          file: f.path,
+          detail: 'decorator syntax is not permitted here (ADR-0034 N2/N4)',
+        });
+      }
+    }
+
+    // --- ADR-0034 N3: controllers hold no business logic ----------------
+    if (/\.controller\.ts$/.test(normalisedPath)) {
+      for (const spec of imports) {
+        if (spec === '@asdp/domain') {
+          violations.push({
+            rule: 'controller-thinness',
+            file: f.path,
+            detail:
+              'a controller may not import @asdp/domain: it parses, delegates to a command, and ' +
+              'maps the result (ADR-0034 N3)',
+          });
+        }
+      }
+      const lines = f.text.split('\n').length;
+      if (lines > CONTROLLER_MAX_LINES) {
+        violations.push({
+          rule: 'controller-thinness',
           file: f.path,
           detail:
-            `${routeCount} routes exceeds the budget of ${ROUTE_BUDGET}. This is not a defect to ` +
-            'work around: it is the signal that the explicit NestJS decision required by ' +
-            'ADR-0033 C4 is now due. Stop and recommend migration.',
+            `${lines} lines exceeds the ${CONTROLLER_MAX_LINES}-line cap; logic is accumulating in ` +
+            'a controller (ADR-0034 N3). Move it into a command',
         });
+      }
+    }
+
+    // --- ADR-0035: persistence confinement ------------------------------
+    for (const spec of imports) {
+      const bare = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
+      if (PERSISTENCE_PACKAGES.includes(bare) && !normalisedPath.startsWith(PERSISTENCE_DIR)) {
+        violations.push({
+          rule: 'persistence-confinement',
+          file: f.path,
+          detail:
+            `'${bare}' may only be imported inside ${PERSISTENCE_DIR}: the domain never sees a ` +
+            'driver type (ADR-0035)',
+        });
+      }
+    }
+
+    // --- ADR-0035: SQL parameterisation ---------------------------------
+    for (const { re, why } of SQL_INTERPOLATION_PATTERNS) {
+      if (re.test(f.text)) {
+        violations.push({ rule: 'sql-injection-guard', file: f.path, detail: why });
       }
     }
   }
@@ -447,36 +561,83 @@ const SELF_TEST_CASES = [
             text: `import { createApp } from './http.ts';\n` },
   },
   {
-    name: 'decorator syntax in the API is rejected (ADR-0033 C2)',
-    rule: 'framework-creep',
-    file: { path: 'apps/api/src/creep.ts', pkg: '@asdp/api', cls: 'application',
-            text: `@Controller('/projects')\nexport class X {}\n` },
-  },
-  {
-    name: 'a DI container in the API is rejected (ADR-0033 C2)',
+    name: 'a hand-rolled DI container is rejected (ADR-0033 C2)',
     rule: 'framework-creep',
     file: { path: 'apps/api/src/creep2.ts', pkg: '@asdp/api', cls: 'application',
             text: `export const c = createContainer({});\n` },
   },
   {
-    name: 'a controller class hierarchy is rejected (ADR-0033 C2)',
-    rule: 'framework-creep',
-    file: { path: 'apps/api/src/creep3.ts', pkg: '@asdp/api', cls: 'application',
-            text: `export class ProjectController {}\n` },
-  },
-  {
-    name: 'a middleware pipeline abstraction is rejected (ADR-0033 C2)',
+    name: 'a hand-rolled middleware pipeline is rejected (ADR-0033 C2)',
     rule: 'framework-creep',
     file: { path: 'apps/api/src/creep4.ts', pkg: '@asdp/api', cls: 'application',
             text: `app.use(async (req, res, next) => next());\n` },
   },
   {
-    name: 'exceeding the route budget trips the NestJS decision (ADR-0033 C5)',
-    rule: 'route-budget',
-    file: {
-      path: 'apps/api/src/http.ts', pkg: '@asdp/api', cls: 'application',
-      text: Array.from({ length: 21 }, (_, i) => `if (method === 'GET' && p === '/r${i}') {}`).join('\n'),
-    },
+    name: 'a hand-rolled router is rejected (ADR-0033 C2)',
+    rule: 'framework-creep',
+    file: { path: 'apps/api/src/creep5.ts', pkg: '@asdp/api', cls: 'application',
+            text: `export function createRouter() {}\n` },
+  },
+  {
+    name: 'NestJS decorators ARE permitted in the composition layer (ADR-0034)',
+    rule: null,
+    expectNone: true,
+    file: { path: 'apps/api/src/http/projects.controller.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { Controller, Get } from '@nestjs/common';\n@Controller('projects')\nexport class ProjectsController { @Get() list() { return []; } }\n` },
+  },
+  {
+    name: 'a pure package importing NestJS is rejected (ADR-0034 N5)',
+    rule: 'nest-confinement',
+    file: { path: 'packages/domain/src/leak.ts', pkg: '@asdp/domain', cls: 'pure',
+            text: `import { Injectable } from '@nestjs/common';\n` },
+  },
+  {
+    name: 'the contract package importing NestJS is rejected (ADR-0034 N5)',
+    rule: 'nest-confinement',
+    file: { path: 'packages/schemas/src/leak.ts', pkg: '@asdp/schemas', cls: 'contract',
+            text: `import 'reflect-metadata';\n` },
+  },
+  {
+    name: 'the command layer importing NestJS is rejected (ADR-0034 N4)',
+    rule: 'nest-domain-purity',
+    file: { path: 'apps/api/src/commands/gates.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { Injectable } from '@nestjs/common';\n` },
+  },
+  {
+    name: 'a decorator in the persistence layer is rejected (ADR-0034 N2)',
+    rule: 'nest-domain-purity',
+    file: { path: 'apps/api/src/persistence/repo.ts', pkg: '@asdp/api', cls: 'application',
+            text: `@Injectable()\nexport class R {}\n` },
+  },
+  {
+    name: 'a controller importing @asdp/domain is rejected (ADR-0034 N3)',
+    rule: 'controller-thinness',
+    file: { path: 'apps/api/src/http/projects.controller.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { approveGate } from '@asdp/domain';\n` },
+  },
+  {
+    name: 'an oversized controller is rejected (ADR-0034 N3)',
+    rule: 'controller-thinness',
+    file: { path: 'apps/api/src/http/big.controller.ts', pkg: '@asdp/api', cls: 'application',
+            text: Array.from({ length: 240 }, (_, i) => `// line ${i}`).join('\n') },
+  },
+  {
+    name: 'a database driver outside the persistence layer is rejected (ADR-0035)',
+    rule: 'persistence-confinement',
+    file: { path: 'apps/api/src/http/leak.controller.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { PGlite } from '@electric-sql/pglite';\n` },
+  },
+  {
+    name: 'template-literal interpolation into SQL is rejected (ADR-0035)',
+    rule: 'sql-injection-guard',
+    file: { path: 'apps/api/src/persistence/bad.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'await db.query(`select * from t where id = ${id}`);\n' },
+  },
+  {
+    name: 'string concatenation into SQL is rejected (ADR-0035)',
+    rule: 'sql-injection-guard',
+    file: { path: 'apps/api/src/persistence/bad2.ts', pkg: '@asdp/api', cls: 'application',
+            text: `await db.query('select * from t where id = ' + id);\n` },
   },
 ];
 
@@ -485,11 +646,18 @@ function runSelfTest() {
   console.log('architecture checker self-test\n');
   for (const c of SELF_TEST_CASES) {
     const violations = evaluateRules([c.file]);
-    const fired = violations.some((v) => v.rule === c.rule);
-    console.log(`  ${fired ? '✔' : '✘'} ${c.name}`);
-    if (!fired) {
+    // Some cases assert the opposite: that a legitimate pattern is NOT flagged.
+    const ok = c.expectNone === true
+      ? violations.length === 0
+      : violations.some((v) => v.rule === c.rule);
+    console.log(`  ${ok ? '✔' : '✘'} ${c.name}`);
+    if (!ok) {
       failures++;
-      console.log(`      expected rule '${c.rule}' to fire, got: ${JSON.stringify(violations)}`);
+      console.log(
+        c.expectNone === true
+          ? `      expected NO violations, got: ${JSON.stringify(violations)}`
+          : `      expected rule '${c.rule}' to fire, got: ${JSON.stringify(violations)}`,
+      );
     }
   }
   // A clean file must produce nothing.

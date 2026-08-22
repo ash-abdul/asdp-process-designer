@@ -24,8 +24,9 @@ jobs:
       - name: Install (locked)
         run: npm ci
 
-      - name: Typecheck (strict)
-        run: npm run typecheck
+      # ADR-0036: build precedes everything; tests run against emitted JavaScript.
+      - name: Build (tsc -b, project references)
+        run: npm run build
 
       # Architectural invariants are enforced mechanically, not by review.
       - name: Architecture checks
@@ -47,5 +48,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-      - name: Internal link check
+      - name: Documentation consistency
         run: node tools/check-docs.mjs

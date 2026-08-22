@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Evaluation harness: corpus registry, response record/replay, extraction and provenance metrics.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "asdp": {
     "class": "adapter"

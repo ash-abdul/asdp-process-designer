@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src/**/*.ts"],
+  "//": "ADR-0004 / invariant I1: no reference to ../domain. The AI layer has no write authority.",
+  "references": [{ "path": "../schemas" }, { "path": "../raf" }, { "path": "../text" }]
+}

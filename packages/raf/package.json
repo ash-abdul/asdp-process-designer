@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Requirement Analysis Frame v1.1: 27 slots, disjointness rules, coverage arithmetic. PURE: no I/O.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "asdp": {
     "class": "pure"

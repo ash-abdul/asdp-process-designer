@@ -1,9 +1,14 @@
 {
-  "extends": "./tsconfig.base.json",
-  "include": [
-    "packages/*/src/**/*.ts",
-    "apps/*/src/**/*.ts",
-    "tools/**/*.ts"
-  ],
-  "exclude": ["node_modules", "**/node_modules"]
+  "//": "Solution file. Build with `tsc -b`, which resolves dependency order from the references below.",
+  "files": [],
+  "references": [
+    { "path": "./packages/schemas" },
+    { "path": "./packages/text" },
+    { "path": "./packages/provenance" },
+    { "path": "./packages/raf" },
+    { "path": "./packages/domain" },
+    { "path": "./packages/ai" },
+    { "path": "./packages/eval" },
+    { "path": "./apps/api" }
+  ]
 }

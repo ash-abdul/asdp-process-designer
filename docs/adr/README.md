@@ -83,7 +83,15 @@ An approved ADR is never edited to change its decision — it is superseded by a
 | [0029](ADR-0029-modular-monolith.md) | Modular Monolith with Enforced Package Boundaries | Moderate |
 | [0030](ADR-0030-typescript-end-to-end.md) | TypeScript End-to-End | **Very hard** |
 | [0031](ADR-0031-corpus-as-data.md) | Evaluation Corpus as Data, Not Code | Easy |
-| [0033](ADR-0033-http-framework-deferral.md) | Defer NestJS; HTTP on Node Built-ins **(Proposed — awaiting approval)** | Easy |
+
+### Phase 1 / Phase 2 decisions
+
+| ADR | Title | Reversibility |
+|---|---|---|
+| [0033](ADR-0033-http-framework-deferral.md) | Temporary Deferral of NestJS for the Phase 1 HTTP Foundation — *deferral discharged by ADR-0034; conditions C2/C3 carried forward* | Easy |
+| [0034](ADR-0034-nestjs-application-layer.md) | NestJS as the Application Composition Layer **(conditions N1–N5)** | Moderate |
+| [0035](ADR-0035-persistence-plain-sql-pglite.md) | Plain Parameterised SQL over PGlite in Development; PostgreSQL in Production | Easy |
+| [0036](ADR-0036-build-toolchain.md) | Compiled Build Toolchain | Moderate |
 
 ---
 

@@ -5,7 +5,10 @@
   "type": "module",
   "description": "AI provider abstraction: port, capability descriptors, egress policy gate, routing, degradation ladder, proposal broker. Holds NO write authority (ADR-0004).",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "asdp": {
     "class": "adapter"

@@ -2,38 +2,34 @@
  * API entrypoint.
  *
  * ADR-0028 K5: graceful shutdown — SIGTERM stops accepting new work, drains
- * in-flight requests, and exits. K1: stateless, so a replica may be replaced at
- * any time.
+ * in-flight requests, and exits. NestJS shutdown hooks handle the draining;
+ * this file owns the lifecycle and the exit code.
+ *
+ * ADR-0036: runs compiled JavaScript from `dist/`. No experimental Node flag.
  */
 
+import 'reflect-metadata';
 import { loadConfig } from './config.ts';
-import { listen } from './http.ts';
-import {
-  counterIdGenerator,
-  createMemoryRepositories,
-  memoryDependencyProbe,
-  systemClock,
-} from './repo-memory.ts';
+import { createAdapters } from './composition.ts';
+import { listen } from './http/bootstrap.ts';
 
 async function main(): Promise<void> {
   const config = loadConfig(process.env);
+  const adapters = await createAdapters(config);
 
-  if (config.repository === 'postgres') {
-    // The Postgres adapter is written when a container runtime is available;
-    // failing loudly is better than silently falling back to memory.
+  if (adapters.database === undefined) {
     throw new Error(
-      'ASDP_REPOSITORY=postgres is configured but the Postgres adapter is not implemented in Phase 1',
+      `ASDP_REPOSITORY=${config.repository} provides no database; the HTTP service requires one`,
     );
   }
 
   const running = await listen({
     config,
-    ctx: {
-      repos: createMemoryRepositories(),
-      clock: systemClock(),
-      ids: counterIdGenerator(),
-    },
-    probe: memoryDependencyProbe(),
+    database: adapters.database,
+    blobStore: adapters.blobStore,
+    clock: adapters.clock,
+    ids: adapters.ids,
+    repositories: adapters.repositories,
   });
 
   process.stdout.write(
@@ -41,7 +37,9 @@ async function main(): Promise<void> {
       level: 'info',
       msg: 'listening',
       port: running.port,
+      framework: 'nestjs',
       repository: config.repository,
+      blobStore: config.blobStore,
       authMode: config.authMode,
     })}\n`,
   );
@@ -58,11 +56,14 @@ async function main(): Promise<void> {
     }, config.shutdownGraceMs);
     forced.unref();
 
-    void running.close().then(() => {
-      clearTimeout(forced);
-      process.stdout.write(`${JSON.stringify({ level: 'info', msg: 'shutdown_complete' })}\n`);
-      process.exit(0);
-    });
+    void running
+      .close()
+      .then(() => adapters.close())
+      .then(() => {
+        clearTimeout(forced);
+        process.stdout.write(`${JSON.stringify({ level: 'info', msg: 'shutdown_complete' })}\n`);
+        process.exit(0);
+      });
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

@@ -16,9 +16,22 @@
 
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+
+    // ADR-0036: pure and contract packages keep erasableSyntaxOnly, which is what
+    // structurally prevents decorators — and therefore NestJS — from leaking into
+    // the domain (ADR-0034 N2/N5). apps/api overrides it, and only apps/api.
     "erasableSyntaxOnly": true,
+
+    // Source files keep writing './foo.ts'; tsc rewrites the specifier to './foo.js'
+    // on emit. This is why the toolchain change required no source edits.
     "allowImportingTsExtensions": true,
-    "noEmit": true,
+    "rewriteRelativeImportExtensions": true,
+
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "incremental": true,
 
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

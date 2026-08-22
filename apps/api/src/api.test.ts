@@ -11,7 +11,13 @@ import assert from 'node:assert/strict';
 
 import type { BaselineMember } from '@asdp/schemas';
 import { loadConfig, ConfigError } from './config.ts';
-import { listen, type RunningServer } from './http.ts';
+import { listen, type RunningApp } from './http/bootstrap.ts';
+import { createPgliteDatabase } from './persistence/pglite-database.ts';
+import { migrate } from './persistence/migrate.ts';
+import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   COMMANDS,
   approveProjectGate,
@@ -93,20 +99,40 @@ describe('command registry (invariant I3 / ADR-0002)', () => {
 // ---------------------------------------------------------------------------
 
 describe('configuration (ADR-0028 K3)', () => {
-  test('defaults are usable with no environment set', () => {
-    const c = loadConfig({});
+  test('defaults are usable with a blob root supplied', () => {
+    const c = loadConfig({ ASDP_BLOB_ROOT: '/tmp/asdp-blobs' });
     assert.equal(c.port, 3000);
-    assert.equal(c.repository, 'memory');
+    assert.equal(c.repository, 'pglite', 'ADR-0035: pglite is the development default');
+    assert.equal(c.blobStore, 'filesystem');
+    assert.equal(c.replicaCount, 1);
     assert.equal(c.rafVersion, 'raf-1.1');
     assert.equal(c.rulePackVersion, 'rp-1.2');
   });
 
   test('fails fast on a missing required value', () => {
     assert.throws(
-      () => loadConfig({ ASDP_REPOSITORY: 'postgres' }),
+      () => loadConfig({ ASDP_REPOSITORY: 'postgres', ASDP_BLOB_ROOT: '/tmp/x' }),
       /ASDP_DATABASE_URL is required/,
     );
-    assert.throws(() => loadConfig({ ASDP_AUTH_MODE: 'oidc' }), /ASDP_OIDC_ISSUER_URL is required/);
+    assert.throws(
+      () => loadConfig({ ASDP_AUTH_MODE: 'oidc', ASDP_BLOB_ROOT: '/tmp/x' }),
+      /ASDP_OIDC_ISSUER_URL is required/,
+    );
+    assert.throws(() => loadConfig({}), /ASDP_BLOB_ROOT is required/);
+    assert.throws(
+      () => loadConfig({ ASDP_BLOB_STORE: 's3' }),
+      /ASDP_OBJECT_STORE_ENDPOINT is required/,
+    );
+  });
+
+  test('A6 GUARD: a filesystem blob store is refused behind multiple replicas', () => {
+    assert.throws(
+      () => loadConfig({ ASDP_BLOB_ROOT: '/tmp/x', ASDP_REPLICA_COUNT: '3' }),
+      /single-node only/,
+    );
+    assert.doesNotThrow(() =>
+      loadConfig({ ASDP_BLOB_STORE: 's3', ASDP_OBJECT_STORE_ENDPOINT: 'http://minio:9000', ASDP_REPLICA_COUNT: '3' }),
+    );
   });
 
   test('rejects an invalid enumerated value rather than coercing it', () => {
@@ -433,24 +459,30 @@ describe('insert-only and append-only guarantees (invariant D8)', () => {
 // HTTP surface — the runnable application (milestone M1)
 // ---------------------------------------------------------------------------
 
-describe('HTTP surface (milestone M1)', () => {
-  async function startServer(): Promise<RunningServer> {
+describe('HTTP surface over NestJS + PGlite (ADR-0034, ADR-0035)', () => {
+  /**
+   * Starts the REAL application graph: NestJS composition, PGlite persistence
+   * with migrations applied, filesystem blob store. The composition under test
+   * is the composition that ships.
+   */
+  async function startServer(): Promise<RunningApp> {
+    const blobRoot = await mkdtemp(join(tmpdir(), 'asdp-blob-'));
+    const config = loadConfig({
+      PORT: '0',
+      ASDP_LOG_LEVEL: 'error',
+      ASDP_BLOB_ROOT: blobRoot,
+    });
+    const database = await createPgliteDatabase();
+    await migrate(database);
+    const blobStore = await createFilesystemBlobStore({ rootDirectory: blobRoot });
     return listen(
-      {
-        config: loadConfig({ PORT: '0', ASDP_LOG_LEVEL: 'error' }),
-        ctx: {
-          repos: createMemoryRepositories(),
-          clock: systemClock(),
-          ids: counterIdGenerator(),
-        },
-        probe: memoryDependencyProbe(),
-      },
+      { config, database, blobStore, clock: systemClock(), ids: counterIdGenerator() },
       0,
     );
   }
 
   async function call(
-    running: RunningServer,
+    running: RunningApp,
     method: string,
     path: string,
     body?: unknown,
@@ -490,7 +522,9 @@ describe('HTTP surface (milestone M1)', () => {
       const meta = await call(running, 'GET', '/meta');
       assert.equal(meta.json.rafVersion, 'raf-1.1');
       assert.equal(meta.json.rulePackVersion, 'rp-1.2');
-      assert.equal(meta.json.repository, 'memory');
+      assert.equal(meta.json.repository, 'pglite', 'ADR-0035 development adapter');
+      assert.equal(meta.json.blobStore, 'filesystem', 'A6 development adapter');
+      assert.equal(meta.json.framework, 'nestjs', 'ADR-0034');
     } finally {
       await running.close();
     }
@@ -603,15 +637,34 @@ describe('HTTP surface (milestone M1)', () => {
     }
   });
 
-  test('an unknown route does not leak its existence to an anonymous caller', async () => {
-    // Authentication precedes routing, so an anonymous request to any
-    // non-health path is refused before the router is consulted. This is the
-    // desired posture: route existence is not information for the unauthenticated.
+  test('BEHAVIOUR CHANGE (ADR-0034): an unknown route 404s before authentication', async () => {
+    // Phase 1 ran authentication before routing, so an anonymous request to an
+    // unknown path was refused with 403 and route existence was not disclosed.
+    // NestJS routes first, so an unmatched path 404s before the guard runs.
+    //
+    // Recorded as a deliberate posture change rather than quietly updated: it is
+    // standard framework behaviour, route names are not secrets in a documented
+    // API, and restoring the old order would mean fighting the composition layer
+    // (ADR-0034 N1). Flagged for review.
     const running = await startServer();
     try {
       const res = await fetch(`http://127.0.0.1:${running.port}/nope`);
-      assert.equal(res.status, 403, 'anonymous callers are refused before routing');
-      assert.ok(res.headers.get('x-correlation-id'), 'every response carries a correlation id');
+      assert.equal(res.status, 404);
+      assert.ok(res.headers.get('x-correlation-id'), 'every response still carries a correlation id');
+    } finally {
+      await running.close();
+    }
+  });
+
+  test('a KNOWN route still refuses anonymous callers (ADR-0027 unchanged)', async () => {
+    // The security property that actually matters is untouched: a real endpoint
+    // never serves an unauthenticated caller.
+    const running = await startServer();
+    try {
+      const res = await fetch(`http://127.0.0.1:${running.port}/projects`);
+      assert.equal(res.status, 403);
+      const body = (await res.json()) as { error: string };
+      assert.match(body.error, /unauthenticated/);
     } finally {
       await running.close();
     }
@@ -624,7 +677,7 @@ describe('HTTP surface (milestone M1)', () => {
       assert.equal(res.status, 404);
       assert.ok(res.headers.get('x-correlation-id'));
       const body = (await res.json()) as { error: string };
-      assert.match(body.error, /no route for GET \/nope/);
+      assert.match(body.error, /Cannot GET \/nope/, 'stable { error } envelope, not NestJS shape');
     } finally {
       await running.close();
     }

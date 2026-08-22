@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+
+    // ADR-0036 / ADR-0034: decorators are enabled HERE AND ONLY HERE, because
+    // NestJS is the application composition layer and nothing else may use it.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // Decorators are not erasable syntax, so this must be relaxed for apps/api.
+    // Every pure and contract package keeps it, which is what stops decorators —
+    // and NestJS — reaching the domain (ADR-0034 N5).
+    "erasableSyntaxOnly": false
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../packages/schemas" },
+    { "path": "../../packages/text" },
+    { "path": "../../packages/provenance" },
+    { "path": "../../packages/raf" },
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/ai" },
+    { "path": "../../packages/eval" }
+  ]
+}

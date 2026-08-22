@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Single source of truth for entity shapes, API contracts and AI output contracts. Zod schemas derive TS types and JSON Schema.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "asdp": {
     "class": "contract"

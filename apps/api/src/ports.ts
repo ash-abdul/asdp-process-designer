@@ -77,6 +77,9 @@ export interface Repositories {
   readonly audit: AuditRepository;
 }
 
+/** Blob storage lives in its own module; re-exported so the port set is one import. */
+export type { BlobStore, BlobMetadata, PutBlobRequest } from './blob/blob-store.ts';
+
 /** Dependency reachability, for the readiness probe (ADR-0028 K4). */
 export interface HealthReport {
   readonly ok: boolean;
