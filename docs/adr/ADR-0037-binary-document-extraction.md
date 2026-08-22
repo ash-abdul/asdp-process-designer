@@ -1,7 +1,12 @@
 # ADR-0037: Binary Document Extraction and Rasterisation Toolchain
 
-> **Status:** **PROPOSED — awaiting approval.** Nothing in this record is implemented.
+> **Status:** **PROPOSED — HELD pending spike S2 completion on real material.** Nothing in this
+> record is implemented, and the dependency in §3.1 **must not be added** until this ADR is approved.
 > **Date:** 2026-08-23 · **Reversibility:** Moderate (confined behind two ports)
+> **Gate:** approval was deliberately withheld on 2026-08-23 in favour of finishing S2 against
+> representative Arabic PDFs first. The material and protocol required are specified in
+> [s2-corpus-request.md](../60-plan/s2-corpus-request.md), which also **pre-registers the decision
+> rule** (§6) — including an outcome under which the recommendation below changes materially.
 > **Related:** ADR-0008, ADR-0021, ADR-0023, ADR-0028, ADR-0030, **A3**, **A4**
 > **Evidence:** Spike **S2** — see §2. This is the spike
 > [roadmap.md](../60-plan/roadmap.md) §2 names as *"the single highest-uncertainty engineering task
@@ -107,6 +112,20 @@ Consequently:
 **S2 therefore cannot yet state the exact-precision yield rate** that its success criterion 6
 demands. That number requires real material, and this is **[OD-7](../60-plan/open-decisions.md)
 (corpus availability) blocking exactly where the roadmap predicted S2 would need it.**
+
+### 2.6 What completing S2 will add
+
+The decision below is therefore **provisional on evidence that does not exist yet**. Completing S2
+per [s2-corpus-request.md](../60-plan/s2-corpus-request.md) will produce: the per-file
+exact-precision yield rate (criterion 6), the library-vs-ASDP split (criterion 7), rendered
+rectangle images verifying that computed highlights sit over the right glyphs, and — importantly —
+a re-run of the candidate comparison **on real files**, which may not reproduce what synthetic
+fixtures showed.
+
+Under the pre-registered decision rule, a yield below 50% would make page-image + vision the
+**primary** Arabic path rather than a fallback, which would change this ADR's recommendation and
+make OD-1 (a vision-capable endpoint) blocking for Arabic PDF support. That possibility is why
+approval was withheld rather than granted with caveats.
 
 ## Decision (proposed)
 

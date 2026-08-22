@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V1 complete · **V2 approved** · V3–V7 **provisional** · **Version:** 2.1 · **Updated:** 2026-08-23
+> **Status:** V0–V1 complete · **V2 approved; a split into V2 / V2-PDF is proposed (§3.4)** · V3–V7 **provisional** · **Version:** 2.2 · **Updated:** 2026-08-23
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -16,12 +16,12 @@ This document distinguishes three kinds of statement. **Do not collapse them.**
 | Kind | Meaning | Where |
 |---|---|---|
 | **Approved** | Explicitly decided. Binding | §1, §2 (V0, V1), §4 (A1–A7), §6 |
-| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3.3 (V3–V7) |
+| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3.5 (V3–V7) |
 | **Consolidated** | Derived from existing approved ADRs and roadmap documents, presented as the current criteria set. Every item is traceable to its source. **Not an original approved wording** | §5 |
 
 The exact original V2–V7 slice boundaries and the exact original wording of the Phase 2 acceptance
 criteria were never durably recorded. They are **not** reconstructed here as historical fact.
-**V2's boundary was approved explicitly on 2026-08-23 and is recorded in §3.1.** §3.3 carries
+**V2's boundary was approved explicitly on 2026-08-23 and is recorded in §3.1.** §3.5 carries
 capability names only for V3–V7, and §5 is derived from sources that do exist.
 
 ### Phase numbering
@@ -107,11 +107,15 @@ V1 required **no new decisions and no new dependencies**. Delivered as specified
 
 ---
 
-## 3. V2 — approved boundary
+## 3. V2 — approved boundary, with a proposed revision
 
-**V2 is approved with the scope below.** V3–V7 remain provisional (§3.3).
+The V2 boundary was **approved on 2026-08-23** and is recorded verbatim in §3.1.
 
-### 3.1 In scope
+**§3.4 proposes splitting it**, because completing spike S2 requires material that must come from
+outside the team and has no committed date. The split is a **proposal awaiting approval**; the
+approved boundary in §3.1 stands until it is accepted.
+
+### 3.1 In scope — as approved
 
 | # | Item | Notes |
 |---|---|---|
@@ -133,7 +137,43 @@ requirement generation · Process IR · BPMN/DMN/Form generation.
 **Spreadsheet ingestion remains a separate proposed capability** and must not be folded into V2
 unless a **demonstrated dependency** requires it. None has been demonstrated.
 
-### 3.3 Provisional capability sequence — V3–V7
+### 3.3 What is blocked, and what is not
+
+| Portion | State |
+|---|---|
+| **PDF-specific work** — items 3, 5, most of 6, and `L0-ING-007`/`008` | **BLOCKED.** Requires spike S2 completed ([s2-corpus-request.md](s2-corpus-request.md)) and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approved. `@embedpdf/pdfium` **must not be added** before then |
+| **DOCX and the abstractions** — items 1, 2, 4, the DOCX half of 6, `L0-ING-005`, and item 8 for DOCX | **NOT blocked.** Needs no new dependency and no open decision |
+
+DOCX is unblocked for a structural reason rather than a convenient one: **a DOCX stores text in
+logical order by construction**, so the question S2 exists to answer does not arise for it. There is
+no ordering to reconstruct and no confidence to assess.
+
+### 3.4 PROPOSED REVISION — split V2 into V2 and V2-PDF
+
+> **Proposal, awaiting approval.** It changes sequencing only. Nothing is added to or removed from
+> the approved scope; every item in §3.1 still gets built.
+
+**Rationale.** S2 needs 2–3 representative Arabic PDFs from outside the team. That has no committed
+date, and the pre-registered decision rule in
+[s2-corpus-request.md](s2-corpus-request.md) §6 includes an outcome — yield below 50% — under which
+the PDF design changes materially. Building PDF intake before that number exists would risk building
+the wrong thing; waiting to start *anything* would idle a slice that has no dependency on the answer.
+
+| Slice | Scope | Dependencies | State |
+|---|---|---|---|
+| **V2 — Document intake (DOCX)** | `TextExtractor` port · `PageRasteriser` port *(port only, no implementation)* · DOCX adapter · `docx_block` anchors · guard admits OOXML · `L0-ING-005` wired to real documents · Arabic and mixed Arabic/English DOCX tested | **None.** `node:zlib` provides inflate | **Ready to proceed on approval** |
+| **V2-PDF — PDF intake** | PDF adapter · per-page confidence and vision-fallback marking · page rasterisation · `PageImage` schema and table · `pdf_region` anchors with rectangle lists · `L0-ING-007` and `L0-ING-008` wired · Arabic PDF limitations documented | S2 complete · ADR-0037 approved · one new runtime dependency | **Blocked** |
+
+**Why the `PageRasteriser` port still lands in V2:** A3 approved the abstraction, and defining it
+early keeps the DOCX adapter honest about where it sits. It gets no implementation, because nothing
+can rasterise without a PDF engine and nothing consumes a page image until V3.
+
+**One consequence to note:** the V1 ingest guard currently refuses PDF and OOXML with a message
+naming *"V2"* as the slice that will parse them. If this split is approved, those messages must be
+corrected in the same change — PDF's refusal would name a later slice. A stale refusal message is a
+small thing that tells a user something untrue.
+
+### 3.5 Provisional capability sequence — V3–V7
 
 > **PROVISIONAL.** The current *planned* capability sequence, not a record of approved slice
 > boundaries. Each requires **refinement and explicit approval before it begins**, and the
@@ -180,8 +220,10 @@ V0 ──▶ V1 ──▶ ( V2 ──▶ V3 )
 | G1 cannot be reached while conflicts are unresolved | [governance-and-gates.md](../50-governance/governance-and-gates.md) |
 | Rasterisation must exist before page images can be analysed | **A3** (§4) |
 
-**Spike dependency:** **S2 (Arabic PDF) gates V2** and was run before implementation — findings in
-[ADR-0037](../adr/ADR-0037-binary-document-extraction.md) §2. S5/S6 (provider abstraction, egress
+**Spike dependency:** **S2 (Arabic PDF) gates PDF intake.** A first pass ran on synthetic fixtures
+([ADR-0037](../adr/ADR-0037-binary-document-extraction.md) §2) and could not produce the deciding
+yield number; the material and protocol needed to finish it are specified in
+[s2-corpus-request.md](s2-corpus-request.md). S2 does **not** gate DOCX (§3.3). S5/S6 (provider abstraction, egress
 gate) were resolved in Phase 1 and gate V4.
 
 ---

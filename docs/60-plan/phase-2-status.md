@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0 and V1 complete and accepted. V2 boundary approved; implementation blocked on ADR-0037.** · **Version:** 2.1 · **Updated:** 2026-08-23
+> **Status:** **V0 and V1 complete and accepted. V2 approved: DOCX portion ready, PDF portion blocked on spike S2.** · **Version:** 2.2 · **Updated:** 2026-08-23
 > **Working tree:** clean at the time of writing
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -12,13 +12,13 @@
 | | |
 |---|---|
 | Slices completed | **V0 — Foundation** · **V1 — Text intake and provenance end to end** |
-| Next slice | **V2 — binary document intake** — **boundary APPROVED 2026-08-23**; implementation **BLOCKED** on [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
+| Next slice | **V2 — binary document intake** — boundary **APPROVED** 2026-08-23. **DOCX portion unblocked; PDF portion blocked** on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). A split into V2 / V2-PDF is **proposed** — [phase-2-plan.md](phase-2-plan.md) §3.4 |
 | Tests | **415 pass · 0 fail · 0 skipped · 0 suppressed** (288 at V0) |
-| Verification | build · `check:arch` (91 files) · checker self-test (24 cases) · `check:docs` (83 files, 571 links) — all clean |
+| Verification | build · `check:arch` (91 files) · checker self-test (24 cases) · `check:docs` (84 files, 592 links) — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | New ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) — all in V0. **V1 added no ADR: it required no new architectural decision** |
 | Decisions | **A1–A7 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4 |
-| Slices V3–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.3 |
+| Slices V3–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.5 |
 
 Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`, `domain`,
 `validation`), three adapters (`ingestion`, `ai`, `eval`), one application (`api`).
@@ -306,25 +306,37 @@ excluded permanently, because it would reverse
 
 ## 8. Next step
 
-### V2 — binary document intake · boundary APPROVED, implementation BLOCKED
+### V2 — boundary approved, split proposed
 
-The V2 boundary was approved on 2026-08-23 and is recorded in
-[phase-2-plan.md](phase-2-plan.md) §3.1. Implementation has **not** started.
+The V2 boundary was approved on 2026-08-23 ([phase-2-plan.md](phase-2-plan.md) §3.1). Implementation
+has **not** started.
 
-**Blocked on one approval.** Spike **S2** was run before implementation, as
-[roadmap.md](roadmap.md) §3 requires ("S2 gates P1"), and it surfaced a material architecture
-decision that **A4** requires be raised for review: a new runtime dependency for PDF extraction and
-rasterisation, plus the rejection of one candidate on licence grounds.
+Spike **S2** was run before implementation, as [roadmap.md](roadmap.md) §3 requires. It settled the
+library comparison but **could not produce the deciding number** — the exact-precision yield rate for
+Arabic — because the fixtures available were synthetic and badly produced. On 2026-08-23 the decision
+was taken to **finish S2 against representative Arabic PDFs before implementing PDF support**, rather
+than approve [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) on synthetic evidence.
 
-The decision is recorded as **[ADR-0037](../adr/ADR-0037-binary-document-extraction.md) — PROPOSED,
-awaiting approval**. Nothing in it is implemented.
-
-| S2 finding | Consequence |
+| Portion | State |
 |---|---|
-| `pdfjs-dist` returns **display-order** text and no per-character geometry | Cannot support the anchor model. Rejected on capability, not licence |
-| `mupdf` is **AGPL-3.0-or-later** | Rejected on licence, despite being technically strong |
-| `@embedpdf/pdfium` is MIT, zero-dependency, gives per-character boxes **and** rasterises headlessly | Proposed. One dependency instead of three, none native |
-| DOCX needs **no** new dependency | `node:zlib` provides inflate; a converter would discard the offsets anchors require |
-| The S2 fixtures are **synthetic and badly produced** | The exact-precision yield rate S2 criterion 6 demands **cannot yet be stated**. This is [OD-7](open-decisions.md) — corpus availability — blocking where the roadmap predicted |
+| **DOCX + the A3 abstractions** | **Ready to proceed.** No new dependency, no open decision. A DOCX stores logical order by construction, so the question S2 exists to answer does not arise |
+| **PDF adapter, rasterisation, `pdf_region` anchors, `L0-ING-007`/`008`** | **BLOCKED** on S2 completion **and** ADR-0037 approval. `@embedpdf/pdfium` **is not added** |
 
-**Do not begin V2 implementation until ADR-0037 is approved or redirected.**
+### What is needed to unblock PDF
+
+**2–3 representative Arabic PDFs.** The exact characteristics, sanitisation rules, success criteria,
+measurement protocol, and a **pre-registered decision rule** are specified in
+[s2-corpus-request.md](s2-corpus-request.md).
+
+The sanitisation rule that matters most: **sanitisation must not repair the document.** Re-exporting
+a file through Word produces a well-formed PDF and destroys the only property S2 measures. A
+re-exported sample is worse than a missing one, because it yields a confident and wrong number.
+
+### Proposed sequencing change
+
+Because the material has no committed date, [phase-2-plan.md](phase-2-plan.md) §3.4 proposes
+splitting the approved scope into **V2 (DOCX)** and **V2-PDF**. Nothing is added to or removed from
+the approved scope; only the order changes. **Awaiting approval.**
+
+**Do not implement PDF support or add the PDF runtime dependency until S2 is complete and ADR-0037 is
+approved.**
