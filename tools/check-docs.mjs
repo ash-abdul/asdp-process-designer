@@ -56,7 +56,12 @@ function walk(dir, out = []) {
 }
 
 const problems = [];
-const mdFiles = [...walk(DOCS), join(ROOT, 'README.md'), join(ROOT, 'infra/README.md')].filter(existsSync);
+const mdFiles = [
+  ...walk(DOCS),
+  join(ROOT, 'README.md'),
+  join(ROOT, 'CLAUDE.md'),
+  join(ROOT, 'infra/README.md'),
+].filter(existsSync);
 
 let linkCount = 0;
 
