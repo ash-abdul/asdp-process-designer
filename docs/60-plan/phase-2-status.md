@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0 complete. V1 complete, awaiting review.** · **Version:** 2.0 · **Updated:** 2026-08-22
+> **Status:** **V0 and V1 complete and accepted. V2 boundary approved; implementation blocked on ADR-0037.** · **Version:** 2.1 · **Updated:** 2026-08-23
 > **Working tree:** clean at the time of writing
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -12,13 +12,13 @@
 | | |
 |---|---|
 | Slices completed | **V0 — Foundation** · **V1 — Text intake and provenance end to end** |
-| Next slice | **V2 — binary document intake** — **PROVISIONAL**, boundary not yet approved |
+| Next slice | **V2 — binary document intake** — **boundary APPROVED 2026-08-23**; implementation **BLOCKED** on [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
 | Tests | **415 pass · 0 fail · 0 skipped · 0 suppressed** (288 at V0) |
-| Verification | build · `check:arch` (91 files) · checker self-test (24 cases) · `check:docs` (82 files, 558 links) — all clean |
+| Verification | build · `check:arch` (91 files) · checker self-test (24 cases) · `check:docs` (83 files, 571 links) — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | New ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) — all in V0. **V1 added no ADR: it required no new architectural decision** |
 | Decisions | **A1–A7 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4 |
-| Slices V2–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3 |
+| Slices V3–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.3 |
 
 Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`, `domain`,
 `validation`), three adapters (`ingestion`, `ai`, `eval`), one application (`api`).
@@ -26,7 +26,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | Slice | Commit |
 |---|---|
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
-| V1 | *this change* — *text intake, provenance, source viewer, L0-ING rules* |
+| V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
 
 ---
 
@@ -306,14 +306,25 @@ excluded permanently, because it would reverse
 
 ## 8. Next step
 
-**V1 is complete and awaiting review. V2 has not started.**
+### V2 — binary document intake · boundary APPROVED, implementation BLOCKED
 
-The next capability is **V2 — binary document intake**, governed by **A3**: a `TextExtractor` and a
-`PageRasteriser` abstraction, text extraction first, confidence-driven per-page fallback to vision,
-and page-level provenance preserved on either path.
+The V2 boundary was approved on 2026-08-23 and is recorded in
+[phase-2-plan.md](phase-2-plan.md) §3.1. Implementation has **not** started.
 
-**V2 is PROVISIONAL.** Its boundary was never durably recorded and is not treated as approved, so it
-needs its **scope** approved, not merely a go-ahead — see [phase-2-plan.md](phase-2-plan.md) §3 and
-[CLAUDE.md](../../CLAUDE.md) §11. Do not infer V2's scope from its capability name.
+**Blocked on one approval.** Spike **S2** was run before implementation, as
+[roadmap.md](roadmap.md) §3 requires ("S2 gates P1"), and it surfaced a material architecture
+decision that **A4** requires be raised for review: a new runtime dependency for PDF extraction and
+rasterisation, plus the rejection of one candidate on licence grounds.
 
-A proposed boundary is in the V1 completion report; it is a proposal, not a record.
+The decision is recorded as **[ADR-0037](../adr/ADR-0037-binary-document-extraction.md) — PROPOSED,
+awaiting approval**. Nothing in it is implemented.
+
+| S2 finding | Consequence |
+|---|---|
+| `pdfjs-dist` returns **display-order** text and no per-character geometry | Cannot support the anchor model. Rejected on capability, not licence |
+| `mupdf` is **AGPL-3.0-or-later** | Rejected on licence, despite being technically strong |
+| `@embedpdf/pdfium` is MIT, zero-dependency, gives per-character boxes **and** rasterises headlessly | Proposed. One dependency instead of three, none native |
+| DOCX needs **no** new dependency | `node:zlib` provides inflate; a converter would discard the offsets anchors require |
+| The S2 fixtures are **synthetic and badly produced** | The exact-precision yield rate S2 criterion 6 demands **cannot yet be stated**. This is [OD-7](open-decisions.md) — corpus availability — blocking where the roadmap predicted |
+
+**Do not begin V2 implementation until ADR-0037 is approved or redirected.**

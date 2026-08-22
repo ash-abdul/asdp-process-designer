@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V1 approved · V2–V7 **provisional** · **Version:** 2.0 · **Updated:** 2026-08-22
+> **Status:** V0–V1 complete · **V2 approved** · V3–V7 **provisional** · **Version:** 2.1 · **Updated:** 2026-08-23
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -16,12 +16,13 @@ This document distinguishes three kinds of statement. **Do not collapse them.**
 | Kind | Meaning | Where |
 |---|---|---|
 | **Approved** | Explicitly decided. Binding | §1, §2 (V0, V1), §4 (A1–A7), §6 |
-| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3 (V2–V7) |
+| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3.3 (V3–V7) |
 | **Consolidated** | Derived from existing approved ADRs and roadmap documents, presented as the current criteria set. Every item is traceable to its source. **Not an original approved wording** | §5 |
 
 The exact original V2–V7 slice boundaries and the exact original wording of the Phase 2 acceptance
-criteria were never durably recorded. They are **not** reconstructed here as historical fact. §3
-carries capability names only, and §5 is derived from sources that do exist.
+criteria were never durably recorded. They are **not** reconstructed here as historical fact.
+**V2's boundary was approved explicitly on 2026-08-23 and is recorded in §3.1.** §3.3 carries
+capability names only for V3–V7, and §5 is derived from sources that do exist.
 
 ### Phase numbering
 
@@ -75,7 +76,7 @@ Delivered:
 Spike **S7** resolved: Prisma is not viable over PGlite; PGlite 0.5.6 is PostgreSQL 18.3 and passed
 15 of 15 fidelity checks. See [phase-2-status.md](phase-2-status.md) for detail.
 
-### V1 — Text intake and provenance end to end ▶ **APPROVED NEXT STEP · NOT STARTED**
+### V1 — Text intake and provenance end to end ✅ **COMPLETE** (`922761a`)
 
 The first slice in which the Phase 1 provenance machinery gets a real consumer.
 
@@ -101,27 +102,53 @@ catalogued rule set rather than defining a new one. `L0-ING-002` and `L0-ING-003
 resolvability) are **errors** at G1; an unresolvable anchor is therefore a hard failure, not a
 warning.
 
-V1 requires **no new decisions and no new dependencies**.
+V1 required **no new decisions and no new dependencies**. Delivered as specified; see
+[phase-2-status.md](phase-2-status.md) §3.
 
 ---
 
-## 3. Provisional capability sequence — V2–V7
+## 3. V2 — approved boundary
 
-> **PROVISIONAL.** This is the current *planned* capability sequence, not a record of approved
-> slice boundaries. Each slice requires **refinement and explicit approval before it begins**, and
-> the boundaries may be re-cut. No implementation commitment is made here.
+**V2 is approved with the scope below.** V3–V7 remain provisional (§3.3).
+
+### 3.1 In scope
+
+| # | Item | Notes |
+|---|---|---|
+| 1 | **`TextExtractor` abstraction** | **A3** |
+| 2 | **`PageRasteriser` abstraction** | **A3** |
+| 3 | **PDF adapter** — extract textual content where reliably available; preserve page-level source structure; assess extraction quality/confidence **per page**; **mark** pages requiring vision fallback | **No vision model call is executed in V2** |
+| 4 | **DOCX adapter** — extract canonical textual content; preserve meaningful document structure and provenance; create resolvable anchors back to the source | |
+| 5 | **Page rasterisation** — rasterise PDF pages **when required by the extraction/provenance architecture**; store through BlobStore; add `PageImage` schema/table **where required** | |
+| 6 | **Provenance** — `pdf_region` anchors with rectangle lists **where appropriate**; preserve page references; preserve source checksum/resolution guarantees; extracted canonical text stays traceable to the original binary document | |
+| 7 | **Validation** — wire the applicable existing L0-ING rules, **including `L0-ING-005`, `L0-ING-007` and `L0-ING-008`**, to actual binary-document data. Unresolved or invalid provenance continues to follow the **approved catalogue severities** | |
+| 8 | **Arabic/English** — preserve Unicode correctness; test Arabic and mixed Arabic/English PDF **and** DOCX content; **document extraction limitations where exact fidelity is not achievable** | |
+
+### 3.2 Out of scope for V2
+
+Live vision-model calls · image or diagram semantic interpretation · **spreadsheet ingestion** ·
+BPMN/DMN structural import · AI requirements-analysis passes · RAF generation · structured
+requirement generation · Process IR · BPMN/DMN/Form generation.
+
+**Spreadsheet ingestion remains a separate proposed capability** and must not be folded into V2
+unless a **demonstrated dependency** requires it. None has been demonstrated.
+
+### 3.3 Provisional capability sequence — V3–V7
+
+> **PROVISIONAL.** The current *planned* capability sequence, not a record of approved slice
+> boundaries. Each requires **refinement and explicit approval before it begins**, and the
+> boundaries may be re-cut. No implementation commitment is made here.
 
 | Slice | Capability |
 |---|---|
-| **V2** | Binary document intake |
 | **V3** | Multimodal and structural source intake |
 | **V4** | AI analysis passes |
 | **V5** | Structured requirement model and epistemic handling |
 | **V6** | Conflicts, precedence and coverage |
 | **V7** | Human requirements workspace and G1 approval |
 
-Detailed scope is deliberately **not** stated. The governing capability descriptions already exist
-and should be read from their own documents rather than paraphrased here:
+Detailed scope is deliberately **not** stated for V3–V7. The governing capability descriptions
+already exist and should be read from their own documents rather than paraphrased here:
 
 | For | Read |
 |---|---|
@@ -153,8 +180,9 @@ V0 ──▶ V1 ──▶ ( V2 ──▶ V3 )
 | G1 cannot be reached while conflicts are unresolved | [governance-and-gates.md](../50-governance/governance-and-gates.md) |
 | Rasterisation must exist before page images can be analysed | **A3** (§4) |
 
-**Spike dependency:** S2 (Arabic PDF) informs V2. S5/S6 (provider abstraction, egress gate) were
-resolved in Phase 1 and gate V4.
+**Spike dependency:** **S2 (Arabic PDF) gates V2** and was run before implementation — findings in
+[ADR-0037](../adr/ADR-0037-binary-document-extraction.md) §2. S5/S6 (provider abstraction, egress
+gate) were resolved in Phase 1 and gate V4.
 
 ---
 

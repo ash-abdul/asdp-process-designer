@@ -92,6 +92,7 @@ An approved ADR is never edited to change its decision — it is superseded by a
 | [0034](ADR-0034-nestjs-application-layer.md) | NestJS as the Application Composition Layer **(conditions N1–N5)** | Moderate |
 | [0035](ADR-0035-persistence-plain-sql-pglite.md) | Plain Parameterised SQL over PGlite in Development; PostgreSQL in Production | Easy |
 | [0036](ADR-0036-build-toolchain.md) | Compiled Build Toolchain | Moderate |
+| [0037](ADR-0037-binary-document-extraction.md) | Binary Document Extraction and Rasterisation Toolchain — **PROPOSED, awaiting approval** | Moderate |
 
 ---
 
