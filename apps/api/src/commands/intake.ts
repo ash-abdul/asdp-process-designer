@@ -23,14 +23,14 @@
  */
 
 import {
-  extractUnits,
   guardSource,
   hashBytes,
   highlightForAnchor,
   highlightForRange,
-  normaliseSource,
-  type AcceptedMediaType,
+  selectExtractor,
+  type ExtractionOutput,
   type RefusalCode,
+  type TextExtractor,
 } from '@asdp/ingestion';
 import { assertAnchorResolvable, resolveTextAnchor, spanChecksum } from '@asdp/provenance';
 import { codePointLength, sliceByCodePoints, baseDirection, normalise } from '@asdp/text';
@@ -65,6 +65,14 @@ export interface IntakeContext extends CommandContext {
   readonly uow: UnitOfWork;
   /** Maximum accepted source size, from configuration. */
   readonly maxSourceBytes: number;
+  /**
+   * The A3 `TextExtractor` registry.
+   *
+   * Injected rather than imported so the adapter set is a composition decision.
+   * There is no PDF extractor in it: PDF intake is V2-PDF, blocked on spike S2
+   * and ADR-0037.
+   */
+  readonly extractors: readonly TextExtractor[];
 }
 
 /** Raised when the guard refuses a source. Carries the code for the API. */
@@ -137,8 +145,15 @@ export function resolveClassification(
 }
 
 /** File extension for the blob key, so a stored blob is recognisable on sight. */
-function extensionFor(mimeType: AcceptedMediaType): string {
-  return mimeType === 'text/markdown' ? 'md' : 'txt';
+function extensionFor(mediaType: string): string {
+  switch (mediaType) {
+    case 'text/markdown':
+      return 'md';
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      return 'docx';
+    default:
+      return 'txt';
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -243,18 +258,27 @@ export async function ingestSource(
     contentType: guarded.mimeType,
   });
 
-  // --- normalise ---------------------------------------------------------
-  const normalised = normaliseSource(guarded.rawText);
   const sourceId = ctx.ids.next('src');
 
   // --- extract -----------------------------------------------------------
+  // The extractor owns normalisation, because the canonical text differs by
+  // format: for text it is the normalised file, for a DOCX it is assembled from
+  // the document part. Either way the text returned here is what gets stored, so
+  // an anchor's offsets and the stored text can never be out of step.
   let units: SourceUnit[] = [];
-  let extractorVersion = '';
+  let extraction: ExtractionOutput | undefined;
   let parseError: string | undefined;
 
   try {
-    const extraction = extractUnits(guarded.mimeType, sourceId, normalised.text);
-    extractorVersion = extraction.extractorVersion;
+    const extractor = selectExtractor(ctx.extractors, guarded.mimeType);
+    extraction = extractor.extract({
+      sourceId,
+      data: input.data,
+      mediaType: guarded.mimeType,
+      filename: input.filename,
+      ...(guarded.rawText === undefined ? {} : { decodedText: guarded.rawText }),
+    });
+
     units = extraction.units.map((unit) => ({
       id: ctx.ids.next('su'),
       sourceId,
@@ -275,7 +299,7 @@ export async function ingestSource(
     // provenance cannot be demonstrated (ADR-0008).
     for (const unit of units) {
       try {
-        assertAnchorResolvable(unit.anchor, normalised.text);
+        assertAnchorResolvable(unit.anchor, extraction.canonicalText);
       } catch (err) {
         throw new AnchorVerificationError(
           `unit ${unit.ordinal} of '${input.filename}' produced an unresolvable anchor: ` +
@@ -289,7 +313,13 @@ export async function ingestSource(
     // document we refused to admit and one we admitted and could not read.
     parseError = err instanceof Error ? err.message : String(err);
     units = [];
+    extraction = undefined;
   }
+
+  // A failed extraction still needs a canonical text to store, so the source row
+  // and its text stay one-to-one. Empty is honest: nothing was read.
+  const canonicalText = extraction?.canonicalText ?? '';
+  const normalised = normalise(canonicalText);
 
   const source: Source = {
     id: sourceId,
@@ -320,7 +350,7 @@ export async function ingestSource(
     ...(parseError === undefined ? {} : { parseError }),
     textLength: normalised.length,
     textSha256: hashBytes(new TextEncoder().encode(normalised.text)),
-    ...(extractorVersion === '' ? {} : { extractorVersion }),
+    ...(extraction === undefined ? {} : { extractorVersion: extraction.extractorVersion }),
     // V1 reads text directly. A3's vision path populates these in V2/V3.
     extractionMethod: 'text',
     visionPageCount: 0,

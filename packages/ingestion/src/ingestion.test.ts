@@ -16,7 +16,10 @@ import {
   assertAnchorContractsAgree,
   extractFreeText,
   extractMarkdown,
-  extractUnits,
+  freeTextExtractor,
+  markdownExtractor,
+  selectExtractor,
+  defaultExtractors,
   guardSource,
   hashBytes,
   highlightForAnchor,
@@ -91,7 +94,11 @@ describe('ingest guard — content type by magic bytes, not by claim', () => {
     assert.equal(r.code, 'unsupported_binary_type');
     assert.equal(r.detectedMimeType, 'application/pdf');
     assert.match(r.reason, /PDF/);
-    assert.match(r.reason, /V2/, 'the refusal must say when the format arrives');
+    assert.match(
+      r.reason,
+      /V2-PDF/,
+      'the refusal must name the slice that will parse it — PDF moved to V2-PDF',
+    );
   });
 
   test('REFUSES a PDF even when the filename claims .txt — content wins', () => {
@@ -100,17 +107,24 @@ describe('ingest guard — content type by magic bytes, not by claim', () => {
     assert.equal(r.accepted, false, 'the extension must never admit a file the content refutes');
   });
 
-  test('REFUSES a DOCX, a PNG and an executable by signature', () => {
+  test('REFUSES a PNG and an executable by signature', () => {
     const cases: readonly (readonly [string, Uint8Array])[] = [
-      ['docx', new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00])],
       ['png', new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
       ['exe', new Uint8Array([0x4d, 0x5a, 0x90, 0x00])],
+      ['gzip', new Uint8Array([0x1f, 0x8b, 0x08, 0x00])],
     ];
     for (const [label, bytes] of cases) {
       const r = guardSource(bytes, GUARD_OPTIONS);
       assert.equal(r.accepted, false, `${label} must be refused`);
       if (!r.accepted) assert.equal(r.code, 'unsupported_binary_type');
     }
+  });
+
+  test('a truncated ZIP is refused as an unreadable archive, not mis-parsed', () => {
+    const r = guardSource(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00]), GUARD_OPTIONS);
+    assert.equal(r.accepted, false);
+    if (r.accepted) return;
+    assert.equal(r.code, 'unreadable_archive');
   });
 
   test('REFUSES UTF-16 rather than transcoding it silently', () => {
@@ -487,15 +501,66 @@ describe('markdown adapter', () => {
   });
 });
 
-describe('adapter dispatch', () => {
-  test('extractUnits routes by media type', () => {
-    const text = normaliseSource('# Heading\n').text;
-    assert.equal(extractUnits('text/markdown', 's', text).extractorVersion, 'markdown@1');
-    assert.equal(extractUnits('text/plain', 's', text).extractorVersion, 'freetext@1');
+describe('extractor registry', () => {
+  const run = (mediaType: string, raw: string) => {
+    const extractor = selectExtractor(defaultExtractors(), mediaType);
+    return extractor.extract({
+      sourceId: 's',
+      data: utf8(raw),
+      mediaType,
+      filename: 'f',
+      decodedText: raw,
+    });
+  };
+
+  test('selects by media type', () => {
+    assert.equal(run('text/markdown', '# Heading\n').extractorVersion, 'markdown@1');
+    assert.equal(run('text/plain', '# Heading\n').extractorVersion, 'freetext@1');
     // The same input read as plain text is a paragraph, not a heading — the
     // adapter choice is a real decision, not a formality.
-    assert.equal(extractUnits('text/plain', 's', text).units[0]?.type, 'paragraph');
-    assert.equal(extractUnits('text/markdown', 's', text).units[0]?.type, 'heading');
+    assert.equal(run('text/plain', '# Heading\n').units[0]?.type, 'paragraph');
+    assert.equal(run('text/markdown', '# Heading\n').units[0]?.type, 'heading');
+  });
+
+  test('the canonical text is the normalised text, and anchors resolve against it', () => {
+    const out = run('text/plain', 'One.\n\nTwo.');
+    assert.equal(out.canonicalText, 'One.\n\nTwo.');
+    assertRoundTrip(out.units, out.canonicalText);
+  });
+
+  test('text formats report no pages and no limitations', () => {
+    const out = run('text/plain', 'Body.');
+    assert.deepEqual(out.pages, [], 'pagination is a rendering property these formats lack');
+    assert.deepEqual(out.limitations, []);
+  });
+
+  test('a media type with no extractor is a loud error, not an empty document', () => {
+    assert.throws(
+      () => selectExtractor(defaultExtractors(), 'application/pdf'),
+      /no text extractor supports/,
+    );
+  });
+
+  test('THERE IS NO PDF EXTRACTOR in this build', () => {
+    // PDF intake is V2-PDF, blocked on spike S2 and ADR-0037. Asserted rather
+    // than assumed, so adding one silently fails a test.
+    for (const extractor of defaultExtractors()) {
+      assert.equal(extractor.supports('application/pdf'), false, `${extractor.id} must not claim PDF`);
+    }
+  });
+
+  test('a text extractor without decodedText fails as a wiring defect', () => {
+    assert.throws(
+      () =>
+        freeTextExtractor().extract({
+          sourceId: 's',
+          data: utf8('x'),
+          mediaType: 'text/plain',
+          filename: 'f',
+        }),
+      /requires decodedText/,
+    );
+    assert.ok(markdownExtractor().supports('text/markdown'));
   });
 });
 

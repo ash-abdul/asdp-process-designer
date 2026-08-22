@@ -32,6 +32,12 @@ export type AnchorTarget =
       readonly blockPath: string;
       readonly runStart: number;
       readonly runEnd: number;
+      /** Code-point offsets into the source's canonical text, so a DOCX anchor is
+       *  verifiable by the same resolver as every other text anchor. Optional for
+       *  the same reason `pdf_region` carries them optionally: the block address
+       *  is the primary identity, the offsets make it checkable. */
+      readonly charStart?: number;
+      readonly charEnd?: number;
     }
   | {
       readonly kind: 'pdf_region';
@@ -71,11 +77,33 @@ export interface ProvenanceAnchor {
   readonly extractorVersion: string;
 }
 
-/** Anchor kinds that carry code-point offsets into normalised text. */
-export function hasTextOffsets(
+/**
+ * Code-point offsets carried by a target, or null when it addresses something
+ * other than text.
+ *
+ * One function rather than a per-kind check, because resolution and highlighting
+ * both need the same answer and must never disagree about which anchors are
+ * verifiable against stored text.
+ */
+export function textOffsetsOf(
   target: AnchorTarget,
-): target is Extract<AnchorTarget, { kind: 'text_range' }> {
-  return target.kind === 'text_range';
+): { readonly start: number; readonly end: number } | null {
+  switch (target.kind) {
+    case 'text_range':
+      return { start: target.charStart, end: target.charEnd };
+    case 'pdf_region':
+    case 'docx_block':
+      return target.charStart !== undefined && target.charEnd !== undefined
+        ? { start: target.charStart, end: target.charEnd }
+        : null;
+    default:
+      return null;
+  }
+}
+
+/** True when a target can be verified against stored text. */
+export function hasTextOffsets(target: AnchorTarget): boolean {
+  return textOffsetsOf(target) !== null;
 }
 
 /** Human-readable rendering of an anchor, for the traceability matrix. */
@@ -85,7 +113,9 @@ export function describeAnchor(anchor: ProvenanceAnchor): string {
     case 'text_range':
       return `chars ${t.charStart}–${t.charEnd}`;
     case 'docx_block':
-      return `${t.blockPath} runs ${t.runStart}–${t.runEnd}`;
+      return t.charStart !== undefined
+        ? `${t.blockPath} runs ${t.runStart}–${t.runEnd} (chars ${t.charStart}–${t.charEnd})`
+        : `${t.blockPath} runs ${t.runStart}–${t.runEnd}`;
     case 'pdf_region':
       return t.charStart !== undefined
         ? `p.${t.page} chars ${t.charStart}–${t.charEnd}`

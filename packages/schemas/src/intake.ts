@@ -58,6 +58,12 @@ export const AnchorTarget = z.discriminatedUnion('kind', [
     blockPath: z.string(),
     runStart: z.number().int().nonnegative(),
     runEnd: z.number().int().nonnegative(),
+    /** Code-point offsets into the canonical text, so a DOCX anchor is verifiable
+     *  by the same resolver as every other text anchor. Optional for the same
+     *  reason `pdf_region` carries them optionally: the block address is the
+     *  primary identity, the offsets make it checkable. */
+    charStart: z.number().int().nonnegative().optional(),
+    charEnd: z.number().int().nonnegative().optional(),
   }),
   z.object({
     kind: z.literal('pdf_region'),
@@ -138,6 +144,11 @@ export const SourceKind = z.enum([
   'transcript',
   'freetext',
   'markdown',
+  // Format-shaped kinds, following the `freetext` / `markdown` precedent. A
+  // caller who knows the document's business role should override with `brd`,
+  // `sop`, `policy` and so on — `kind` models the role, and the format is only a
+  // default when nothing better is stated.
+  'docx',
   'other',
 ]);
 export type SourceKind = z.infer<typeof SourceKind>;

@@ -26,6 +26,7 @@ import { createSqlRepositories, withTransaction } from './persistence/repositori
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
 import { counterIdGenerator, systemClock } from './repo-memory.ts';
 import { resolveClassification } from './commands/intake.ts';
+import { defaultExtractors, unavailableRasteriser } from '@asdp/ingestion';
 import { ValidationError } from './commands.ts';
 import type { Database } from './persistence/db.ts';
 
@@ -1056,5 +1057,387 @@ describe('command helpers', () => {
   test('the JSON body limit exceeds the source limit, because base64 inflates', () => {
     const limit = jsonBodyLimit(1_000_000);
     assert.ok(limit > 1_000_000 * (4 / 3), 'a source at the limit must reach the guard');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// V2 — DOCX intake, end to end
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a DOCX as a stored-method ZIP.
+ *
+ * A second, simpler copy of the builder in `docx.test.ts`: this suite needs a
+ * DOCX over HTTP, not coverage of the deflate path, and importing a helper across
+ * package test files would couple two suites for no benefit.
+ */
+function buildDocx(bodyXml: string): Uint8Array {
+  const encoder = new TextEncoder();
+  const document =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    `<w:body>${bodyXml}</w:body></w:document>`;
+
+  const crcTable: number[] = [];
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) !== 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    crcTable[n] = c >>> 0;
+  }
+  const crc32 = (bytes: Uint8Array): number => {
+    let c = 0xffffffff;
+    for (const b of bytes) c = (crcTable[(c ^ b) & 0xff] as number) ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const u16 = (v: number): number[] => [v & 0xff, (v >>> 8) & 0xff];
+  const u32 = (v: number): number[] => [v & 0xff, (v >>> 8) & 0xff, (v >>> 16) & 0xff, (v >>> 24) & 0xff];
+
+  const name = encoder.encode('word/document.xml');
+  const raw = encoder.encode(document);
+  const sum = crc32(raw);
+
+  const local = [
+    ...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+    ...u32(sum), ...u32(raw.length), ...u32(raw.length),
+    ...u16(name.length), ...u16(0), ...name, ...raw,
+  ];
+  const central = [
+    ...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+    ...u32(sum), ...u32(raw.length), ...u32(raw.length),
+    ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(0), ...name,
+  ];
+  const eocd = [
+    ...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(1), ...u16(1),
+    ...u32(central.length), ...u32(local.length), ...u16(0),
+  ];
+  return new Uint8Array([...local, ...central, ...eocd]);
+}
+
+const docxPara = (text: string, style?: string): string =>
+  `<w:p>${style === undefined ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}` +
+  `<w:r><w:t xml:space="preserve">${text}</w:t></w:r></w:p>`;
+
+const BILINGUAL_DOCX = buildDocx(
+  docxPara('Identity Verification', 'Heading1') +
+    docxPara('The system must call the SADAD endpoint before approval.') +
+    docxPara('المتطلبات', 'Heading2') +
+    docxPara(ARABIC) +
+    docxPara('على النظام استدعاء خدمة SADAD خلال 30 ثانية.') +
+    '<w:tbl><w:tr>' +
+    `<w:tc>${docxPara('Condition')}</w:tc><w:tc>${docxPara('Action')}</w:tc>` +
+    '</w:tr></w:tbl>',
+);
+
+const asBase64 = (bytes: Uint8Array): string => Buffer.from(bytes).toString('base64');
+
+describe('DOCX intake', () => {
+  test('ingests a DOCX, sniffing the type from the archive contents', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'brd.docx',
+        contentBase64: asBase64(BILINGUAL_DOCX),
+      });
+
+      assert.equal(
+        result.source.mimeType,
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+      assert.equal(result.source.kind, 'docx');
+      assert.equal(result.source.status, 'parsed');
+      assert.equal(result.source.extractorVersion, 'docx@1');
+      assert.equal(result.source.extractionMethod, 'text', 'no vision path exists in V2');
+      assert.ok(result.unitCount >= 6);
+      assert.match(result.source.blobRef, /\.docx$/);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('units carry docx_block anchors with block paths AND offsets', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'brd.docx',
+        contentBase64: asBase64(BILINGUAL_DOCX),
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+
+      for (const unit of units.json.units) {
+        assert.equal(unit.anchor.target.kind, 'docx_block');
+        assert.ok(typeof unit.anchor.target.blockPath === 'string');
+        assert.ok(Number.isInteger(unit.anchor.target.charStart), 'offsets survive the jsonb round trip');
+      }
+      const types = new Set(units.json.units.map((u: any) => u.type));
+      assert.ok(types.has('heading'));
+      assert.ok(types.has('paragraph'));
+      assert.ok(types.has('tableCell'));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('every stored DOCX anchor still resolves — highlights come back resolved', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'brd.docx',
+        contentBase64: asBase64(BILINGUAL_DOCX),
+      });
+      const h = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/highlights`,
+        undefined, asAnalyst,
+      );
+      assert.equal(h.json.total, result.unitCount);
+      assert.ok(
+        h.json.ranges.every((r: any) => r.resolution === 'resolved'),
+        'a docx_block anchor must be verifiable by the same resolver as any other',
+      );
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('Arabic in a DOCX round-trips byte-exactly and keeps logical order', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'ar.docx',
+        contentBase64: asBase64(buildDocx(docxPara(ARABIC))),
+      });
+      const content = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/content`,
+        undefined, asAnalyst,
+      );
+      assert.equal(content.json.text, ARABIC);
+      assert.equal(content.json.units[0].text, ARABIC);
+      assert.equal(content.json.units[0].direction, 'rtl');
+      assert.equal(result.source.primaryLanguage, 'ar');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('an embedded Latin term inside Arabic is NOT reversed', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const line = 'على النظام استدعاء خدمة SADAD خلال 30 ثانية.';
+      const result = await ingest(s, projectId, {
+        filename: 'mixed.docx',
+        contentBase64: asBase64(buildDocx(docxPara(line))),
+      });
+      const content = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/content`,
+        undefined, asAnalyst,
+      );
+      assert.equal(content.json.units[0].text, line);
+      assert.ok(content.json.text.includes('SADAD'), 'the Latin run keeps its reading order');
+      assert.ok(content.json.text.includes('30'));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('evidence can cite a DOCX unit, and the citation verifies', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'brd.docx',
+        contentBase64: asBase64(BILINGUAL_DOCX),
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      const arabicUnit = units.json.units.find((u: any) => u.direction === 'rtl');
+      assert.ok(arabicUnit !== undefined);
+
+      const created = await call(
+        s, 'POST', `/projects/${projectId}/evidence`,
+        { sourceId: result.source.id, sourceUnitId: arabicUnit.id }, asAnalyst,
+      );
+      assert.equal(created.status, 201, JSON.stringify(created.json));
+      assert.equal(created.json.anchorVerified, true);
+      assert.equal(created.json.verbatimText, arabicUnit.text);
+      assert.equal(created.json.anchor.target.kind, 'docx_block');
+      assert.equal(created.json.language, 'ar');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a DOCX with no readable document part is recorded as parse_failed', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      // A valid ZIP whose only part is a malformed document.xml: the guard admits
+      // it (the part is present), and the adapter then fails — which is exactly
+      // the difference between refusing a file and reading one badly.
+      const broken = buildDocx('<w:p><w:r><w:t>unclosed');
+      const r = await call(
+        s, 'POST', `/projects/${projectId}/sources`,
+        { filename: 'broken.docx', contentBase64: asBase64(broken) }, asAnalyst,
+      );
+      assert.equal(r.status, 201, 'the source IS created, with a recorded failure');
+      assert.equal(r.json.source.status, 'parse_failed');
+      assert.ok(String(r.json.source.parseError).length > 0, 'and it says why');
+      assert.equal(r.json.unitCount, 0);
+
+      const validation = await call(
+        s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst,
+      );
+      const ids = validation.json.findings.map((f: any) => f.ruleId);
+      assert.ok(ids.includes('L0-ING-001'), 'a parse failure is never silent');
+      assert.ok(validation.json.summary.blocking.length > 0, 'and it blocks G1');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('REFUSES an XLSX over HTTP, naming spreadsheets as a separate capability', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      // A minimal but valid ZIP containing xl/workbook.xml.
+      const encoder = new TextEncoder();
+      const name = encoder.encode('xl/workbook.xml');
+      const raw = encoder.encode('<workbook/>');
+      const u16 = (v: number): number[] => [v & 0xff, (v >>> 8) & 0xff];
+      const u32 = (v: number): number[] => [v & 0xff, (v >>> 8) & 0xff, (v >>> 16) & 0xff, (v >>> 24) & 0xff];
+      const local = [
+        ...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+        ...u32(0), ...u32(raw.length), ...u32(raw.length),
+        ...u16(name.length), ...u16(0), ...name, ...raw,
+      ];
+      const central = [
+        ...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+        ...u32(0), ...u32(raw.length), ...u32(raw.length),
+        ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(0), ...name,
+      ];
+      const eocd = [
+        ...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(1), ...u16(1),
+        ...u32(central.length), ...u32(local.length), ...u16(0),
+      ];
+      const xlsx = new Uint8Array([...local, ...central, ...eocd]);
+
+      const r = await call(
+        s, 'POST', `/projects/${projectId}/sources`,
+        { filename: 'rules.xlsx', contentBase64: asBase64(xlsx) }, asAnalyst,
+      );
+      assert.equal(r.status, 400);
+      assert.match(String(r.json.error), /separate proposed capability/);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a PDF refusal now names V2-PDF, not V2', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      const r = await call(
+        s, 'POST', `/projects/${projectId}/sources`,
+        { filename: 'brd.pdf', contentBase64: base64([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]) },
+        asAnalyst,
+      );
+      assert.equal(r.status, 400);
+      assert.match(
+        String(r.json.error),
+        /V2-PDF/,
+        'the sequencing change must be reflected in what the user is told',
+      );
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a DOCX source passes L0 validation cleanly', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await createProjectVia(s);
+      await ingest(s, projectId, {
+        filename: 'brd.docx',
+        contentBase64: asBase64(BILINGUAL_DOCX),
+        authorityRank: 700,
+        effectiveDate: '2026-01-01T00:00:00.000Z',
+      });
+      const r = await call(s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst);
+      assert.deepEqual(r.json.summary.blocking, [], JSON.stringify(r.json.findings));
+      assert.equal(r.json.summary.errors, 0);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('DOCX state survives a restart, and its anchors still resolve', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'asdp-docx-db-'));
+    let projectId = '';
+    let sourceId = '';
+    let text = '';
+
+    const first = await startServer({ dataDir });
+    try {
+      projectId = await createProjectVia(first);
+      const result = await ingest(first, projectId, {
+        filename: 'brd.docx',
+        contentBase64: asBase64(BILINGUAL_DOCX),
+      });
+      sourceId = result.source.id;
+      const content = await call(
+        first, 'GET', `/projects/${projectId}/sources/${sourceId}/content`, undefined, asAnalyst,
+      );
+      text = content.json.text;
+    } finally {
+      await first.close();
+    }
+
+    const second = await startServer({ dataDir });
+    try {
+      const content = await call(
+        second, 'GET', `/projects/${projectId}/sources/${sourceId}/content`, undefined, asAnalyst,
+      );
+      assert.equal(content.json.text, text, 'Arabic survives byte-exactly');
+
+      const h = await call(
+        second, 'GET', `/projects/${projectId}/sources/${sourceId}/highlights`, undefined, asAnalyst,
+      );
+      assert.ok(h.json.ranges.every((r: any) => r.resolution === 'resolved'));
+    } finally {
+      await second.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// V2-PDF is blocked, and the build says so
+// ---------------------------------------------------------------------------
+
+describe('V2-PDF is not implemented', () => {
+  test('the rasteriser refuses by name, with the reason', async () => {
+    const rasteriser = unavailableRasteriser();
+    assert.equal(rasteriser.supports('application/pdf'), false);
+    await assert.rejects(
+      rasteriser.rasterise({
+        sourceId: 'src-1',
+        data: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+        mediaType: 'application/pdf',
+        pageNumbers: [1],
+        scale: 2,
+      }),
+      /not implemented in V2/,
+    );
+  });
+
+  test('no extractor claims PDF', () => {
+    for (const extractor of defaultExtractors()) {
+      assert.equal(extractor.supports('application/pdf'), false);
+    }
   });
 });

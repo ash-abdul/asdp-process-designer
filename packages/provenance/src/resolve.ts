@@ -15,7 +15,7 @@
  */
 
 import { sliceByCodePoints, buildMatchFormCollapsed, toMatchText } from '@asdp/text';
-import type { ProvenanceAnchor } from './anchor.ts';
+import { textOffsetsOf, type ProvenanceAnchor } from './anchor.ts';
 import { spanChecksum } from './checksum.ts';
 
 export type ResolutionStatus = 'resolved' | 'drifted' | 'broken';
@@ -37,27 +37,22 @@ const MAX_DRIFT = 64;
 /**
  * Resolve a text-offset anchor against the stored normalised text.
  *
- * Only `text_range` anchors (and `pdf_region` anchors that carry offsets) can be
- * verified against text. Region- and element-addressed anchors are verified by
- * their own adapters against page images or parsed models.
+ * Any target carrying code-point offsets can be verified this way — `text_range`
+ * always, `pdf_region` and `docx_block` when they recorded them. Region- and
+ * element-addressed anchors without offsets are verified by their own adapters
+ * against page images or parsed models.
  */
 export function resolveTextAnchor(anchor: ProvenanceAnchor, storedText: string): Resolution {
   const target = anchor.target;
-  let start: number;
-  let end: number;
-
-  if (target.kind === 'text_range') {
-    start = target.charStart;
-    end = target.charEnd;
-  } else if (target.kind === 'pdf_region' && target.charStart !== undefined && target.charEnd !== undefined) {
-    start = target.charStart;
-    end = target.charEnd;
-  } else {
+  const offsets = textOffsetsOf(target);
+  if (offsets === null) {
     return {
       status: 'broken',
       detail: `anchor kind '${target.kind}' carries no text offsets; verify it with its own adapter`,
     };
   }
+  const start = offsets.start;
+  const end = offsets.end;
 
   if (start < 0 || end < start) {
     return { status: 'broken', detail: `invalid offsets ${start}..${end}` };

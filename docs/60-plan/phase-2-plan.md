@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V1 complete · **V2 approved; a split into V2 / V2-PDF is proposed (§3.4)** · V3–V7 **provisional** · **Version:** 2.2 · **Updated:** 2026-08-23
+> **Status:** V0–V1 complete · **V2 (DOCX) complete; V2-PDF blocked** · V3–V7 **provisional** · **Version:** 3.0 · **Updated:** 2026-08-23
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -111,9 +111,9 @@ V1 required **no new decisions and no new dependencies**. Delivered as specified
 
 The V2 boundary was **approved on 2026-08-23** and is recorded verbatim in §3.1.
 
-**§3.4 proposes splitting it**, because completing spike S2 requires material that must come from
-outside the team and has no committed date. The split is a **proposal awaiting approval**; the
-approved boundary in §3.1 stands until it is accepted.
+**§3.4 splits it** into **V2 (DOCX)** and **V2-PDF** — approved on 2026-08-23 as a sequencing
+decision only. Nothing was removed from the approved capability: every item in §3.1 is still to be
+built, and **V2-PDF remains part of Phase 2**.
 
 ### 3.1 In scope — as approved
 
@@ -148,10 +148,10 @@ DOCX is unblocked for a structural reason rather than a convenient one: **a DOCX
 logical order by construction**, so the question S2 exists to answer does not arise for it. There is
 no ordering to reconstruct and no confidence to assess.
 
-### 3.4 PROPOSED REVISION — split V2 into V2 and V2-PDF
+### 3.4 APPROVED — V2 split into V2 and V2-PDF
 
-> **Proposal, awaiting approval.** It changes sequencing only. Nothing is added to or removed from
-> the approved scope; every item in §3.1 still gets built.
+> **Approved 2026-08-23. Sequencing only.** Nothing is added to or removed from the approved scope;
+> every item in §3.1 still gets built, and V2-PDF stays inside Phase 2.
 
 **Rationale.** S2 needs 2–3 representative Arabic PDFs from outside the team. That has no committed
 date, and the pre-registered decision rule in
@@ -161,17 +161,16 @@ the wrong thing; waiting to start *anything* would idle a slice that has no depe
 
 | Slice | Scope | Dependencies | State |
 |---|---|---|---|
-| **V2 — Document intake (DOCX)** | `TextExtractor` port · `PageRasteriser` port *(port only, no implementation)* · DOCX adapter · `docx_block` anchors · guard admits OOXML · `L0-ING-005` wired to real documents · Arabic and mixed Arabic/English DOCX tested | **None.** `node:zlib` provides inflate | **Ready to proceed on approval** |
+| **V2 — Document intake (DOCX)** | `TextExtractor` port · `PageRasteriser` port *(port only, no implementation)* · DOCX adapter · `docx_block` anchors · guard admits OOXML · `L0-ING-005` wired to real documents · Arabic and mixed Arabic/English DOCX tested | **None added.** `node:zlib` provides inflate | ✅ **COMPLETE** — see [phase-2-status.md](phase-2-status.md) §4 |
 | **V2-PDF — PDF intake** | PDF adapter · per-page confidence and vision-fallback marking · page rasterisation · `PageImage` schema and table · `pdf_region` anchors with rectangle lists · `L0-ING-007` and `L0-ING-008` wired · Arabic PDF limitations documented | S2 complete · ADR-0037 approved · one new runtime dependency | **Blocked** |
 
 **Why the `PageRasteriser` port still lands in V2:** A3 approved the abstraction, and defining it
 early keeps the DOCX adapter honest about where it sits. It gets no implementation, because nothing
 can rasterise without a PDF engine and nothing consumes a page image until V3.
 
-**One consequence to note:** the V1 ingest guard currently refuses PDF and OOXML with a message
-naming *"V2"* as the slice that will parse them. If this split is approved, those messages must be
-corrected in the same change — PDF's refusal would name a later slice. A stale refusal message is a
-small thing that tells a user something untrue.
+**One consequence, now handled:** the V1 ingest guard refused PDF with a message naming *"V2"* as
+the slice that would parse it. That became untrue with the split, so V2 corrected it to **V2-PDF**
+and a test asserts it. A stale refusal message is a small thing that tells a user something false.
 
 ### 3.5 Provisional capability sequence — V3–V7
 

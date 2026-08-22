@@ -26,9 +26,18 @@ import {
 } from '@nestjs/common';
 import { readHighlights, readSourceForViewer, type IntakeContext } from '../commands/intake.ts';
 import { ActorGuard, CorrelationId } from './actor.guard.ts';
-import { BLOB_STORE, CLOCK, CONFIG, ID_GENERATOR, REPOSITORIES, UNIT_OF_WORK } from './tokens.ts';
+import {
+  BLOB_STORE,
+  CLOCK,
+  CONFIG,
+  EXTRACTORS,
+  ID_GENERATOR,
+  REPOSITORIES,
+  UNIT_OF_WORK,
+} from './tokens.ts';
 import type { BlobStore, Clock, IdGenerator, Repositories, UnitOfWork } from '../ports.ts';
 import type { Config } from '../config.ts';
+import type { TextExtractor } from '@asdp/ingestion';
 import { maybe, parseOffset } from './request-parsing.ts';
 
 @Controller('projects/:projectId/sources/:sourceId')
@@ -41,6 +50,7 @@ export class SourceViewerController {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(CONFIG) private readonly config: Config,
+    @Inject(EXTRACTORS) private readonly extractors: readonly TextExtractor[],
   ) {}
 
   private ctx(correlationId: string): IntakeContext {
@@ -52,6 +62,7 @@ export class SourceViewerController {
       blobs: this.blobs,
       uow: this.uow,
       maxSourceBytes: this.config.maxSourceBytes,
+      extractors: this.extractors,
     };
   }
 

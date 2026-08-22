@@ -17,6 +17,12 @@ import { createPgliteDatabase } from './persistence/pglite-database.ts';
 import { migrate } from './persistence/migrate.ts';
 import { createSqlRepositories, withTransaction } from './persistence/repositories.ts';
 import type { BlobStore } from './blob/blob-store.ts';
+import {
+  defaultExtractors,
+  unavailableRasteriser,
+  type PageRasteriser,
+  type TextExtractor,
+} from '@asdp/ingestion';
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
 import { counterIdGenerator, createMemoryRepositories, systemClock } from './repo-memory.ts';
 
@@ -25,6 +31,10 @@ export interface Adapters {
   readonly repositories: Repositories;
   readonly blobStore: BlobStore;
   readonly unitOfWork: UnitOfWork;
+  /** A3 TextExtractor registry. No PDF extractor: PDF intake is V2-PDF. */
+  readonly extractors: readonly TextExtractor[];
+  /** A3 PageRasteriser. Refuses in V2 — see `unavailableRasteriser`. */
+  readonly pageRasteriser: PageRasteriser;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   close(): Promise<void>;
@@ -76,6 +86,8 @@ export async function createAdapters(
       repositories,
       blobStore,
       unitOfWork: passThroughUnitOfWork(repositories),
+      extractors: defaultExtractors(),
+      pageRasteriser: unavailableRasteriser(),
       clock,
       ids,
       close: async () => undefined,
@@ -100,6 +112,8 @@ export async function createAdapters(
     // A real transaction: the ingest of a source, its text and its units either
     // all commit or none do.
     unitOfWork: { run: (fn) => withTransaction(database, fn) },
+    extractors: defaultExtractors(),
+    pageRasteriser: unavailableRasteriser(),
     clock,
     ids,
     close: () => database.close(),

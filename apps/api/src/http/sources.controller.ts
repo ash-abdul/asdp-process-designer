@@ -31,9 +31,18 @@ import {
 } from '../commands/intake.ts';
 import type { Actor } from '../commands.ts';
 import { ActorGuard, CorrelationId, CurrentActor } from './actor.guard.ts';
-import { BLOB_STORE, CLOCK, CONFIG, ID_GENERATOR, REPOSITORIES, UNIT_OF_WORK } from './tokens.ts';
+import {
+  BLOB_STORE,
+  CLOCK,
+  CONFIG,
+  EXTRACTORS,
+  ID_GENERATOR,
+  REPOSITORIES,
+  UNIT_OF_WORK,
+} from './tokens.ts';
 import type { BlobStore, Clock, IdGenerator, Repositories, UnitOfWork } from '../ports.ts';
 import type { Config } from '../config.ts';
+import type { TextExtractor } from '@asdp/ingestion';
 import { decodeContent, maybe, optionalInteger, optionalString, requiredString } from './request-parsing.ts';
 
 interface IngestBody {
@@ -65,6 +74,7 @@ export class SourcesController {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(CONFIG) private readonly config: Config,
+    @Inject(EXTRACTORS) private readonly extractors: readonly TextExtractor[],
   ) {}
 
   private ctx(correlationId: string): IntakeContext {
@@ -76,6 +86,7 @@ export class SourcesController {
       blobs: this.blobs,
       uow: this.uow,
       maxSourceBytes: this.config.maxSourceBytes,
+      extractors: this.extractors,
     };
   }
 

@@ -17,9 +17,20 @@
 
 import { createHash } from 'node:crypto';
 import type { SourceKind } from '@asdp/schemas';
+import { readZipEntries, ZipError } from './zip.ts';
+import {
+  DOCX,
+  PPTX,
+  TEXT_MARKDOWN,
+  TEXT_PLAIN,
+  XLSX,
+  familyOf,
+  type AdmittedMediaType,
+  type MediaFamily,
+} from './media-types.ts';
 
-/** Content types V1 can parse. Everything else is refused by name. */
-export type AcceptedMediaType = 'text/plain' | 'text/markdown';
+/** Content types V2 can parse. Everything else is refused by name. */
+export type AcceptedMediaType = AdmittedMediaType;
 
 /** Why a file was refused. Stable codes so the API can be tested on them. */
 export type RefusalCode =
@@ -28,7 +39,9 @@ export type RefusalCode =
   | 'unsupported_binary_type'
   | 'undecodable_text'
   | 'unsupported_text_encoding'
-  | 'embedded_nul';
+  | 'embedded_nul'
+  | 'unreadable_archive'
+  | 'unsupported_ooxml_kind';
 
 export interface GuardOptions {
   readonly filename: string;
@@ -41,17 +54,24 @@ export interface GuardOptions {
 export interface AcceptedSource {
   readonly accepted: true;
   readonly mimeType: AcceptedMediaType;
+  readonly family: MediaFamily;
   readonly kind: SourceKind;
   readonly sha256: string;
   readonly byteSize: number;
-  /** Decoded, pre-normalisation text. Normalisation belongs to `@asdp/text`. */
-  readonly rawText: string;
+  /**
+   * Decoded, pre-normalisation text — **text family only**.
+   *
+   * Undefined for `ooxml`, whose text lives inside compressed XML parts and is
+   * the adapter's business to assemble. Passed forward rather than re-decoded, so
+   * the bytes the guard admitted are the bytes that get extracted.
+   */
+  readonly rawText?: string;
   /** How the type was decided, so the decision is auditable. */
   readonly detection: {
-    readonly binarySniff: 'clean';
-    readonly encoding: 'utf-8' | 'utf-8-bom';
+    readonly binarySniff: 'clean' | 'ooxml';
+    readonly encoding: 'utf-8' | 'utf-8-bom' | 'n/a';
     /** `text/plain` vs `text/markdown` is the one choice the extension makes. */
-    readonly adapterSelectedBy: 'extension' | 'default';
+    readonly adapterSelectedBy: 'extension' | 'default' | 'archive-contents';
   };
 }
 
@@ -77,7 +97,7 @@ interface Signature {
   readonly mimeType: string;
   readonly label: string;
   /** The slice that will parse it, so the refusal can say when it arrives. */
-  readonly arrivesIn: 'V2' | 'V3' | 'never';
+  readonly arrivesIn: 'V2-PDF' | 'V3' | 'a later slice' | 'never';
 }
 
 /**
@@ -88,10 +108,9 @@ interface Signature {
  * that PDFs arrive in V2, not that their file was wrong.
  */
 const SIGNATURES: readonly Signature[] = [
-  { bytes: [0x25, 0x50, 0x44, 0x46, 0x2d], offset: 0, mimeType: 'application/pdf', label: 'PDF', arrivesIn: 'V2' },
-  { bytes: [0x50, 0x4b, 0x03, 0x04], offset: 0, mimeType: 'application/zip', label: 'ZIP or OOXML (DOCX/XLSX/PPTX)', arrivesIn: 'V2' },
-  { bytes: [0x50, 0x4b, 0x05, 0x06], offset: 0, mimeType: 'application/zip', label: 'empty ZIP archive', arrivesIn: 'V2' },
-  { bytes: [0xd0, 0xcf, 0x11, 0xe0], offset: 0, mimeType: 'application/x-ole-storage', label: 'legacy Microsoft Office (DOC/XLS)', arrivesIn: 'V2' },
+  { bytes: [0x25, 0x50, 0x44, 0x46, 0x2d], offset: 0, mimeType: 'application/pdf', label: 'PDF', arrivesIn: 'V2-PDF' },
+  { bytes: [0x50, 0x4b, 0x05, 0x06], offset: 0, mimeType: 'application/zip', label: 'empty ZIP archive', arrivesIn: 'never' },
+  { bytes: [0xd0, 0xcf, 0x11, 0xe0], offset: 0, mimeType: 'application/x-ole-storage', label: 'legacy Microsoft Office (DOC/XLS)', arrivesIn: 'a later slice' },
   { bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], offset: 0, mimeType: 'image/png', label: 'PNG image', arrivesIn: 'V3' },
   { bytes: [0xff, 0xd8, 0xff], offset: 0, mimeType: 'image/jpeg', label: 'JPEG image', arrivesIn: 'V3' },
   { bytes: [0x47, 0x49, 0x46, 0x38], offset: 0, mimeType: 'image/gif', label: 'GIF image', arrivesIn: 'V3' },
@@ -129,6 +148,9 @@ export function sniffBinary(data: Uint8Array): Signature | null {
 // Extension → adapter selection
 // ---------------------------------------------------------------------------
 
+/** Local file header. An OOXML package is a ZIP, so this is the entry point. */
+const ZIP_LOCAL_HEADER = [0x50, 0x4b, 0x03, 0x04];
+
 const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd'];
 
 function extensionOf(filename: string): string {
@@ -146,14 +168,14 @@ function extensionOf(filename: string): string {
  * honest rather than implicit.
  */
 function selectTextType(filename: string): {
-  readonly mimeType: AcceptedMediaType;
+  readonly mimeType: 'text/plain' | 'text/markdown';
   readonly kind: SourceKind;
   readonly by: 'extension' | 'default';
 } {
   if (MARKDOWN_EXTENSIONS.includes(extensionOf(filename))) {
-    return { mimeType: 'text/markdown', kind: 'markdown', by: 'extension' };
+    return { mimeType: TEXT_MARKDOWN, kind: 'markdown', by: 'extension' };
   }
-  return { mimeType: 'text/plain', kind: 'freetext', by: 'default' };
+  return { mimeType: TEXT_PLAIN, kind: 'freetext', by: 'default' };
 }
 
 // ---------------------------------------------------------------------------
@@ -195,6 +217,64 @@ export function guardSource(data: Uint8Array, options: GuardOptions): GuardResul
     );
   }
 
+  // --- OOXML packages ----------------------------------------------------
+  // Checked BEFORE the generic binary sniff, because an OOXML package is a ZIP
+  // and would otherwise be refused as one. Which OOXML kind it is can only be
+  // decided by looking inside, so this is content sniffing one level deeper —
+  // still content, never the filename.
+  if (startsWith(data, ZIP_LOCAL_HEADER, 0)) {
+    let partNames: readonly string[];
+    try {
+      partNames = readZipEntries(data).map((e) => e.name);
+    } catch (err) {
+      return refuse(
+        'unreadable_archive',
+        `content is a ZIP-based package that could not be read: ` +
+          `${err instanceof ZipError ? err.message : String(err)}`,
+        'application/zip',
+      );
+    }
+
+    const has = (name: string): boolean => partNames.includes(name);
+
+    if (has('word/document.xml')) {
+      return {
+        accepted: true,
+        mimeType: DOCX,
+        family: familyOf(DOCX),
+        kind: 'docx',
+        sha256,
+        byteSize,
+        detection: {
+          binarySniff: 'ooxml',
+          encoding: 'n/a',
+          adapterSelectedBy: 'archive-contents',
+        },
+      };
+    }
+    if (has('xl/workbook.xml')) {
+      return refuse(
+        'unsupported_ooxml_kind',
+        'content is an Excel workbook (XLSX). Spreadsheet ingestion is a separate proposed ' +
+          'capability and is deliberately not part of V2; it needs its own approved boundary.',
+        XLSX,
+      );
+    }
+    if (has('ppt/presentation.xml')) {
+      return refuse(
+        'unsupported_ooxml_kind',
+        'content is a PowerPoint presentation (PPTX), which is not a planned source type.',
+        PPTX,
+      );
+    }
+    return refuse(
+      'unsupported_ooxml_kind',
+      'content is a ZIP archive with no recognised OOXML document part. V2 reads Word ' +
+        `documents (word/document.xml). Parts found: ${partNames.slice(0, 6).join(', ')}`,
+      'application/zip',
+    );
+  }
+
   const binary = sniffBinary(data);
   if (binary !== null) {
     const when =
@@ -203,8 +283,8 @@ export function guardSource(data: Uint8Array, options: GuardOptions): GuardResul
         : `Parsing for this format arrives in ${binary.arrivesIn}.`;
     return refuse(
       'unsupported_binary_type',
-      `content is ${binary.label}, which V1 cannot parse. ${when} ` +
-        'V1 accepts UTF-8 free text and Markdown only.',
+      `content is ${binary.label}, which this build cannot parse. ${when} ` +
+        'V2 accepts UTF-8 free text, Markdown and Word documents (DOCX).',
       binary.mimeType,
     );
   }
@@ -213,7 +293,7 @@ export function guardSource(data: Uint8Array, options: GuardOptions): GuardResul
     if (startsWith(data, bom.bytes, 0)) {
       return refuse(
         'unsupported_text_encoding',
-        `content is ${bom.label} encoded. V1 decodes UTF-8 only; re-save the file as UTF-8. ` +
+        `content is ${bom.label} encoded. Only UTF-8 is decoded; re-save the file as UTF-8. ` +
           'Transcoding is not performed silently, because a lossy conversion would corrupt ' +
           'anchors without corrupting the text visibly.',
         'text/plain',
@@ -250,6 +330,7 @@ export function guardSource(data: Uint8Array, options: GuardOptions): GuardResul
   const selected = selectTextType(options.filename);
   return {
     accepted: true,
+    family: 'text',
     mimeType: selected.mimeType,
     kind: selected.kind,
     sha256,

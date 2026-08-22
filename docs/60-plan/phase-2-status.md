@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0 and V1 complete and accepted. V2 approved: DOCX portion ready, PDF portion blocked on spike S2.** · **Version:** 2.2 · **Updated:** 2026-08-23
+> **Status:** **V0, V1 complete and accepted. V2 (DOCX) complete, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 3.0 · **Updated:** 2026-08-23
 > **Working tree:** clean at the time of writing
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -11,13 +11,14 @@
 
 | | |
 |---|---|
-| Slices completed | **V0 — Foundation** · **V1 — Text intake and provenance end to end** |
-| Next slice | **V2 — binary document intake** — boundary **APPROVED** 2026-08-23. **DOCX portion unblocked; PDF portion blocked** on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). A split into V2 / V2-PDF is **proposed** — [phase-2-plan.md](phase-2-plan.md) §3.4 |
-| Tests | **415 pass · 0 fail · 0 skipped · 0 suppressed** (288 at V0) |
+| Slices completed | **V0 — Foundation** · **V1 — Text intake and provenance** · **V2 — DOCX document intake** |
+| Next slice | **V2-PDF — PDF intake.** **BLOCKED** on spike S2 completing against representative Arabic PDFs **and** [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval. Then V3, provisional |
+| Tests | **480 pass · 0 fail · 0 skipped · 0 suppressed** (288 at V0, 415 at V1) |
 | Verification | build · `check:arch` (91 files) · checker self-test (24 cases) · `check:docs` (84 files, 592 links) — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
-| New ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) — all in V0. **V1 added no ADR: it required no new architectural decision** |
+| ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) in V0. **V1 and V2 added none.** [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) is **PROPOSED — HELD**, and no dependency from it is present |
 | Decisions | **A1–A7 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4 |
+| Dependencies added | **NONE in V1 or V2.** Runtime dependencies stand at seven, unchanged since V0 |
 | Slices V3–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.5 |
 
 Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`, `domain`,
@@ -27,6 +28,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 |---|---|
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
+| V2 | *this change* — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* |
 
 ---
 
@@ -194,7 +196,114 @@ at G1.
 
 ---
 
-## 4. Accepted HTTP status posture
+## 4. V2 capabilities delivered — DOCX document intake
+
+**Binary document intake for Word documents, with no new dependency.** The PDF portion of the
+approved V2 boundary is a separate slice (§9) and is not built.
+
+### 4.1 The A3 abstractions
+
+- **`TextExtractor` port**, implemented three times: free text, Markdown, DOCX. V1's
+  `extractUnits` dispatcher became a registry, so the next adapter plugs in rather than extending a
+  `switch`.
+- **`PageRasteriser` port — defined, deliberately not implemented.** The V2 binding is
+  `unavailableRasteriser()`, which **refuses by name with a reason**. Registered rather than left
+  absent, so a caller reaching for rasterisation gets an explanation instead of `undefined`, and the
+  refusal is visible in the composition root.
+- `PageDescriptor` carries `confidence` and `requiresVisionFallback` **now**, so the PDF adapter
+  will add values rather than a schema. A DOCX reports **no pages**: pagination is a rendering
+  property, and a DOCX has none until it is laid out.
+- **No PDF extractor exists**, and a test asserts that no registered extractor claims
+  `application/pdf`.
+
+### 4.2 ZIP and XML readers — zero dependencies
+
+- **ZIP reader** on `node:zlib` raw inflate: central directory, local headers, stored and deflate.
+  ~150 lines.
+- **Refuses rather than guesses.** ZIP64, encryption, spanned archives and unknown compression
+  methods are rejected by name. A partially-understood archive would yield partial text, and partial
+  text with confident anchors is the failure mode intake exists to prevent.
+- **XML tokeniser**, ~140 lines. No DTD processing and no external entity resolution, so there is
+  **no XXE surface** — a DOCX is untrusted input.
+- It **checks element balance**. Found by a failing test: the tokeniser claimed to refuse malformed
+  markup but accepted `<w:body><w:p>`, which would have produced blocks from a truncated document.
+  An unknown entity is an error too, because leaving `&nbsp;` in the text would put a literal
+  seven-character string into a quote and its checksum.
+
+### 4.3 DOCX adapter
+
+- Paragraphs, ATX-equivalent **headings with depth**, **list items with indent level**, **table
+  cells in row-major order**, tabs and line breaks.
+- **Tracked changes: insertions accepted, deletions dropped.** A deletion is not evidence of a
+  requirement. Field instruction codes (`w:instrText`) are dropped as machinery, not content.
+- **Canonical text is assembled by the adapter**, one block per line — a DOCX has no linear text to
+  store, so the extractor defines it. Offsets are taken against exactly the string that gets
+  persisted, so an anchor and the stored text cannot be out of step.
+- An empty paragraph produces **no unit but keeps its line**, because dropping it would shift every
+  later offset.
+- **Limitations are reported, not buried**: footnotes, endnotes, comments, headers, footers and
+  embedded images are named in the response when the document contains them, and merged table cells
+  are declared as not reconstructed. The person citing the document is the one who needs to know
+  what was dropped.
+
+### 4.4 Provenance — `docx_block` anchors
+
+`docx_block` previously carried only `blockPath` + `runStart`/`runEnd`, which the resolver could not
+verify at all — it returned `broken` for the kind. A DOCX anchor would have been unverifiable, and
+`L0-ING-002` would have had nothing to check.
+
+- The target now also carries **optional `charStart`/`charEnd`**, following the precedent
+  `pdf_region` already set. The block address stays the primary identity; the offsets make it
+  **checkable**.
+- `textOffsetsOf` replaces the per-kind check, and **both** the resolver and the highlighter use it —
+  so they cannot disagree about which anchors are verifiable.
+- Consequence: a DOCX unit round-trips, highlights, and is citable as evidence through exactly the
+  same path as a text unit. No second provenance mechanism was introduced.
+
+### 4.5 Arabic and mixed Arabic/English
+
+**A DOCX stores text in logical order by construction** — `w:t` holds characters in reading order,
+and the renderer applies bidi at display time. That is the structural reason DOCX was unblocked
+while PDF waits: the question spike S2 exists to answer does not arise here.
+
+Verified end to end, through `jsonb` and back:
+
+- Arabic round-trips **byte-exactly**; blocks are tagged `ar` / `rtl`.
+- **An embedded Latin run inside Arabic keeps its reading order** — `SADAD` and `30` are not
+  reversed. This is the assertion that failed for every PDF library measured in S2.
+- A mixed range paints **several tiling segments** with `counterFlow` marked.
+- NFC and NFD input produce **identical canonical text and identical anchors**, on a fixture that
+  genuinely decomposes.
+- Non-BMP characters do not shift offsets — asserted against a surrogate-pair fixture.
+
+### 4.6 Validation
+
+- `L0-ING-005` now runs against **real binary-document data**: a DOCX whose document part fails to
+  parse is recorded `parse_failed` with a reason, `L0-ING-001` reports it, and it **blocks G1**.
+- `L0-ING-007` and `L0-ING-008` remain implemented but **unexercised by real data**, because both
+  concern vision extraction and Arabic PDF reordering. Wiring them to actual data is V2-PDF.
+- A clean DOCX source passes L0 with **nothing blocking**.
+
+### 4.7 Guard and messaging
+
+- **OOXML admitted by looking inside the archive**, not by extension: a DOCX named `.txt` is still
+  admitted, and content still decides.
+- **XLSX is refused by name**, stating that spreadsheet ingestion is a separate proposed capability.
+  PPTX is refused. A ZIP with no recognised OOXML part is refused and says what it found.
+- **The PDF refusal message now names `V2-PDF`.** V1 told users PDF *"arrives in V2"*, which the
+  sequencing change made untrue. Corrected, and asserted by a test — a stale message tells a user
+  something false.
+
+### 4.8 Enforcement added
+
+- Checker rule **`pdf-engine-not-approved`**: importing `@embedpdf/pdfium`, `pdfjs-dist`, `mupdf`,
+  `pdf-lib`, `@napi-rs/canvas` or `canvas` **anywhere** fails the build. Adding a PDF engine while
+  ADR-0037 is unapproved is not a judgement call, so it is not left to review. Two self-test cases
+  cover it.
+- When ADR-0037 is approved this becomes a *confinement* rule naming the PDF adapter directory,
+  rather than a prohibition.
+
+## 5. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
 
@@ -239,7 +348,7 @@ behaviour as correct.
 
 ---
 
-## 5. Known limitations
+## 6. Known limitations
 
 | # | Limitation | Consequence |
 |---|---|---|
@@ -269,9 +378,24 @@ behaviour as correct.
 | 19 | **`bounded drift repair` is unreachable in practice today** | With one version of each adapter, any drift is a defect, so `L0-ING-002` treats it as one. The mechanism matters when a second extractor version exists |
 | 20 | **The in-memory adapter's unit of work does not roll back** | Stated plainly in `passThroughUnitOfWork`. Rollback is tested against PGlite, where the transaction is real |
 
+### V2 limitations
+
+| # | Limitation | Consequence |
+|---|---|---|
+| 21 | **No PDF support.** A PDF is refused by name at the guard | V2-PDF, blocked on S2 and ADR-0037 |
+| 22 | **No rasterisation.** The `PageRasteriser` port exists and its only binding refuses | Nothing consumes a page image until V3's vision path exists |
+| 23 | **Headings are recognised only from English `Heading N` style ids.** A localised style name (`Titre 1`, `عنوان 1`) reads as a paragraph | Not guessed at. A misread heading would restructure the document silently. Style-name mapping is a configuration question, not an extraction one |
+| 24 | **Setext-equivalent and outline-numbered headings are not detected**; only paragraph styles are | Same reasoning as above |
+| 25 | **Merged table cells are not reconstructed, and table structure is not modelled.** Cells are units in row-major order | Declared in the response `limitations`. `sheet_cell`-style range anchoring belongs with spreadsheet work |
+| 26 | **Footnotes, endnotes, comments, headers, footers and embedded images are not extracted** | Each is reported in `limitations` when present, so nothing goes missing silently |
+| 27 | **ZIP64, encrypted and spanned archives are refused** | A document over the 10 MiB limit would be refused by size first anyway |
+| 28 | **`L0-ING-007` and `L0-ING-008` are still unexercised by real data** | Both concern vision and Arabic PDF reordering. Wiring them to real data is V2-PDF |
+| 29 | **A DOCX reports no pages**, so page-level provenance is untested against a paginated format | Correct for DOCX — pagination is a rendering property. First exercised in V2-PDF |
+| 30 | **The `docx` source kind is format-shaped, not role-shaped** | Follows the V1 `freetext`/`markdown` precedent. A caller who knows the business role should pass `brd`, `sop` or `policy`. The modelling tension is inherited, not introduced |
+
 ---
 
-## 6. Docker-deferred infrastructure
+## 7. Docker-deferred infrastructure
 
 Docker remains unavailable. Each item below is deferred **with a named trigger**, not dropped
 ([infra/README.md](../../infra/README.md)).
@@ -293,7 +417,7 @@ is **untested** until Docker exists.
 
 ---
 
-## 7. Not started, by instruction
+## 8. Not started, by instruction
 
 BPMN generation, DMN generation, form generation, Process IR compilation, layout, the
 requirements-analysis passes, the Specification Studio, and any graphical process designer.
@@ -304,39 +428,30 @@ excluded permanently, because it would reverse
 
 ---
 
-## 8. Next step
+## 9. Next step
 
-### V2 — boundary approved, split proposed
+### V2 (DOCX) is complete and awaiting review. V2-PDF has not started.
 
-The V2 boundary was approved on 2026-08-23 ([phase-2-plan.md](phase-2-plan.md) §3.1). Implementation
-has **not** started.
-
-Spike **S2** was run before implementation, as [roadmap.md](roadmap.md) §3 requires. It settled the
-library comparison but **could not produce the deciding number** — the exact-precision yield rate for
-Arabic — because the fixtures available were synthetic and badly produced. On 2026-08-23 the decision
-was taken to **finish S2 against representative Arabic PDFs before implementing PDF support**, rather
-than approve [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) on synthetic evidence.
-
-| Portion | State |
+| | |
 |---|---|
-| **DOCX + the A3 abstractions** | **Ready to proceed.** No new dependency, no open decision. A DOCX stores logical order by construction, so the question S2 exists to answer does not arise |
-| **PDF adapter, rasterisation, `pdf_region` anchors, `L0-ING-007`/`008`** | **BLOCKED** on S2 completion **and** ADR-0037 approval. `@embedpdf/pdfium` **is not added** |
+| **V2 — DOCX document intake** | **Complete**, awaiting review. Zero new dependencies |
+| **V2-PDF — PDF intake** | **BLOCKED.** Not started |
+| **V3** | **Provisional**, and not approved — [phase-2-plan.md](phase-2-plan.md) §3.5 |
 
-### What is needed to unblock PDF
+### V2-PDF is blocked on three things, all of them explicit
 
-**2–3 representative Arabic PDFs.** The exact characteristics, sanitisation rules, success criteria,
-measurement protocol, and a **pre-registered decision rule** are specified in
-[s2-corpus-request.md](s2-corpus-request.md).
+1. **A representative Arabic PDF corpus.** Characteristics, sanitisation rules and handling are
+   specified in [s2-corpus-request.md](s2-corpus-request.md) §2–§3.
+2. **Spike S2 completed** against that material, producing the exact-precision yield rate its own
+   success criterion 6 demands — the number that does not exist yet.
+3. **[ADR-0037](../adr/ADR-0037-binary-document-extraction.md) explicitly approved.** It remains
+   **PROPOSED — HELD**.
 
-The sanitisation rule that matters most: **sanitisation must not repair the document.** Re-exporting
-a file through Word produces a well-formed PDF and destroys the only property S2 measures. A
-re-exported sample is worse than a missing one, because it yields a confident and wrong number.
+V2-PDF **remains part of Phase 2**. The split was a sequencing decision and removed nothing from the
+approved capability: every item of the approved V2 boundary
+([phase-2-plan.md](phase-2-plan.md) §3.1) is still to be built.
 
-### Proposed sequencing change
+`@embedpdf/pdfium` **is not installed**, and the checker rule `pdf-engine-not-approved` fails the
+build if any PDF engine is imported — so the block is mechanical, not remembered.
 
-Because the material has no committed date, [phase-2-plan.md](phase-2-plan.md) §3.4 proposes
-splitting the approved scope into **V2 (DOCX)** and **V2-PDF**. Nothing is added to or removed from
-the approved scope; only the order changes. **Awaiting approval.**
-
-**Do not implement PDF support or add the PDF runtime dependency until S2 is complete and ADR-0037 is
-approved.**
+**Do not begin V2-PDF or V3 without approval.**

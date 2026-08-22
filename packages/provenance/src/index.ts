@@ -12,6 +12,7 @@ export {
   type ProvenanceAnchor,
   type Rect,
   hasTextOffsets,
+  textOffsetsOf,
   describeAnchor,
 } from './anchor.ts';
 

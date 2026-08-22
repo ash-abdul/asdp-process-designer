@@ -16,7 +16,7 @@
  */
 
 import { baseDirection, sliceByCodePoints, codePointLength, type Direction } from '@asdp/text';
-import { resolveTextAnchor } from '@asdp/provenance';
+import { resolveTextAnchor, textOffsetsOf } from '@asdp/provenance';
 import type { HighlightRange, HighlightSegment, ProvenanceAnchor } from '@asdp/schemas';
 import { describeSpan } from './units.ts';
 
@@ -92,8 +92,11 @@ export function highlightForAnchor(
   anchor: ProvenanceAnchor,
   storedText: string,
 ): HighlightRange {
-  const target = anchor.target;
-  if (target.kind !== 'text_range') {
+  // Any target carrying code-point offsets is highlightable — `text_range`, and
+  // `docx_block` / `pdf_region` when they recorded them. One predicate, shared
+  // with the resolver, so the two can never disagree about what is verifiable.
+  const offsets = textOffsetsOf(anchor.target);
+  if (offsets === null) {
     return {
       sourceId: anchor.sourceId,
       start: 0,
@@ -102,8 +105,8 @@ export function highlightForAnchor(
       segments: [],
       resolution: 'broken',
       detail:
-        `anchor kind '${target.kind}' is not a text range; it is highlighted by its own ` +
-        'adapter against a page image or a parsed model, not against source text',
+        `anchor kind '${anchor.target.kind}' carries no text offsets; it is highlighted by its ` +
+        'own adapter against a page image or a parsed model, not against source text',
     };
   }
 
@@ -111,8 +114,8 @@ export function highlightForAnchor(
   if (resolution.status === 'broken') {
     return {
       sourceId: anchor.sourceId,
-      start: target.charStart,
-      end: target.charEnd,
+      start: offsets.start,
+      end: offsets.end,
       baseDirection: anchor.direction,
       segments: [],
       resolution: 'broken',
@@ -120,8 +123,8 @@ export function highlightForAnchor(
     };
   }
 
-  const start = resolution.repairedStart ?? target.charStart;
-  const end = resolution.repairedEnd ?? target.charEnd;
+  const start = resolution.repairedStart ?? offsets.start;
+  const end = resolution.repairedEnd ?? offsets.end;
   const base = baseDirection(sliceByCodePoints(storedText, start, end));
 
   return {

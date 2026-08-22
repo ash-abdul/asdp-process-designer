@@ -94,6 +94,26 @@ const VENDOR_AI_SDKS = [
   'ollama',
 ];
 
+/**
+ * PDF engines. Permitted NOWHERE in this build.
+ *
+ * V2-PDF is blocked on spike S2 completing against representative Arabic PDFs
+ * and on ADR-0037 being approved. Until then adding a PDF engine is not a
+ * judgement call, so the checker makes it a build failure rather than a review
+ * obligation. When ADR-0037 is approved this becomes a confinement rule naming
+ * the PDF adapter directory, not a prohibition.
+ */
+const PDF_ENGINES = [
+  '@embedpdf/pdfium',
+  'pdfjs-dist',
+  'mupdf',
+  '@mupdf/mupdfjs',
+  'pdf-parse',
+  'pdf-lib',
+  '@napi-rs/canvas',
+  'canvas',
+];
+
 /** BPMN/DMN serialisation libraries. Permitted only in compiler-* and ingestion (ADR-0005). */
 const MODEL_SERIALISATION_LIBS = [
   'bpmn-moddle',
@@ -336,6 +356,19 @@ export function evaluateRules(files) {
     for (const { re, why } of ENV_BRANCH_PATTERNS) {
       if (re.test(f.text)) {
         violations.push({ rule: 'env-branching', file: f.path, detail: why });
+      }
+    }
+
+    // --- ADR-0037 (PROPOSED): no PDF engine is adopted yet --------------
+    for (const spec of imports) {
+      if (PDF_ENGINES.some((p) => spec === p || spec.startsWith(`${p}/`))) {
+        violations.push({
+          rule: 'pdf-engine-not-approved',
+          file: f.path,
+          detail:
+            `must not import '${spec}': no PDF engine is adopted. V2-PDF is blocked on spike S2 ` +
+            'completing against representative Arabic PDFs and on ADR-0037 being approved',
+        });
       }
     }
 
@@ -647,6 +680,18 @@ const SELF_TEST_CASES = [
     rule: 'controller-thinness',
     file: { path: 'apps/api/src/http/big.controller.ts', pkg: '@asdp/api', cls: 'application',
             text: Array.from({ length: 240 }, (_, i) => `// line ${i}`).join('\n') },
+  },
+  {
+    name: 'importing a PDF engine is rejected while ADR-0037 is unapproved',
+    rule: 'pdf-engine-not-approved',
+    file: { path: 'packages/ingestion/src/pdf.ts', pkg: '@asdp/ingestion', cls: 'adapter',
+            text: `import { init } from '@embedpdf/pdfium';\n` },
+  },
+  {
+    name: 'importing a native canvas is rejected too (no rasterisation in V2)',
+    rule: 'pdf-engine-not-approved',
+    file: { path: 'packages/ingestion/src/raster.ts', pkg: '@asdp/ingestion', cls: 'adapter',
+            text: `import { createCanvas } from '@napi-rs/canvas';\n` },
   },
   {
     name: 'a database driver outside the persistence layer is rejected (ADR-0035)',

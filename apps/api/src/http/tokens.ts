@@ -15,3 +15,7 @@ export const ID_GENERATOR = Symbol('ASDP_ID_GENERATOR');
 export const DEPENDENCY_PROBE = Symbol('ASDP_DEPENDENCY_PROBE');
 /** Transaction boundary (V1). A port, so controllers never see a driver. */
 export const UNIT_OF_WORK = Symbol('ASDP_UNIT_OF_WORK');
+/** The A3 TextExtractor registry (V2). Which adapters exist is a composition decision. */
+export const EXTRACTORS = Symbol('ASDP_EXTRACTORS');
+/** The A3 PageRasteriser (V2). Port only — the V2 binding refuses by name. */
+export const PAGE_RASTERISER = Symbol('ASDP_PAGE_RASTERISER');

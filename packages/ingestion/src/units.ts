@@ -42,7 +42,7 @@ export interface Line {
 }
 
 /** Code points that may be trimmed from a span without changing its meaning. */
-function isTrimmable(cp: string): boolean {
+export function isTrimmable(cp: string): boolean {
   return cp === ' ' || cp === '\t' || cp === '\r' || cp === '\n' || cp === '\u00A0' || cp === '\uFEFF';
 }
 

@@ -23,6 +23,12 @@ import type { Database } from '../persistence/db.ts';
 import { createSqlRepositories, withTransaction } from '../persistence/repositories.ts';
 import { appliedMigrations } from '../persistence/migrate.ts';
 import type { BlobStore } from '../blob/blob-store.ts';
+import {
+  defaultExtractors,
+  unavailableRasteriser,
+  type PageRasteriser,
+  type TextExtractor,
+} from '@asdp/ingestion';
 import { HealthController } from './health.controller.ts';
 import { ProjectsController } from './projects.controller.ts';
 import { SourcesController } from './sources.controller.ts';
@@ -37,6 +43,8 @@ import {
   DATABASE,
   DEPENDENCY_PROBE,
   ID_GENERATOR,
+  EXTRACTORS,
+  PAGE_RASTERISER,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
@@ -51,6 +59,9 @@ export interface AppDependencies {
   readonly repositories?: Repositories;
   /** Overrides the derived transaction boundary — used by tests. */
   readonly unitOfWork?: UnitOfWork;
+  /** Overrides the extractor registry — used by tests. */
+  readonly extractors?: readonly TextExtractor[];
+  readonly pageRasteriser?: PageRasteriser;
 }
 
 /**
@@ -116,6 +127,8 @@ export class AppModule {
         { provide: DATABASE, useValue: deps.database },
         { provide: REPOSITORIES, useValue: repositories },
         { provide: UNIT_OF_WORK, useValue: unitOfWork },
+        { provide: EXTRACTORS, useValue: deps.extractors ?? defaultExtractors() },
+        { provide: PAGE_RASTERISER, useValue: deps.pageRasteriser ?? unavailableRasteriser() },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },
         { provide: ID_GENERATOR, useValue: deps.ids },

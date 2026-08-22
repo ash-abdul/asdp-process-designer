@@ -13,10 +13,6 @@
  */
 
 import { normalise, type NormalisedText } from '@asdp/text';
-import type { AcceptedMediaType } from './guard.ts';
-import { extractFreeText } from './freetext.ts';
-import { extractMarkdown } from './markdown.ts';
-import type { ExtractionResult } from './units.ts';
 
 export {
   type AcceptedMediaType,
@@ -31,11 +27,46 @@ export {
 } from './guard.ts';
 
 export {
+  type AdmittedMediaType,
+  type MediaFamily,
+  TEXT_PLAIN,
+  TEXT_MARKDOWN,
+  DOCX,
+  XLSX,
+  PPTX,
+  PDF,
+  ADMITTED,
+  familyOf,
+} from './media-types.ts';
+
+export {
+  type ExtractionInput,
+  type ExtractionOutput,
+  type PageDescriptor,
+  type TextExtractor,
+  type PageRasteriser,
+  type RasteriseInput,
+  type RasterisedPage,
+  UnsupportedMediaTypeError,
+  RasterisationUnavailableError,
+  selectExtractor,
+  unavailableRasteriser,
+} from './ports.ts';
+
+export {
+  MissingDecodedTextError,
+  freeTextExtractor,
+  markdownExtractor,
+  defaultExtractors,
+} from './extractors.ts';
+
+export {
   type ExtractedUnit,
   type ExtractionResult,
   type Line,
   toLines,
   isBlank,
+  isTrimmable,
   trimSpan,
   describeSpan,
   mintTextAnchor,
@@ -44,6 +75,31 @@ export {
 
 export { FREETEXT_EXTRACTOR_VERSION, extractFreeText } from './freetext.ts';
 export { MARKDOWN_EXTRACTOR_VERSION, extractMarkdown } from './markdown.ts';
+
+export {
+  DOCX_MEDIA_TYPE,
+  DOCX_EXTRACTOR_VERSION,
+  DocxError,
+  extractDocx,
+  docxExtractor,
+} from './docx.ts';
+
+export {
+  type ZipEntry,
+  ZipError,
+  readZipEntries,
+  readZipEntry,
+  readZipTextEntry,
+  looksLikeZip,
+} from './zip.ts';
+
+export {
+  type XmlToken,
+  XmlError,
+  tokeniseXml,
+  decodeXmlEntities,
+  localName,
+} from './xml.ts';
 
 export { segmentRange, highlightForAnchor, highlightForRange } from './highlight.ts';
 
@@ -58,24 +114,4 @@ export { assertAnchorContractsAgree } from './contract.ts';
  */
 export function normaliseSource(rawText: string): NormalisedText {
   return normalise(rawText);
-}
-
-/**
- * Select and run the adapter for an accepted media type.
- *
- * Exhaustive over `AcceptedMediaType`, so adding a media type to the guard
- * without giving it an adapter is a compile error rather than a runtime
- * fall-through that silently produces zero units.
- */
-export function extractUnits(
-  mimeType: AcceptedMediaType,
-  sourceId: string,
-  normalisedText: string,
-): ExtractionResult {
-  switch (mimeType) {
-    case 'text/plain':
-      return extractFreeText(sourceId, normalisedText);
-    case 'text/markdown':
-      return extractMarkdown(sourceId, normalisedText);
-  }
 }
