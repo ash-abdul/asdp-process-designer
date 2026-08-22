@@ -1,8 +1,14 @@
 # ASDP Process Designer
 
-> **Phase:** 0 — Architecture & Specification
-> **Status:** documentation only. No application code, no dependencies, no framework scaffolding.
+> **Phase:** 2 — Multimodal intake & structured requirements
+> **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
+> **Phase 2 V0 complete** · **V1 approved, not started**
+> Application code and dependencies now exist: 8 packages, a compiled TypeScript build, a NestJS
+> composition layer, durable PGlite persistence. **288 tests pass, none skipped.**
+> No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-22
+> **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)
+> to understand it · [docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md) for current state
 
 The ASDP Process Designer is an AI-assisted, requirements-driven process-engineering
 application. It transforms unstructured and structured business inputs into a governed,
@@ -72,16 +78,37 @@ Start here: **[`docs/README.md`](docs/README.md)** — the full index.
 | Process IR, generation pipeline, layout, directives | [`docs/30-generation/`](docs/30-generation/) |
 | Validation, test scenarios, AI evaluation | [`docs/40-quality/`](docs/40-quality/) |
 | Governance gates, Camunda integration, handoff | [`docs/50-governance/`](docs/50-governance/) |
-| Roadmap, Phase 0 tasks, open decisions | [`docs/60-plan/`](docs/60-plan/) |
+| Roadmap, phase plans and status, open decisions | [`docs/60-plan/`](docs/60-plan/) |
 | Architecture Decision Records | [`docs/adr/`](docs/adr/) |
 
 ---
 
 ## Current state
 
-Phase 0 deliverables are complete and awaiting approval. See
-[`docs/60-plan/open-decisions.md`](docs/60-plan/open-decisions.md) for what still blocks
-implementation.
+**Phase 0** (architecture and specification) and **Phase 1** (foundations) are complete.
+**Phase 2 V0** — compiled build toolchain, NestJS composition layer, PGlite persistence,
+development BlobStore — is complete at commit `8f2a665`.
+**V1**, text intake and provenance end to end, is **approved but not started**.
 
-Nothing in this repository is executable. No package manager files, no framework
-configuration, no source code exist yet — by design.
+The application runs, persists durable state across restarts, enforces authentication and gate
+read-locks, and shuts down gracefully. **288 tests pass; none are skipped or suppressed.**
+
+**No generation capability exists.** BPMN, DMN and form generation, Process IR compilation, the
+Specification Studio, and any graphical designer are out of scope for Phase 2.
+
+```bash
+npm run verify
+```
+
+Runs build → architecture checks → checker self-test → documentation checks → tests.
+
+| For | See |
+|---|---|
+| Working on this repository | [`CLAUDE.md`](CLAUDE.md) |
+| Current implementation state | [`docs/60-plan/phase-2-status.md`](docs/60-plan/phase-2-status.md) |
+| Phase 2 plan, decisions A1–A7, acceptance criteria | [`docs/60-plan/phase-2-plan.md`](docs/60-plan/phase-2-plan.md) |
+| What still blocks implementation | [`docs/60-plan/open-decisions.md`](docs/60-plan/open-decisions.md) |
+
+Docker is unavailable in the current development environment, so the PostgreSQL container, MinIO,
+the OIDC development identity provider, ICU collation behaviour and container build verification
+remain deferred with named triggers — see [`infra/README.md`](infra/README.md).

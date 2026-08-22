@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0 complete. V1 not started.** · **Updated:** 2026-08-22
+> **Status:** **V0 complete. V1 approved, not started.** · **Version:** 1.1 · **Updated:** 2026-08-22
 > **Commit:** `8f2a665` — *Phase 2 V0: compiled toolchain, NestJS composition, PGlite persistence, BlobStore*
 > **Working tree:** clean at the time of writing
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
@@ -19,6 +19,8 @@
 | Verification | build · `check:arch` (72 files) · checker self-test (22 cases) · `check:docs` (79 files, 413 links) — all clean |
 | Durability | Verified by execution: state survives a full service restart |
 | New ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) |
+| Decisions | **A1–A7 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4 |
+| Slices V2–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3 |
 
 Packages: eight — five pure/contract (`schemas`, `text`, `provenance`, `raf`, `domain`), two
 adapters (`ai`, `eval`), one application (`api`).
@@ -116,7 +118,7 @@ behaviour as correct.
 
 | # | Limitation | Consequence |
 |---|---|---|
-| 1 | **All AI provider transports are injected stubs.** No live model call has ever been made | Shape, capabilities, routing, degradation and egress guards are tested; *quality* is not measured. Blocked on **OD-1** |
+| 1 | **All AI provider transports are injected stubs.** No live model call has ever been made | Shape, capabilities, routing, degradation and egress guards are tested; *quality* is not measured. Blocked on **OD-1**. Note this is now also **policy, not only an environment constraint**: under **A7** normal CI makes no live AI call, and live evaluation is a separately triggered capability |
 | 2 | **ICU collation is inert in PGlite.** It is accepted in DDL but has no effect on ordering — Alef variants do not sort adjacently | DDL portability holds; collation *behaviour* is unverified until a real server runs. Bilingual ordering uses application-side match forms from `@asdp/text`, which is what [ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md) already mandated |
 | 3 | **No OIDC adapter.** `ASDP_AUTH_MODE=oidc` **rejects** requests rather than trusting them | Correct failure mode, but no real identity provider is exercised |
 | 4 | **No durable job queue.** Durability is the point, so an in-memory queue would teach nothing | Deferred to the PostgreSQL container |
@@ -177,7 +179,19 @@ The first slice in which the Phase 1 provenance machinery gets a real consumer.
 | **Source viewer API** returning highlight ranges, including RTL Arabic spans |
 | **L0 validation rules** `L0-ING-001 … L0-ING-010`; an unresolvable anchor is a **hard error** |
 
-**No new decisions and no new dependencies are required.**
+**No new decisions and no new dependencies are required.** The L0 ingestion rules are already
+catalogued in [validation-rule-catalog.md](../40-quality/validation-rule-catalog.md), so V1
+implements an existing rule set rather than defining a new one.
 
 **V1 has not started.** Per [CLAUDE.md](../../CLAUDE.md) §11, it does not begin without explicit
 approval.
+
+### After V1
+
+The next capability is **V2 — binary document intake**, governed by **A3** (text extraction first,
+`TextExtractor` and `PageRasteriser` abstractions, per-page quality-driven fallback to vision,
+page-level provenance preserved either way).
+
+**V2–V7 are provisional.** Their boundaries were never durably recorded and are not treated as
+approved. Each requires approval of its **scope**, not merely a go-ahead, before it begins. See
+[phase-2-plan.md](phase-2-plan.md) §3.

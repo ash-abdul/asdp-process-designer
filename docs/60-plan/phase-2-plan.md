@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** Approved · **Version:** 1.0 · **Updated:** 2026-08-22
+> **Status:** V0–V1 approved · V2–V7 **provisional** · **Version:** 2.0 · **Updated:** 2026-08-22
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -9,50 +9,39 @@
 
 ---
 
-## 0. Provenance of this record, and what needs confirmation
+## 0. What is approved, and what is not
 
-This document was written **after** Phase 2 V0 was implemented, to make the approved plan durable
-in the repository rather than only in a planning session. Its content is drawn from the V0 commit
-record (`8f2a665`), the three Phase 2 ADRs, and the roadmap.
+This document distinguishes three kinds of statement. **Do not collapse them.**
 
-**Confirmed from the repository:**
+| Kind | Meaning | Where |
+|---|---|---|
+| **Approved** | Explicitly decided. Binding | §1, §2 (V0, V1), §4 (A1–A7), §6 |
+| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3 (V2–V7) |
+| **Consolidated** | Derived from existing approved ADRs and roadmap documents, presented as the current criteria set. Every item is traceable to its source. **Not an original approved wording** | §5 |
 
-- the V0 slice scope, and that it is complete
-- the V1 slice scope
-- approvals **A2**, **A5** and **A6** (each cited in an ADR or in the V0 commit)
-- the Docker-deferred set
-- the out-of-scope set
+The exact original V2–V7 slice boundaries and the exact original wording of the Phase 2 acceptance
+criteria were never durably recorded. They are **not** reconstructed here as historical fact. §3
+carries capability names only, and §5 is derived from sources that do exist.
 
-**Reconstructed, and requiring confirmation** — marked ⚠ throughout:
-
-- the V2–V7 slice boundaries, derived from the roadmap P1/P2 capability lists
-- the wording of the 12 acceptance criteria
-- approvals **A1**, **A3**, **A4** and **A7**
-
-Correct anything marked ⚠ rather than treating it as settled. Once confirmed, delete this section
-and the markers.
-
-### A note on phase numbering
-
-Two numbering schemes coexist and must not be confused.
+### Phase numbering
 
 | Scheme | Meaning |
 |---|---|
 | **P0 … P9** | The [roadmap](roadmap.md) phases — a capability plan |
 | **Phase 0 / 1 / 2** | Implementation phases actually executed in this repository |
 
-**Implementation Phase 2 spans roadmap P1 and P2**: multimodal intake *and* AI analysis through to
+**Implementation Phase 2 spans roadmap P1 and P2** — multimodal intake *and* AI analysis through to
 structured requirements. It is the vertical slice the roadmap §2 recommends running before
 committing later scope.
 
 ---
 
-## 1. Objective
+## 1. Objective — approved
 
 **Produce structured, human-approved requirements from real business evidence, with resolvable
 provenance on every statement, and reach gate G1.**
 
-Concretely, at the end of Phase 2 the application must be able to:
+At the end of Phase 2 the application must be able to:
 
 1. ingest real business evidence — text, documents, spreadsheets, images, legacy BPMN
 2. anchor every extracted unit to the exact region it came from, in Arabic and English
@@ -61,173 +50,255 @@ Concretely, at the end of Phase 2 the application must be able to:
 5. surface genuine gaps, ambiguities and conflicts for human resolution
 6. reach **G1** only after a human has actually resolved them
 
-Phase 2 proves the first of the two hypotheses the whole product depends on: **that AI reads real
-bilingual documents accurately, with provenance that resolves.** (The second — that generation plus
-layout yields artifacts an architect accepts without touching them — is Phase 3+.)
+Phase 2 proves the first of the two hypotheses the product depends on: **that AI reads real
+bilingual documents accurately, with provenance that resolves.** The second — that generation plus
+layout yields artifacts an architect accepts without touching them — is Phase 3+.
 
-Phase 2 delivers **no generation**. See §7.
-
----
-
-## 2. Vertical slices V0–V7
-
-Each slice is a working vertical increment: schema → persistence → command → HTTP → tests. No slice
-is a horizontal layer.
-
-### V0 — Foundation ✅ complete
-
-Durable state, a composition layer able to carry ~32 endpoints, and a blob store.
-
-- Compiled build toolchain: `tsc -b`, project references, decorators confined to `apps/api`
-  ([ADR-0036](../adr/ADR-0036-build-toolchain.md))
-- NestJS as the composition layer, conditions N1–N5
-  ([ADR-0034](../adr/ADR-0034-nestjs-application-layer.md))
-- PGlite persistence, plain parameterised SQL, forward-only migrations
-  ([ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md))
-- BlobStore port with a guarded filesystem development adapter, content-addressed keys
-- Optimistic concurrency on gate updates; readiness probe reporting applied migrations
-- Spike **S7** resolved: Prisma not viable over PGlite; PGlite is PostgreSQL 18.3, 15/15 fidelity
-
-### V1 — Text intake and provenance end to end ▶ approved next
-
-The first slice where the Phase 1 provenance machinery gets a real consumer.
-
-- **Ingest guard**: type sniffing by magic bytes, size limits, SHA-256 dedupe, immutable blob storage
-- **Free-text and Markdown adapter** producing `SourceUnit`s with verified, resolvable anchors
-- New schemas `Source`, `SourceUnit`, `EvidenceItem`, plus migration `002`
-- **Source inventory** with human-set **authority ranking** — the deterministic input to conflict
-  precedence
-- **Source viewer API** returning highlight ranges, including RTL Arabic spans
-- **L0 validation rules** `L0-ING-001 … L0-ING-010`, with an unresolvable anchor as a hard error
-
-No new decisions, no new dependencies.
-
-### V2 — Binary document intake ⚠
-
-- PDF, DOCX and spreadsheet adapters
-- Page rasterisation and page-image storage
-- Data classification applied at ingest ([ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md))
-- Arabic PDF extraction measured against spike **S2**'s findings, with the documented fallback to
-  page-image + vision — never a silent degradation
-
-### V3 — Multimodal and structural intake ⚠
-
-- Screenshots, diagram images and scanned pages, with `image_region` anchors
-- Structural import of legacy BPMN, DMN and forms as *evidence*, not as editable artifacts
-- Per-source-type confidence ceilings: diagram images capped at L2 with element-wise confirmation
-
-### V4 — Analysis passes and the evidence store ⚠
-
-- Analysis Frame v1; passes **P0–P6**
-- **Egress policy gate live** on the real analysis path ([ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md))
-- Provider routing and the **degradation ladder** recorded on every proposal
-- Evidence store: citations, quotes, checksums, anchor references
-
-### V5 — Requirement model and epistemics ⚠
-
-- Requirement model over RAF v1.1's 27 slots
-- Epistemic ladder L1–L4 enforced on every item
-- **Computed confidence** — never provider-reported
-- **Clarification queue**: blocking questions that must be answered by a human
-
-### V6 — Conflict resolution and coverage ⚠
-
-- Cross-source conflict detection
-- **Deterministic precedence** derived from the human authority ranking set in V1
-- Coverage dashboard over the RAF slots
-- Conflicts **block G1**; the human always decides
-
-### V7 — Requirements workspace and G1 ⚠
-
-- Requirements workspace: diff-centric review, L3 content marked and counted
-- **G1 gate** reachable only after genuine human resolution
-- AI-disclosure reporting; edit-rate monitoring where 100% raw acceptance is a **warning**
-- Evaluation harness run over the corpus with no network
+**Phase 2 delivers no generation.** See §7.
 
 ---
 
-## 3. Dependencies between slices
+## 2. Approved slices
 
-```
-V0 ──▶ V1 ──▶ V2 ──▶ V3
-        │              │
-        └──────▶ V4 ◀──┘        V4 needs anchored units (V1);
-                 │              image evidence needs V3
-                 ▼
-                V5 ──▶ V6 ──▶ V7
-```
+### V0 — Phase 2 foundation ✅ **COMPLETE** (`8f2a665`)
 
-| Dependency | Reason |
+Delivered:
+
+- compiled TypeScript build toolchain ([ADR-0036](../adr/ADR-0036-build-toolchain.md))
+- NestJS composition layer ([ADR-0034](../adr/ADR-0034-nestjs-application-layer.md))
+- PGlite persistence ([ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md))
+- governance migration
+- repository implementations
+- development BlobStore
+- architecture and verification updates
+
+Spike **S7** resolved: Prisma is not viable over PGlite; PGlite 0.5.6 is PostgreSQL 18.3 and passed
+15 of 15 fidelity checks. See [phase-2-status.md](phase-2-status.md) for detail.
+
+### V1 — Text intake and provenance end to end ▶ **APPROVED NEXT STEP · NOT STARTED**
+
+The first slice in which the Phase 1 provenance machinery gets a real consumer.
+
+Scope:
+
+- ingest guard
+- type sniffing by magic bytes
+- size limits
+- SHA-256 deduplication
+- immutable blob storage
+- free-text and Markdown adapters
+- `Source` / `SourceUnit` / `EvidenceItem` schemas
+- migration `002`
+- source inventory
+- human-set authority ranking
+- resolvable provenance anchors
+- source-viewer API with highlight ranges, including RTL Arabic spans
+- L0 ingestion validation rules
+
+The L0 ingestion rules already exist as specification —
+[`L0-ING-001` … `L0-ING-010`](../40-quality/validation-rule-catalog.md) — so V1 implements a
+catalogued rule set rather than defining a new one. `L0-ING-002` and `L0-ING-003` (anchor
+resolvability) are **errors** at G1; an unresolvable anchor is therefore a hard failure, not a
+warning.
+
+V1 requires **no new decisions and no new dependencies**.
+
+---
+
+## 3. Provisional capability sequence — V2–V7
+
+> **PROVISIONAL.** This is the current *planned* capability sequence, not a record of approved
+> slice boundaries. Each slice requires **refinement and explicit approval before it begins**, and
+> the boundaries may be re-cut. No implementation commitment is made here.
+
+| Slice | Capability |
 |---|---|
-| V1 → everything | Nothing can be analysed before it can be anchored |
-| V2 → V3 | Rasterisation must exist before page images can be analysed |
-| V1 → V4 | Analysis consumes `SourceUnit`s; it does not consume raw blobs |
-| V3 → V4 (partial) | Only the *image* evidence path depends on V3. Text analysis does not |
-| V4 → V5 | Requirements are built from evidence, not from sources |
-| V1 → V6 | Authority ranking is set in V1 and consumed in V6 |
-| V6 → V7 | G1 cannot be reached while conflicts are unresolved |
+| **V2** | Binary document intake |
+| **V3** | Multimodal and structural source intake |
+| **V4** | AI analysis passes |
+| **V5** | Structured requirement model and epistemic handling |
+| **V6** | Conflicts, precedence and coverage |
+| **V7** | Human requirements workspace and G1 approval |
 
-**Spike dependency:** S2 (Arabic PDF) gates V2. S5/S6 (provider abstraction, egress gate) were
+Detailed scope is deliberately **not** stated. The governing capability descriptions already exist
+and should be read from their own documents rather than paraphrased here:
+
+| For | Read |
+|---|---|
+| V2, V3 | [roadmap.md](roadmap.md) P1; [ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md); **A3** (§4) |
+| V4 | [roadmap.md](roadmap.md) P2; [ai-provider-abstraction.md](../10-architecture/ai-provider-abstraction.md); [ADR-0022](../adr/ADR-0022-capability-negotiation.md) |
+| V5 | [requirement-analysis-frame.md](../20-domain/requirement-analysis-frame.md); [epistemic-model.md](../20-domain/epistemic-model.md); [ADR-0007](../adr/ADR-0007-epistemic-ladder.md), [ADR-0011](../adr/ADR-0011-computed-confidence.md) |
+| V6 | [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md); [traceability-model.md](../20-domain/traceability-model.md) |
+| V7 | [governance-and-gates.md](../50-governance/governance-and-gates.md); [ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) |
+
+### Sequencing constraints that are structural, not planning choices
+
+These follow from the architecture rather than from a slice plan, and hold however V2–V7 are cut:
+
+```
+V0 ──▶ V1 ──▶ ( V2 ──▶ V3 )
+        │                │
+        └───────▶ V4 ◀───┘        text analysis needs V1 only;
+                  │               image evidence needs V3
+                  ▼
+                 V5 ──▶ V6 ──▶ V7
+```
+
+| Constraint | Why it is structural |
+|---|---|
+| Nothing is analysed before it can be anchored | [ADR-0008](../adr/ADR-0008-resolvable-anchors.md): provenance is a precondition, not an addition |
+| Analysis consumes `SourceUnit`s, never raw blobs | The anchor is the unit of citation |
+| Requirements are built from evidence, not from sources | [ADR-0007](../adr/ADR-0007-epistemic-ladder.md): L1 precedes L2 |
+| Conflict precedence needs the authority ranking set in V1 | [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md): precedence derives from a human ranking |
+| G1 cannot be reached while conflicts are unresolved | [governance-and-gates.md](../50-governance/governance-and-gates.md) |
+| Rasterisation must exist before page images can be analysed | **A3** (§4) |
+
+**Spike dependency:** S2 (Arabic PDF) informs V2. S5/S6 (provider abstraction, egress gate) were
 resolved in Phase 1 and gate V4.
 
 ---
 
-## 4. Acceptance criteria ⚠
+## 4. Approved decisions A1–A7
 
-Phase 2 is complete when all twelve hold. Each is a test, not a judgement.
+All seven are **approved and binding**.
 
-| # | Criterion |
-|---|---|
-| 1 | **Ingest guard**: type determined by magic bytes not extension; size limits enforced; SHA-256 dedupe; the stored blob is immutable |
-| 2 | **Every anchor resolves.** Given an anchor and the stored source, the exact region is returned and the quote checksum verifies. An unresolvable anchor is a **hard L0 error**, never a warning |
-| 3 | **Bilingual fidelity**: Arabic and English round-trip byte-exact; highlighting is correct in both reading directions, including mixed and non-BMP text |
-| 4 | **Durability**: all Phase 2 state survives a full service restart; every gate transition is transactional and rolls back cleanly |
-| 5 | **Egress**: a `RESTRICTED` payload cannot reach an external adapter, asserted **at the transport boundary**, on the real analysis path |
-| 6 | **Degradations are recorded** on every proposal and propagated into computed confidence; no degradation is silent |
-| 7 | **No requirement without provenance.** Every requirement cites evidence or is explicitly marked as inference. There is no third case |
-| 8 | **Conflicts block G1**, and precedence is deterministic, derived from the human-set authority ranking |
-| 9 | **G1 is reachable only after genuine human resolution** of blocking questions — not by dismissing the queue |
-| 10 | **Evaluation metrics** are computed offline from recordings, with no network access |
-| 11 | **Verification clean**: build, `check:arch`, checker self-test, `check:docs` and tests all pass, with **no skipped or suppressed tests** |
-| 12 | **Vision has no silent fallback.** If the configured provider lacks vision, image evidence is **refused with a named degradation**, never downgraded quietly |
+### A1 — NestJS · **Approved**
+
+Adopt NestJS as the Phase 2 application/API composition layer.
+
+- Domain and application logic remain **framework-independent**.
+- NestJS controllers **parse, delegate and map**, and **must not contain business logic**.
+
+Recorded as [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), conditions N1–N5. Enforced by
+the `nest-confinement`, `nest-domain-purity` and `controller-thinness` checker rules, and by
+`erasableSyntaxOnly` outside `apps/api`.
+
+### A2 — PGlite · **Approved**
+
+Use PGlite as the **development** persistence adapter while Docker/PostgreSQL is unavailable.
+
+- **PostgreSQL remains the production persistence target.**
+- Persistence remains **behind repository/adapter abstractions**.
+
+Recorded as [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md).
+
+### A3 — PDF rasterisation and extraction fallback · **Approved**
+
+Use:
+
+- a **`TextExtractor` abstraction**
+- a **`PageRasteriser` abstraction**
+- **text extraction first**
+- **confidence/quality-driven, per-page fallback to vision**
+
+**Do not send every PDF page to vision unnecessarily.**
+
+**Page-level provenance is preserved regardless** of whether the evidence came from direct text
+extraction or from vision.
+
+This is the operative decision for V2/V3 and is consistent with
+[ADR-0022](../adr/ADR-0022-capability-negotiation.md) (declared degradation, never silent) and with
+rules `L0-ING-007` and `L0-ING-008`, which require vision-read pages and low-confidence Arabic
+reordering to be **recorded as such**.
+
+### A4 — New dependencies · **Approved with controls**
+
+| Control |
+|---|
+| **Pin** dependency versions |
+| Maintain a **dependency manifest** |
+| **Document** significant dependencies and their purpose |
+| **Avoid unnecessary** dependencies |
+| **Preserve architecture-checker constraints** |
+| **Raise material framework/runtime dependencies for review** |
+
+A material framework or runtime dependency is not an implementation detail — it is a decision, and it
+goes through review before adoption, as NestJS did under A1.
+
+### A5 — Prisma / PGlite · **Approved as a spike-first decision**
+
+Prisma was gated on a spike proving compatibility with PGlite. **Spike S7 proved Prisma is not
+viable with PGlite** — no driver adapter exists, official or community.
+
+The **implemented** decision is therefore:
+
+- **plain parameterised SQL**
+- **explicit PostgreSQL-compatible migrations**
+- **persistence abstraction retained**
+- **PGlite development adapter**
+- **PostgreSQL production target**
+
+Recorded as [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md). Enforced by the
+`sql-injection-guard` and `persistence-confinement` checker rules.
+
+### A6 — Development BlobStore · **Approved**
+
+Use the **BlobStore port with a filesystem-backed local development adapter**.
+
+**Domain and application logic must not depend directly on filesystem paths.** MinIO remains the
+deployed target.
+
+### A7 — Live AI in CI · **Approved: NO live AI calls in normal CI**
+
+- Normal CI uses **deterministic recorded/replay fixtures**.
+- **Live AI evaluation is a separate, explicitly triggered capability**, and is **not** part of
+  normal deterministic CI pass/fail.
+
+This makes CI reproducible and provider-independent, and it means a provider outage or a model
+revision can never turn the build red. It is consistent with
+[ADR-0031](../adr/ADR-0031-corpus-as-data.md) and with the Phase 1 evaluation harness, which
+computes metrics from recordings with no network.
 
 ---
 
-## 5. Approved decisions A1–A7
+## 5. Consolidated current acceptance criteria
 
-| # | Decision | Source |
+> **Consolidated, not historical.** The original wording of the Phase 2 acceptance criteria is not
+> recoverable from repository evidence, so it is not reproduced. The set below is **derived from
+> existing approved ADRs, the validation rule catalogue, and the roadmap**, and every criterion
+> names its source. It is the current criteria set; it is not presented as an approved original.
+
+| # | Criterion | Traces to |
 |---|---|---|
-| **A1** ⚠ | **NestJS adopted** as the HTTP and application composition layer from V0, under binding conditions N1–N5. Discharges the ADR-0033 C5 route-budget tripwire | Reconstructed from [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md) |
-| **A2** | **PGlite approved as the *development* adapter.** PostgreSQL remains the production target, and switching later **must not require domain-model redesign** | Cited in [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md) §Context |
-| **A3** ⚠ | *Not recoverable from the repository.* Plausibly the compiled build toolchain ([ADR-0036](../adr/ADR-0036-build-toolchain.md)) — **confirm** | — |
-| **A4** ⚠ | *Not recoverable from the repository* — **confirm** | — |
-| **A5** | **Prisma must not become an architectural dependency** until compatibility with PGlite is proven; a materially different approach must be recorded in an ADR. Spike S7 found no PGlite driver adapter exists, so Prisma was **not adopted** | Cited in [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md) §Context |
-| **A6** | **BlobStore port with a filesystem development adapter**, guarded by explicit selection, a multi-replica refusal, and traversal-safe keys. MinIO remains the deployed target | Cited in the V0 commit `8f2a665` |
-| **A7** ⚠ | *Not recoverable from the repository* — **confirm** | — |
+| 1 | **Every anchor resolves.** Given an anchor and the stored source, the exact region is returned and the quote checksum verifies. Offsets are Unicode code-point indices over NFC, logical-order text. Unresolvable = **hard error** | [ADR-0008](../adr/ADR-0008-resolvable-anchors.md); [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) A1, A3, A4, A7; `L0-ING-002`, `L0-ING-003` |
+| 2 | **No requirement without provenance.** Every requirement cites evidence or is explicitly marked as inference. There is no third case | [ADR-0004](../adr/ADR-0004-ai-proposes-code-commits.md); [traceability-model.md](../20-domain/traceability-model.md) |
+| 3 | **Epistemic level and computed confidence** are carried on every item. Confidence is **computed**, never provider-reported. Per-source-type ceilings apply | [ADR-0007](../adr/ADR-0007-epistemic-ladder.md), [ADR-0011](../adr/ADR-0011-computed-confidence.md); [epistemic-model.md](../20-domain/epistemic-model.md) |
+| 4 | **Bilingual correctness.** Arabic and English round-trip byte-exact; highlighting correct in both reading directions including mixed and non-BMP text; ordering and comparison use **application-side match forms**, never database collation | [ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md), [ADR-0024](../adr/ADR-0024-ascii-identifiers-unicode-names.md); [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md) §5; `L0-ING-004` |
+| 5 | **Egress is enforced at the transport boundary.** A `RESTRICTED` payload cannot reach an external adapter, asserted at the boundary rather than by policy review. Every source carries a classification | [ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md); [data-governance.md](../10-architecture/data-governance.md); `L0-ING-006` |
+| 6 | **Provider neutrality holds, and degradation is declared.** No vendor concept is load-bearing; every degradation is recorded on the proposal and propagated into confidence. No silent degradation | [ADR-0020](../adr/ADR-0020-ai-provider-abstraction.md), [ADR-0022](../adr/ADR-0022-capability-negotiation.md); checker rule `vendor-sdk-leak` |
+| 7 | **Vision has no silent fallback.** Text extraction runs first with per-page, quality-driven fallback to vision; vision-read pages are recorded as such; page-level provenance survives either path. If no vision capability exists, image evidence is **refused with a named degradation** | **A3** (§4); [ADR-0022](../adr/ADR-0022-capability-negotiation.md); [open-decisions.md](open-decisions.md) OD-1; `L0-ING-007`, `L0-ING-008` |
+| 8 | **Conflict precedence is deterministic**, derived from the human-set authority ranking, and unresolved conflicts **block G1**. The human always decides | [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md); [governance-and-gates.md](../50-governance/governance-and-gates.md); `L0-ING-010` |
+| 9 | **Approval integrity.** Only humans approve; approval is a signature over `(baselineHash, validationRunId)` and is invalidated automatically when either changes | [ADR-0007](../adr/ADR-0007-epistemic-ladder.md), [ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) |
+| 10 | **L0 blocking semantics hold.** `L0-ING-001 … L0-ING-010` are implemented with their catalogued severities; an ERROR blocks G1 structurally, not by convention | [ADR-0026](../adr/ADR-0026-static-validation-first.md); [validation-architecture.md](../40-quality/validation-architecture.md); [validation-rule-catalog.md](../40-quality/validation-rule-catalog.md) |
+| 11 | **Durability and immutability.** State survives a full restart; stored evidence is immutable and content-addressed; evidence and audit tables are insert-only/append-only, enforced in SQL as well as in code | [ADR-0016](../adr/ADR-0016-immutable-content-addressed-artifacts.md), [ADR-0032](../adr/ADR-0032-retain-everything.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md) §7 |
+| 12 | **Verification is deterministic and complete.** Build, `check:arch`, checker self-test, `check:docs` and tests all pass with **no skipped or suppressed tests**, and **no live AI call occurs in normal CI** | **A7** (§4); [ADR-0036](../adr/ADR-0036-build-toolchain.md); [ADR-0031](../adr/ADR-0031-corpus-as-data.md); [phase-0-tasks.md](phase-0-tasks.md) A3/A5 |
+
+Criteria 1–4 and 10–12 are exercisable from V1. Criteria 5–9 become exercisable from V4 onward.
 
 ---
 
-## 6. Standing decisions carried into Phase 2
+## 6. Standing decisions carried into Phase 2 — approved
 
 ### 6.1 Docker-deferred items
 
-Docker is unavailable in the development environment. These are **deferred with a named trigger**,
-not dropped ([infra/README.md](../../infra/README.md),
-[ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md) §Decision 6):
+Docker is unavailable. Each item is deferred **with a named trigger**, not dropped
+([infra/README.md](../../infra/README.md);
+[ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md) §Decision 6).
 
 | Deferred | Trigger to revisit |
 |---|---|
-| PostgreSQL container; the PGlite → PostgreSQL swap | Docker availability |
+| PostgreSQL container; the PGlite → PostgreSQL adapter swap | Docker availability |
 | **ICU collation behaviour** — accepted in DDL by PGlite but **inert**; Alef variants do not sort adjacently | Docker availability |
 | `pgvector` for near-duplicate detection | Docker availability |
 | Image build, layer caching, Compose start-up ordering and health gating | Docker availability |
 | MinIO object store; bucket bootstrapping | Docker availability |
-| OIDC development identity provider; Keycloak realm import | Docker + the IdP decision (OD-1 in identity terms) |
+| OIDC development identity provider; Keycloak realm import | Docker + the IdP decision |
 | Durable job queue | PostgreSQL availability |
 
-The collation gap **independently confirms** [ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md):
-bilingual ordering and comparison use **application-side match forms** from `@asdp/text`, never
-database collation. The migrations declare no collation at all, and a test asserts it.
+The collation gap **independently confirms**
+[ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md): bilingual ordering and comparison use
+application-side match forms from `@asdp/text`. The migrations declare no collation at all, and a
+test asserts it.
 
 ### 6.2 AI provider decision
 
@@ -238,8 +309,9 @@ database collation. The migrations declare no collation at all, and a test asser
   ([ADR-0022](../adr/ADR-0022-capability-negotiation.md)).
 - **All transports are still injected stubs.** Shape, capabilities, routing, degradation and egress
   guards are tested without any network call.
-- **Live transport selection remains OD-1** — which private/enterprise endpoint will be available.
-  It blocks Phase 2 *completion measurement*, not Phase 2 implementation.
+- **Normal CI makes no live AI call** (**A7**). Live evaluation is separately triggered.
+- **Live transport selection remains OD-1.** It blocks Phase 2 *quality measurement*, not Phase 2
+  implementation.
 - Claude API is **one adapter**, never the architecture.
 
 ### 6.3 Multimodal and vision requirement
@@ -247,39 +319,43 @@ database collation. The migrations declare no collation at all, and a test asser
 Multimodal intake is a **headline capability**, not an enhancement: screenshots, diagram images,
 scanned documents and process diagrams are primary evidence types.
 
-**Vision is the one capability with no degradation path.** It cannot be synthesised from a
+**Vision is the one capability with no degradation path** — it cannot be synthesised from a
 text-only model. Therefore:
 
-- if the configured provider lacks vision, image evidence is **refused with a named degradation**
-- it is **never** silently downgraded, and never partially analysed as if complete
+- extraction is **text-first**, with per-page quality-driven fallback to vision (**A3**)
+- vision is **not** applied to every page indiscriminately (**A3**)
+- **page-level provenance is preserved on either path** (**A3**)
+- vision-read pages are **recorded as such**, and a confidence ceiling applies (`L0-ING-007`)
+- if the configured provider lacks vision, image evidence is **refused with a named degradation**,
+  never silently downgraded
 - a fully air-gapped environment with no vision-capable model is a **scope consequence** — it
-  removes a headline capability, and that must be visible, not discovered later (OD-1, and
+  removes a headline capability, and that must be visible early (OD-1;
   [open-decisions.md](open-decisions.md) §4.1)
 
-Diagram-image extraction is capped at **L2** with element-wise human confirmation, because
-confident wrong extraction from diagrams is a named high risk (R5).
+Diagram-image extraction is capped at **L2** with element-wise human confirmation, because confident
+wrong extraction from diagrams is a named high risk (R5).
 
 ### 6.4 Corpus and evaluation approach
 
 - **Corpus is data, not code** ([ADR-0031](../adr/ADR-0031-corpus-as-data.md)).
 - Phase 2 proceeds on **synthetic and clearly-labelled representative corpora**. Synthetic-only
-  metrics are labelled as such and down-weighted.
-- **Real or sanitised ASDP material is required eventually** (OD-7). Phase 2 is the point at which
-  prompt work starts compounding, so if nothing real is available by V4, **escalate** rather than
-  tune against synthetic material.
-- The evaluation harness runs **record/replay with no network**, so metrics are reproducible and
-  provider-independent.
-- Provenance metrics are treated as **defect detectors**, not scores: an anchor that does not
-  resolve is a bug, not a low number.
+  metrics are labelled and down-weighted.
+- **Real or sanitised ASDP material is required eventually** (OD-7). Phase 2 is where prompt work
+  starts compounding, so if nothing real is available by V4, **escalate** rather than tune against
+  synthetic material.
+- The evaluation harness runs **record/replay with no network**, so metrics are reproducible. This
+  is the mechanism by which **A7** holds.
+- Provenance metrics are **defect detectors**, not scores: an anchor that does not resolve is a bug,
+  not a low number.
 - Over-fitting to synthetic material is a named risk (R14); the mitigation is a full prompt-history
   re-run when real material arrives.
 
 ---
 
-## 7. Explicitly out of scope for Phase 2
+## 7. Explicitly out of scope for Phase 2 — approved
 
-These are **not started**, by instruction. Attempting any of them is scope creep against the named
-critical risk R11 — drifting toward becoming Camunda Modeler.
+**Not started, by instruction.** Attempting any of these is scope creep against named critical risk
+R11 — drifting toward becoming Camunda Modeler.
 
 | Out of scope | Belongs to |
 |---|---|
@@ -287,18 +363,21 @@ critical risk R11 — drifting toward becoming Camunda Modeler.
 | **DMN generation** | Phase 3+ (roadmap P4) |
 | **Form generation** | Phase 3+ (roadmap P4) |
 | **Process IR compilation** | Phase 3+ (roadmap P4) |
-| **A graphical process designer** | **Never** — it reverses [ADR-0001](../adr/ADR-0001-requirements-driven-product-boundary.md) and [ADR-0003](../adr/ADR-0003-no-override-editor.md) |
+| **Graphical process designer** | **Never** — it reverses [ADR-0001](../adr/ADR-0001-requirements-driven-product-boundary.md) and [ADR-0003](../adr/ADR-0003-no-override-editor.md) |
 
 Also out of scope for Phase 2: the Specification Studio and BPS editor (roadmap P3), the viewer
-framework (P5), interface registry and full L0–L6 rule packs (P6), packaging and handoff (P7),
+framework (P5), the interface registry and full L0–L6 rule packs (P6), packaging and handoff (P7),
 divergence (P8).
 
-Structural import of legacy BPMN/DMN in V3 is **intake of evidence**, not generation and not
-editing. The imported file is never rendered as an editable artifact.
+Structural import of legacy BPMN/DMN in V3 is **intake of evidence** — not generation, and not
+editing. An imported file is never rendered as an editable artifact.
 
 ---
 
 ## 8. Working rule
 
-**No slice begins without explicit approval.** When a slice completes, report and stop. See
-[CLAUDE.md](../../CLAUDE.md) §11 and the current state in [phase-2-status.md](phase-2-status.md).
+**No slice begins without explicit approval**, and for V2–V7 that includes approving the slice
+boundary itself, not only the go-ahead. When a slice completes, report and stop.
+
+See [CLAUDE.md](../../CLAUDE.md) §11 and the current state in
+[phase-2-status.md](phase-2-status.md).

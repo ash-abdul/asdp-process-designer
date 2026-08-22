@@ -183,6 +183,19 @@ Then:
 5. Add or update tests.
 6. Update the documentation in the same change.
 
+### Adding a dependency
+
+Approved decision **A4** governs this. A dependency is a decision, not an implementation detail.
+
+- **Pin** the version. No ranges.
+- Record it in the **dependency manifest**, with its **purpose**.
+- **Avoid unnecessary dependencies.** Plain code over a small surface usually wins — that is why
+  persistence is plain SQL rather than an ORM ([ADR-0035](docs/adr/ADR-0035-persistence-plain-sql-pglite.md)).
+- **Preserve the architecture-checker constraints.** A dependency that requires weakening a rule is
+  refused, not accommodated.
+- **Raise any material framework or runtime dependency for review before adopting it.** NestJS went
+  through [ADR-0034](docs/adr/ADR-0034-nestjs-application-layer.md); anything comparable does too.
+
 ---
 
 ## 9. Verification
@@ -222,6 +235,15 @@ Three Phase 1 defects were found by tests rather than by review, including one t
 
 Report results faithfully. If something fails, show the output. If a step was skipped, say so.
 
+### No live AI calls in verification
+
+Approved decision **A7**. Normal verification and CI use **deterministic recorded/replay fixtures**
+and make **no live model call**. Live AI evaluation is a **separate, explicitly triggered
+capability** and is never part of normal pass/fail.
+
+Do not add a test, a check, or a CI step that calls a model over the network. A provider outage or a
+model revision must never be able to turn the build red.
+
 ---
 
 ## 10. Documentation stays synchronised with code
@@ -236,6 +258,23 @@ Documentation and implementation are updated in the **same change**, never in a 
 `npm run check:docs` enforces link integrity and ADR-index completeness. It does not enforce that
 prose is *true* — that is your obligation.
 
+### Never present reconstructed information as authoritative
+
+If a decision cannot be recovered from repository evidence — an ADR, a commit, a specification — do
+**not** write it down as though it were approved. Reconstruction from plausible sources is not
+recovery.
+
+Instead, distinguish explicitly:
+
+| Label | Meaning |
+|---|---|
+| **Approved** | Traceable to an ADR, a commit, or an explicit decision on the record |
+| **Provisional** | The current plan. Not approved. Requires approval before it is acted on |
+| **Consolidated** | Derived from approved sources, presented as current, with each item traced to its source |
+
+An invented detail that reads as settled is worse than an acknowledged gap, because the gap invites
+a question and the invention does not. When something is unrecoverable, say so and ask.
+
 ---
 
 ## 11. Do not start a phase or slice without approval
@@ -248,9 +287,15 @@ formality; scope creep toward becoming Camunda Modeler is a named critical risk 
 - If the next step seems obvious, propose it and wait.
 - Out-of-scope work that seems necessary → raise it, do not do it.
 
+**A provisional slice needs its scope approved, not just a go-ahead.** V0 and V1 are approved with
+their scope stated. **V2–V7 are provisional** — capability names only, deliberately without detailed
+scope, because the original boundaries were never durably recorded. Before starting one of those,
+propose the boundary and get it approved; do not infer scope from the capability name.
+
 Current state and the approved next step are recorded in
 [docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md).
-The slice definitions are in [docs/60-plan/phase-2-plan.md](docs/60-plan/phase-2-plan.md).
+The slice definitions, the approved decisions **A1–A7**, and the consolidated acceptance criteria
+are in [docs/60-plan/phase-2-plan.md](docs/60-plan/phase-2-plan.md).
 
 ---
 
