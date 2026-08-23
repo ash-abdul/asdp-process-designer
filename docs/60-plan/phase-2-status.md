@@ -19,7 +19,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Commit** | **`d82d285`** — *V4a accepted; E2 resolved*. V4a was implemented at **`09dfc9b`**; V3 accepted at **`bea4041`** |
 | **Working tree** | **Clean.** V4a is committed and accepted |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None — awaiting a decision.** V4b's boundary needs approval before any work begins; **E2 is resolved** ([v4-proposal.md](v4-proposal.md) §6, [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) §4.4). V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
+| **Next approved action** | **Implement V4b-core**, per [v4b-proposal.md](v4b-proposal.md) and decisions **F1–F5**. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -40,7 +40,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | Tests | **596 pass · 0 fail · 0 skipped · 0 todo** · 119 suites |
 | `check:arch` | passed — 118 source files |
 | `check:arch:selftest` | passed — **36 cases** |
-| `check:docs` | passed — 87 files, 704 links |
+| `check:docs` | passed — 88 files, 722 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
 | Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` |
@@ -65,6 +65,12 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md); D2 plain `fetch`; D3 reuse the XML
 tokeniser; D4 ceilings as functions; D5 a checker rule barring real provider calls in tests;
 **D6 defers V3 in-scope items 4, 9 and 10 to V4** — §5.10.
+
+**V4b decisions F1–F5**, all approved 2026-08-23 — [phase-2-plan.md](phase-2-plan.md) §3.9 and
+[v4b-proposal.md](v4b-proposal.md) §2. F1 human-controlled gold set (never AI ground truth); F2
+rejections recorded but **no analyst workflow**; F3 the core/eval split so no credential blocks
+V4b-core; F4 structural chunking first, size fallback with recorded overlap, never silent; F5 the
+four-condition persistence gate.
 
 **V4 decisions E1–E5**, all approved 2026-08-23 and implemented in V4a where they apply — [phase-2-plan.md](phase-2-plan.md) §3.8 and
 [v4-proposal.md](v4-proposal.md) §2. E1 development egress ceiling (`INTERNAL` and below only, and
@@ -906,7 +912,8 @@ excluded permanently, because it would reverse
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
-| **V4b — AI evidence extraction** | **Not started.** V4a is accepted and **E2 is resolved**; what remains is approval of V4b's own boundary |
+| **V4b-core — AI evidence extraction** | **Approved 2026-08-23**, not yet implemented — [v4b-proposal.md](v4b-proposal.md), decisions **F1–F5**. Needs no credential |
+| **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
 | **V4 — AI analysis passes** | **Provisional**, not approved. It now also carries the **D6** deferrals: broker-consumer wiring, recorded fixtures, interaction persistence |

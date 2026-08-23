@@ -107,11 +107,12 @@ V1 required **no new decisions and no new dependencies**. Delivered as specified
 
 ---
 
-## 3. V2, V3 and V4 — approved boundaries
+## 3. V2, V3, V4 and V4b — approved boundaries
 
 The V2 boundary was **approved on 2026-08-23** and is recorded verbatim in §3.1. The **V3** boundary
 was approved the same day and is in §3.6; the **V4** boundary — split into **V4a** and **V4b** — was
-approved on the same day and is in §3.8.
+approved on the same day and is in §3.8. **V4b** — split into **V4b-core** and **V4b-eval** — was
+approved on the same day and is in §3.9.
 
 **§3.4 splits it** into **V2 (DOCX)** and **V2-PDF** — approved on 2026-08-23 as a sequencing
 decision only. Nothing was removed from the approved capability: every item in §3.1 is still to be
@@ -270,7 +271,7 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 | Slice | Capability |
 |---|---|
-| **V4** | AI analysis passes — **now split and no longer provisional**: **V4a approved** (§3.8), **V4b approved in shape**. V4a discharges the three items deferred from V3 by **D6** |
+| **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core approved / V4b-eval deferred** (§3.9) |
 | **V5** | Structured requirement model and epistemic handling |
 | **V6** | Conflicts, precedence and coverage |
 | **V7** | Human requirements workspace and G1 approval |
@@ -325,6 +326,51 @@ Process IR, generation, PDF, spreadsheets, and the **H1/H2** hardening candidate
 
 **ADRs required for V4a: none.** Every item implements an approved decision; the item-by-item check
 is in [v4-proposal.md](v4-proposal.md) §3, along with the four changes that *would* need one.
+
+**Dependencies added: none.** Runtime dependencies stay at seven.
+
+### 3.9 V4b — approved boundary (V4b-core) and deferred sequel (V4b-eval)
+
+**Approved 2026-08-23.** V4b is **split** on its one external dependency: **V4b-core** is approved
+and cleared to begin and needs **no credential**; **V4b-eval** is deferred until an approved
+credential and **E1**-permitted material exist. Full boundary, decisions **F1–F5**, acceptance
+criteria and the one behaviour change are in [v4b-proposal.md](v4b-proposal.md).
+
+**V4b-core must not be blocked** on credentials or corpus availability (**F3**).
+
+| V4b-core in scope |
+|---|
+| `EXTRACT_EVIDENCE` over V1/V2 textual `SourceUnit`s |
+| Post-hoc citation verification |
+| **Provenance §4.4 enforced**, including the `locateQuote` behaviour change (v4b-proposal.md §3) |
+| The ambiguous-AI-evidence **rejection path**, recorded and countable |
+| The **E3 persistence gate** — four conditions, all of them |
+| **Confidence propagation** with degradations carried in |
+| **Deterministic structural chunking** with recorded ranges, ids, overlap and declared degradation |
+| The **degradation ladder** exercised end to end |
+| **Gold-set evaluation** on a synthetic, human-labelled corpus |
+| **Precision, recall, unsupported/hallucinated-evidence rate, citation validity** |
+| Deterministic recorded/replay fixtures |
+
+**Out of scope for V4b (both halves):** RAF population / `POPULATE_FRAME` · structured business
+requirements · `RECONCILE_SOURCES` · conflict precedence · clarification-question generation · **the
+human approval workspace** · G1 · Process IR · BPMN/DMN/Form generation · PDF · spreadsheets ·
+**H1/H2**. In particular **no analyst resolution workflow** — a rejected extraction is recorded and
+measurable, never queued (**F2**).
+
+#### Approved decisions F1–F5
+
+| # | Decision | Outcome |
+|---|---|---|
+| **F1** | Gold set | **Approved: initial human-controlled gold set.** Synthetic documents permitted, but expected `EvidenceItem`s must be **explicitly labelled**, ground truth **authored or reviewed by a human**, **AI-generated expected output is never authoritative**, every expected item carries its **expected source location**, and the **corpus tier is recorded**. V4b-eval adds analyst-labelled sanitised real material. **No real-world quality claim from the synthetic tier** |
+| **F2** | Ambiguous extraction rejection | **Approved.** No analyst resolution workflow in V4b. A rejected item is **not persisted** as usable evidence; the **reason is recorded** in the AI-interaction/evaluation audit; enough is retained to **measure recall loss and diagnose**; the event is **never silently discarded**. A user-facing remediation queue belongs to the later human requirements workspace |
+| **F3** | Live provider capture | **Approved: split.** V4b-core is fully replay-capable, needs **no credential**, keeps CI deterministic, and **is acceptable without a live provider**. V4b-eval carries real capture, real fixtures and model-quality evaluation, and requires an approved credential and **E1**-permitted corpus. **V4b-core is not blocked on either** |
+| **F4** | Chunking | **Approved: structural first** — `SourceUnit`, section, heading-defined block, or other deterministic structure. **Only** when a single structural unit exceeds the provider limit may it be split by size, and then with deterministic **versioned** splitting, **controlled overlap**, recorded **source ranges**, **chunk ids** and **overlap**, declared `chunked_context`, and the degradation **propagated into confidence**. **Never chunk silently** |
+| **F5** | AI evidence persistence | **Approved.** Automatic persistence only when the output **validates**, the citation **resolves uniquely** under §4.4, the anchor **verifies independently**, and applicable rules **pass**. Persisted items stay `extractedBy: 'ai'` with `aiInteractionId` and remain **AI-derived evidence** — never automatically RAF items, approved requirements, BPS elements or process design decisions. Those transitions belong to later analysis and review gates |
+
+**ADRs required for V4b-core: none.** v4b-proposal.md §3 checks it item by item and names the one
+**behaviour change** to Phase-1 code — `locateQuote` currently selects the *first* of several matches
+when a hint is merely present, which §4.4 forbids outright.
 
 **Dependencies added: none.** Runtime dependencies stay at seven.
 

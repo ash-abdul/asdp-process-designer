@@ -99,7 +99,8 @@ for the module you are building.
 | [phase-2-plan.md](60-plan/phase-2-plan.md) | Phase 2 objective, slices V0–V7, approved V2 boundary, acceptance criteria |
 | [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — V0–V3 accepted; V2-PDF blocked |
 | [v3-proposal.md](60-plan/v3-proposal.md) | V3 design record — multimodal and structural intake. **Approved, implemented and accepted** |
-| [v4-proposal.md](60-plan/v4-proposal.md) | V4 boundary — **V4a accepted**; V4b (AI evidence extraction) approved in shape only. Decisions **E1–E5**, with **E2 resolved** |
+| [v4-proposal.md](60-plan/v4-proposal.md) | V4 boundary — **V4a accepted**; V4b split out to its own record. Decisions **E1–E5**, with **E2 resolved** |
+| [v4b-proposal.md](60-plan/v4b-proposal.md) | V4b boundary — **V4b-core approved**, **V4b-eval deferred** pending a credential and permitted material. Decisions **F1–F5** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 
