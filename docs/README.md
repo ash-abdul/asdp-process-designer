@@ -1,6 +1,6 @@
 # ASDP Process Designer — Documentation Index
 
-> **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0, V1 and V2 (DOCX) complete** · **Version:** 1.4 · **Updated:** 2026-08-23
+> **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V3 complete** · **Version:** 1.5 · **Updated:** 2026-08-23
 
 All documents are versioned specifications, not notes. Where a document and an ADR appear to
 disagree, **the ADR wins** and the document is a defect.
@@ -96,18 +96,18 @@ for the module you are building.
 | [phase-0-tasks.md](60-plan/phase-0-tasks.md) | Phase 0 breakdown and the six spikes |
 | [phase-1-status.md](60-plan/phase-1-status.md) | Phase 1 implementation status, defects found, deferrals |
 | [phase-2-plan.md](60-plan/phase-2-plan.md) | Phase 2 objective, slices V0–V7, approved V2 boundary, acceptance criteria |
-| [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — V0, V1 and V2 (DOCX) complete; V2-PDF blocked |
-| [v3-proposal.md](60-plan/v3-proposal.md) | V3 boundary proposal — multimodal and structural intake. **Provisional, awaiting approval** |
+| [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — V0–V3 complete; V2-PDF blocked |
+| [v3-proposal.md](60-plan/v3-proposal.md) | V3 design record — multimodal and structural intake. **Approved and implemented** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 
 ## ADRs
 
-[**ADR Index**](adr/README.md) — 37 decisions: ADR-0001 … ADR-0032 approved in Phase 0;
+[**ADR Index**](adr/README.md) — 38 decisions: ADR-0001 … ADR-0032 approved in Phase 0;
 [ADR-0033](adr/ADR-0033-http-framework-deferral.md) raised during Phase 1 and now **discharged** by
 [ADR-0034](adr/ADR-0034-nestjs-application-layer.md); ADR-0034, ADR-0035 and ADR-0036 added in
 Phase 2 V0; [ADR-0037](adr/ADR-0037-binary-document-extraction.md) **proposed** in V2 planning and
-**awaiting approval**.
+**awaiting approval**; [ADR-0038](adr/ADR-0038-target-versus-content-verification.md) **approved** for V3.
 
 ---
 

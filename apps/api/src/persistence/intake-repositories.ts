@@ -17,6 +17,7 @@
 import type {
   Classification,
   EvidenceItem,
+  PageImage,
   ProvenanceAnchor,
   Source,
   SourceKind,
@@ -27,6 +28,7 @@ import type {
 import {
   NotFoundError,
   type EvidenceRepository,
+  type PageImageRepository,
   type SourceRepository,
   type SourceTextRecord,
   type SourceUnitRepository,
@@ -291,6 +293,66 @@ class SqlSourceUnitRepository implements SourceUnitRepository {
 }
 
 // ---------------------------------------------------------------------------
+// Page images — INSERT-ONLY
+// ---------------------------------------------------------------------------
+
+function mapPageImage(r: Record<string, unknown>): PageImage {
+  return {
+    id: String(r.id),
+    projectId: String(r.project_id),
+    sourceId: String(r.source_id),
+    pageNo: Number(r.page_no),
+    blobRef: String(r.blob_ref),
+    sha256: String(r.sha256),
+    width: Number(r.width),
+    height: Number(r.height),
+    mediaType: String(r.media_type),
+    byteSize: Number(r.byte_size),
+    createdAt: toIso(r.created_at),
+  };
+}
+
+class SqlPageImageRepository implements PageImageRepository {
+  constructor(private readonly db: Db) {}
+
+  async insert(image: PageImage): Promise<void> {
+    try {
+      await this.db.query(
+        `insert into page_image (id, project_id, source_id, page_no, blob_ref, sha256,
+                                 width, height, media_type, byte_size, created_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          image.id, image.projectId, image.sourceId, image.pageNo, image.blobRef,
+          image.sha256, image.width, image.height, image.mediaType, image.byteSize,
+          image.createdAt,
+        ],
+      );
+    } catch (err) {
+      if (err instanceof UniqueViolationError) {
+        throw new Error(
+          `page ${image.pageNo} of source ${image.sourceId} already exists; images are insert-only`,
+        );
+      }
+      throw err;
+    }
+  }
+
+  async get(id: string): Promise<PageImage | undefined> {
+    const r = await this.db.query('select * from page_image where id = $1', [id]);
+    const row = r.rows[0];
+    return row === undefined ? undefined : mapPageImage(row);
+  }
+
+  async listForSource(sourceId: string): Promise<readonly PageImage[]> {
+    const r = await this.db.query(
+      'select * from page_image where source_id = $1 order by page_no asc',
+      [sourceId],
+    );
+    return r.rows.map(mapPageImage);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Evidence — INSERT-ONLY (D1, D8)
 // ---------------------------------------------------------------------------
 
@@ -352,10 +414,12 @@ export function createSqlIntakeRepositories(db: Db): {
   readonly sources: SourceRepository;
   readonly sourceUnits: SourceUnitRepository;
   readonly evidence: EvidenceRepository;
+  readonly pageImages: PageImageRepository;
 } {
   return {
     sources: new SqlSourceRepository(db),
     sourceUnits: new SqlSourceUnitRepository(db),
     evidence: new SqlEvidenceRepository(db),
+    pageImages: new SqlPageImageRepository(db),
   };
 }

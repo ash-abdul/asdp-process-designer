@@ -26,8 +26,10 @@ import type { BlobStore } from '../blob/blob-store.ts';
 import {
   defaultExtractors,
   unavailableRasteriser,
+  unavailableVisionExtractor,
   type PageRasteriser,
   type TextExtractor,
+  type VisionExtractor,
 } from '@asdp/ingestion';
 import { HealthController } from './health.controller.ts';
 import { ProjectsController } from './projects.controller.ts';
@@ -45,6 +47,7 @@ import {
   ID_GENERATOR,
   EXTRACTORS,
   PAGE_RASTERISER,
+  VISION_EXTRACTOR,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
@@ -62,6 +65,8 @@ export interface AppDependencies {
   /** Overrides the extractor registry — used by tests. */
   readonly extractors?: readonly TextExtractor[];
   readonly pageRasteriser?: PageRasteriser;
+  /** Overrides the vision extractor — used by tests with recorded fixtures. */
+  readonly visionExtractor?: VisionExtractor;
 }
 
 /**
@@ -129,6 +134,7 @@ export class AppModule {
         { provide: UNIT_OF_WORK, useValue: unitOfWork },
         { provide: EXTRACTORS, useValue: deps.extractors ?? defaultExtractors() },
         { provide: PAGE_RASTERISER, useValue: deps.pageRasteriser ?? unavailableRasteriser() },
+        { provide: VISION_EXTRACTOR, useValue: deps.visionExtractor ?? unavailableVisionExtractor() },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },
         { provide: ID_GENERATOR, useValue: deps.ids },

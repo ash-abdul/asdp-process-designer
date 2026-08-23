@@ -67,3 +67,11 @@ export {
   allocateD15_requirementId,
   assertD15_notReused,
 } from './invariants.ts';
+
+export {
+  type CeilingInput,
+  type EpistemicCeiling,
+  type ExtractionMethod,
+  ceilingFor,
+  permittedByCeiling,
+} from './ceilings.ts';

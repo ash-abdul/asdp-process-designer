@@ -31,13 +31,14 @@ import {
   CLOCK,
   CONFIG,
   EXTRACTORS,
+  VISION_EXTRACTOR,
   ID_GENERATOR,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
 import type { BlobStore, Clock, IdGenerator, Repositories, UnitOfWork } from '../ports.ts';
 import type { Config } from '../config.ts';
-import type { TextExtractor } from '@asdp/ingestion';
+import type { TextExtractor, VisionExtractor } from '@asdp/ingestion';
 import { maybe, parseOffset } from './request-parsing.ts';
 
 @Controller('projects/:projectId/sources/:sourceId')
@@ -51,6 +52,7 @@ export class SourceViewerController {
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(CONFIG) private readonly config: Config,
     @Inject(EXTRACTORS) private readonly extractors: readonly TextExtractor[],
+    @Inject(VISION_EXTRACTOR) private readonly vision: VisionExtractor,
   ) {}
 
   private ctx(correlationId: string): IntakeContext {
@@ -63,6 +65,7 @@ export class SourceViewerController {
       uow: this.uow,
       maxSourceBytes: this.config.maxSourceBytes,
       extractors: this.extractors,
+      vision: this.vision,
     };
   }
 

@@ -107,11 +107,14 @@ describe('ingest guard — content type by magic bytes, not by claim', () => {
     assert.equal(r.accepted, false, 'the extension must never admit a file the content refutes');
   });
 
-  test('REFUSES a PNG and an executable by signature', () => {
+  test('REFUSES an executable and an archive by signature', () => {
+    // V3 ADMITS images, so PNG/JPEG/GIF/BMP moved out of this list deliberately —
+    // see the image admission tests in v3.test.ts. What remains refused is
+    // content that is not a business source at all.
     const cases: readonly (readonly [string, Uint8Array])[] = [
-      ['png', new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
       ['exe', new Uint8Array([0x4d, 0x5a, 0x90, 0x00])],
       ['gzip', new Uint8Array([0x1f, 0x8b, 0x08, 0x00])],
+      ['elf', new Uint8Array([0x7f, 0x45, 0x4c, 0x46])],
     ];
     for (const [label, bytes] of cases) {
       const r = guardSource(bytes, GUARD_OPTIONS);

@@ -14,6 +14,7 @@ import type {
   EvidenceItem,
   Gate,
   GateCode,
+  PageImage,
   Project,
   Source,
   SourceStatus,
@@ -116,6 +117,19 @@ export interface SourceUnitRepository {
 }
 
 /**
+ * Insert-only. An image is never edited: a corrected screenshot is a NEW source,
+ * so anchors over the old bytes stay valid (provenance-and-anchoring.md §7).
+ *
+ * `get` returns the stored checksum and dimensions, which is what makes ADR-0038
+ * target verification possible — without them a bounds check is vacuous.
+ */
+export interface PageImageRepository {
+  insert(image: PageImage): Promise<void>;
+  get(id: string): Promise<PageImage | undefined>;
+  listForSource(sourceId: string): Promise<readonly PageImage[]>;
+}
+
+/**
  * Insert-only (invariants D1 and D8). There is deliberately no update and no
  * delete: an EvidenceItem is immutable and is only ever re-extracted.
  */
@@ -159,6 +173,7 @@ export interface Repositories {
   readonly sources: SourceRepository;
   readonly sourceUnits: SourceUnitRepository;
   readonly evidence: EvidenceRepository;
+  readonly pageImages: PageImageRepository;
 }
 
 /** Blob storage lives in its own module; re-exported so the port set is one import. */

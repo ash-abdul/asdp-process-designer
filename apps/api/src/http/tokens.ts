@@ -19,3 +19,5 @@ export const UNIT_OF_WORK = Symbol('ASDP_UNIT_OF_WORK');
 export const EXTRACTORS = Symbol('ASDP_EXTRACTORS');
 /** The A3 PageRasteriser (V2). Port only — the V2 binding refuses by name. */
 export const PAGE_RASTERISER = Symbol('ASDP_PAGE_RASTERISER');
+/** The A3 VisionExtractor (V3). Refuses when no provider is configured. */
+export const VISION_EXTRACTOR = Symbol('ASDP_VISION_EXTRACTOR');

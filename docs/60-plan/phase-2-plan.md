@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V1 complete · **V2 (DOCX) complete; V2-PDF blocked** · V3–V7 **provisional** · **Version:** 3.0 · **Updated:** 2026-08-23
+> **Status:** V0–V3 complete · V2-PDF blocked · V4–V7 **provisional** · **Version:** 4.1 · **Updated:** 2026-08-23
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -16,13 +16,13 @@ This document distinguishes three kinds of statement. **Do not collapse them.**
 | Kind | Meaning | Where |
 |---|---|---|
 | **Approved** | Explicitly decided. Binding | §1, §2 (V0, V1), §4 (A1–A7), §6 |
-| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3.5 (V3–V7) |
+| **Provisional** | The current planned capability sequence. **Not historically approved.** Requires approval before the slice begins, and may be refined or re-cut | §3.7 (V4–V7) |
 | **Consolidated** | Derived from existing approved ADRs and roadmap documents, presented as the current criteria set. Every item is traceable to its source. **Not an original approved wording** | §5 |
 
 The exact original V2–V7 slice boundaries and the exact original wording of the Phase 2 acceptance
 criteria were never durably recorded. They are **not** reconstructed here as historical fact.
-**V2's boundary was approved explicitly on 2026-08-23 and is recorded in §3.1.** §3.5 carries
-capability names only for V3–V7, and §5 is derived from sources that do exist.
+**The V2 and V3 boundaries were approved explicitly on 2026-08-23**, and are recorded in §3.1 and
+§3.6. §3.7 carries capability names only for V4–V7, and §5 is derived from sources that do exist.
 
 ### Phase numbering
 
@@ -107,9 +107,10 @@ V1 required **no new decisions and no new dependencies**. Delivered as specified
 
 ---
 
-## 3. V2 — approved boundary, with a proposed revision
+## 3. V2 and V3 — approved boundaries
 
-The V2 boundary was **approved on 2026-08-23** and is recorded verbatim in §3.1.
+The V2 boundary was **approved on 2026-08-23** and is recorded verbatim in §3.1. The **V3** boundary
+was approved the same day and is in §3.6.
 
 **§3.4 splits it** into **V2 (DOCX)** and **V2-PDF** — approved on 2026-08-23 as a sequencing
 decision only. Nothing was removed from the approved capability: every item in §3.1 is still to be
@@ -172,10 +173,74 @@ can rasterise without a PDF engine and nothing consumes a page image until V3.
 the slice that would parse it. That became untrue with the split, so V2 corrected it to **V2-PDF**
 and a test asserts it. A stale refusal message is a small thing that tells a user something false.
 
-### 3.5 Provisional capability sequence — V3–V7
+### 3.6 V3 — approved boundary ✅ **COMPLETE**
 
-**V3 has a detailed proposal awaiting approval:** [v3-proposal.md](v3-proposal.md). It remains
-**provisional and unimplemented**.
+**Approved 2026-08-23** as an **evidence-ingestion slice only**, and delivered the same day; see
+[phase-2-status.md](phase-2-status.md) §5. Full rationale and design in
+[v3-proposal.md](v3-proposal.md); the governing decision on provenance is
+[ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
+
+#### In scope
+
+PNG/JPEG/WEBP/GIF/BMP intake · `PageImage` schema and table · `VisionExtractor` port · Claude
+vision transport **through the AI Provider Abstraction** · `image_region` provenance ·
+image-specific confidence ceilings · screenshot and diagram-image intake · **structural BPMN/DMN/Form
+import as evidence** · `L0-ING-007` wired to real visual evidence · AI-interaction audit ·
+record/replay fixtures for **every** AI call · sanitised or synthetic images for development wherever
+an external provider is called.
+
+#### Out of scope
+
+Semantic conversion of diagrams into process structure · RAF generation · business-requirement
+interpretation · Process IR · BPMN/DMN/Form generation · **PDF support** · **spreadsheet support** ·
+editing imported structural models.
+
+#### The preserved rule
+
+> **If deterministic extraction can produce the evidence, do not invoke AI.**
+
+Not a performance preference: a deterministic reader is reproducible and its output is verifiable
+against the stored bytes, and neither is true of a model.
+
+#### Approved decisions D1–D5
+
+| # | Decision | Outcome |
+|---|---|---|
+| **D1** | Non-text provenance | **Approved and implemented.** Target verification and content verification are separate axes; visual evidence supports only the first; a distinct resolution state `content_unverified` is introduced and `resolved` is **not** reused. Recorded as [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) |
+| **D2** | Live AI transport | **Approved: plain `fetch`** behind the existing adapter boundary. The Anthropic SDK is **not** introduced for convenience. Provider-specific transport stays isolated so it can be replaced |
+| **D3** | Structural import parsing | **Approved: reuse the existing deterministic XML tokeniser.** Imported content is evidence only, under the five absolutes in [v3-proposal.md](v3-proposal.md) §5 |
+| **D4** | Confidence ceilings | **Approved as deterministic functions** of evidence kind and extraction method, **not** stored columns. Semantics verified against the epistemic ladder — see below |
+| **D5** | Live AI in tests | **Approved.** A mechanical checker rule prevents live transport in normal tests and CI. Live evaluation stays explicitly invoked and outside pass/fail |
+
+#### Epistemic semantics — confirmed, and one correction
+
+The mandated consistency check against
+[epistemic-model.md](../20-domain/epistemic-model.md),
+[provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) and
+[traceability-model.md](../20-domain/traceability-model.md) **changed the reasoning** behind the
+ceilings, though not the ceilings themselves:
+
+1. **L1 permits AI extraction.** epistemic-model.md §1 defines L1 as created by *"AI extraction or
+   deterministic parser"*. So the cap **cannot** rest on "an AI read it". The V3 proposal's original
+   reasoning was wrong on this point.
+2. **What disqualifies visual evidence from L1 is the anchor, not the author.** L1 requires a
+   *resolvable* anchor; for an image only the target resolves.
+3. **The cap was already approved in Phase 0.** provenance-and-anchoring.md §5 states that `page`
+   and `document` precision are *"permitted only for L2/L3 content, never for L1 evidence"*, and
+   `image_region` is `page` precision. V3 implements an existing rule rather than inventing one.
+4. **No L2 → L1 promotion exists or is created.** Human element-wise confirmation satisfies the
+   confirmation requirement that lets L2 proceed toward L4; it does not turn an interpretation into
+   an extracted fact.
+
+**No new L-level meanings are introduced.** The ladder stays four levels.
+
+#### Dependencies
+
+**None.** `fetch` is built into Node 22 (**D2**); the XML tokeniser already exists (**D3**); image
+dimensions are read from file headers with no library. Runtime dependencies remain at seven.
+
+### 3.7 Provisional capability sequence — V4–V7
+
 
 
 > **PROVISIONAL.** The current *planned* capability sequence, not a record of approved slice
@@ -184,13 +249,12 @@ and a test asserts it. A stale refusal message is a small thing that tells a use
 
 | Slice | Capability |
 |---|---|
-| **V3** | Multimodal and structural source intake |
 | **V4** | AI analysis passes |
 | **V5** | Structured requirement model and epistemic handling |
 | **V6** | Conflicts, precedence and coverage |
 | **V7** | Human requirements workspace and G1 approval |
 
-Detailed scope is deliberately **not** stated for V3–V7. The governing capability descriptions
+Detailed scope is deliberately **not** stated for V4–V7. The governing capability descriptions
 already exist and should be read from their own documents rather than paraphrased here:
 
 | For | Read |

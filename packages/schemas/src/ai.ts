@@ -233,5 +233,18 @@ export const AiInteraction = z.object({
   usage: AiUsage,
   proposalId: EntityId.optional(),
   humanVerdict: z.enum(['accepted', 'edited', 'rejected', 'pending']).default('pending'),
+
+  // --- added in V3 --------------------------------------------------------
+  /**
+   * Whether the provider was actually called, or a recording was replayed.
+   *
+   * **A7** requires normal CI to be entirely `replay`, so this is what makes that
+   * auditable rather than asserted. A recording replayed is still an AI
+   * interaction for disclosure purposes — the content still rests on a model's
+   * reading — so it is recorded, not skipped.
+   */
+  mode: z.enum(['live', 'replay']).default('replay'),
+  /** The source this interaction read, when it read one. */
+  sourceId: EntityId.optional(),
 });
 export type AiInteraction = z.infer<typeof AiInteraction>;

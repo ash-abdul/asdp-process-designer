@@ -76,7 +76,19 @@ export const AnchorTarget = z.discriminatedUnion('kind', [
     charStart: z.number().int().nonnegative().optional(),
     charEnd: z.number().int().nonnegative().optional(),
   }),
-  z.object({ kind: z.literal('image_region'), imageId: z.string(), rect: Rect }),
+  z.object({
+    kind: z.literal('image_region'),
+    imageId: z.string(),
+    rect: Rect,
+    /**
+     * Checksum of the image AS IT WAS when this anchor was minted.
+     *
+     * Recorded on the anchor, not read from the image row, because comparing a
+     * row's checksum against itself is vacuous — it always matches. Two
+     * independent records are what make "unchanged" checkable (ADR-0038).
+     */
+    imageSha256: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  }),
   z.object({ kind: z.literal('sheet_cell'), sheet: z.string(), a1Range: z.string() }),
   z.object({ kind: z.literal('bpmn_element'), fileId: z.string(), elementId: z.string() }),
   z.object({
@@ -330,9 +342,86 @@ export const HighlightRange = z.object({
   /** Base direction the viewer should apply to the containing block. */
   baseDirection: TextDirection,
   segments: z.array(HighlightSegment),
-  /** Resolution outcome of the anchor that produced this range. */
-  resolution: z.enum(['resolved', 'drifted', 'broken']),
+  /**
+   * Resolution outcome of the anchor that produced this range (ADR-0038).
+   *
+   * `content_unverified` means the target was verified but the quote is an AI
+   * interpretation. A viewer MUST render it differently from `resolved`, or a
+   * vision citation looks like a verified one.
+   */
+  resolution: z.enum(['resolved', 'content_unverified', 'drifted', 'broken']),
   /** Present when the anchor drifted or broke, so the viewer can say so. */
   detail: z.string().optional(),
+  /**
+   * For an `image_region` anchor: the rectangle to paint over the page image.
+   *
+   * Text highlights use `segments`; an image highlight is a rectangle over stored
+   * pixels (provenance-and-anchoring.md §6). Both shapes live on one type so a
+   * viewer handles one contract, but they are never both populated.
+   */
+  imageId: EntityId.optional(),
+  imageRect: Rect.optional(),
 });
 export type HighlightRange = z.infer<typeof HighlightRange>;
+
+// ---------------------------------------------------------------------------
+// Page images (V3) — also the landing place for V2-PDF's rasterised pages
+// ---------------------------------------------------------------------------
+
+/**
+ * A stored image belonging to a source.
+ *
+ * For an image source there is exactly one, `pageNo: 1`. For a paginated source
+ * there is one per rasterised page. Same table either way, so the vision path
+ * does not care which produced it.
+ *
+ * INSERT-ONLY. The checksum is what makes ADR-0038 target verification real:
+ * without it, "the image exists" is all that could be checked.
+ */
+export const PageImage = z.object({
+  id: EntityId,
+  projectId: EntityId,
+  sourceId: EntityId,
+  /** 1-based. An image source has a single page 1. */
+  pageNo: z.number().int().positive(),
+  /** Opaque BlobStore key. Never a filesystem path (A6). */
+  blobRef: z.string().min(1),
+  /** SHA-256 of the image bytes. Re-verified on every anchor resolution. */
+  sha256: Sha256,
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  mediaType: z.string().min(1).max(200),
+  byteSize: z.number().int().nonnegative(),
+  createdAt: z.string(),
+});
+export type PageImage = z.infer<typeof PageImage>;
+
+// ---------------------------------------------------------------------------
+// Vision extraction contracts (V3)
+// ---------------------------------------------------------------------------
+
+/**
+ * One region a vision model reported.
+ *
+ * The `rect` is deterministically verifiable against the stored image; the `text`
+ * is not (ADR-0038). Both are recorded, because a human reviewing the highlight
+ * needs to see what the model claimed to read.
+ */
+export const VisionRegion = z.object({
+  rect: Rect,
+  text: z.string().min(1),
+  language: Bcp47,
+  direction: TextDirection,
+  /** What the model thinks this region is. A hint, never a commitment. */
+  role: z.enum(['label', 'heading', 'body', 'table_cell', 'annotation', 'unknown']).default('unknown'),
+  /** Model self-rating, weighted low and never the band by itself (ADR-0011). */
+  modelSelfRating: z.number().min(0).max(1).optional(),
+});
+export type VisionRegion = z.infer<typeof VisionRegion>;
+
+export const VisionResult = z.object({
+  regions: z.array(VisionRegion).default([]),
+  /** Fidelity losses and refusals, in plain language. */
+  limitations: z.array(z.string()).default([]),
+});
+export type VisionResult = z.infer<typeof VisionResult>;

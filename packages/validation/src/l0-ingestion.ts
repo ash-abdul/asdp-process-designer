@@ -13,8 +13,8 @@
  * WARNING).
  */
 
-import { resolveTextAnchor } from '@asdp/provenance';
-import type { ProvenanceAnchor as PureAnchor } from '@asdp/provenance';
+import { isCitable, resolveAnchor, textOffsetsOf } from '@asdp/provenance';
+import type { ProvenanceAnchor as PureAnchor, StoredImage, StoredModel } from '@asdp/provenance';
 import { baseDirection } from '@asdp/text';
 import {
   CLASSIFICATION_ORDER,
@@ -174,6 +174,21 @@ export interface IntakeState {
   readonly evidence: readonly EvidenceItem[];
   /** Stored normalised text per source id, for anchor resolution. */
   readonly textBySourceId: ReadonlyMap<string, string>;
+  /**
+   * Stored images by image id, for ADR-0038 target verification.
+   *
+   * Without these, an `image_region` anchor could not be checked at all — the
+   * bounds check needs real dimensions and the tamper check needs the checksum.
+   */
+  readonly imagesById?: ReadonlyMap<string, StoredImage>;
+  /**
+   * Element ids per model-file source, for element-anchor verification.
+   *
+   * Supplied by the caller because parsing a BPMN is the ingestion adapter's job
+   * and this package cannot import it — a rule pack that could parse its inputs
+   * would be doing extraction, not validation.
+   */
+  readonly modelsBySourceId?: ReadonlyMap<string, StoredModel>;
 }
 
 /** Model-file kinds whose parse is asserted by `L0-ING-009`. */
@@ -266,8 +281,11 @@ export function evaluateL0Ingestion(state: IntakeState, runId: string): readonly
     const text = state.textBySourceId.get(source.id);
     const units = unitsBySource.get(source.id) ?? [];
     for (const unit of [...units].sort((a, b) => a.ordinal - b.ordinal)) {
-      if (unit.anchor.target.kind !== 'text_range') continue;
-      if (text === undefined) {
+      const kind = unit.anchor.target.kind;
+      const isTextAnchored = textOffsetsOf(unit.anchor.target as never) !== null;
+
+      // A text anchor with no stored text cannot be verified at all.
+      if (isTextAnchored && text === undefined) {
         findings.push(
           finding(runId, 'L0-ING-002', { sourceId: source.id, specElementId: unit.id }, {
             ordinal: unit.ordinal,
@@ -277,8 +295,28 @@ export function evaluateL0Ingestion(state: IntakeState, runId: string): readonly
         );
         continue;
       }
-      const resolution = resolveTextAnchor(unit.anchor as PureAnchor, text);
-      if (resolution.status !== 'resolved') {
+
+      const resolution = resolveAnchor(unit.anchor as PureAnchor, {
+        ...(text === undefined ? {} : { storedText: text }),
+        ...(kind === 'image_region'
+          ? (() => {
+              const image = state.imagesById?.get(unit.anchor.target.imageId);
+              return image === undefined ? {} : { storedImage: image };
+            })()
+          : {}),
+        ...(kind === 'bpmn_element' || kind === 'dmn_rule' || kind === 'form_field'
+          ? (() => {
+              const model = state.modelsBySourceId?.get(source.id);
+              return model === undefined ? {} : { storedModel: model };
+            })()
+          : {}),
+      });
+
+      // `content_unverified` is NOT a violation (ADR-0038): the target is sound,
+      // and the epistemic ceiling is what limits what such evidence may support.
+      // Treating it as a failure here would make visual evidence unusable rather
+      // than appropriately qualified.
+      if (!isCitable(resolution.status)) {
         findings.push(
           finding(runId, 'L0-ING-002', { sourceId: source.id, specElementId: unit.id }, {
             ordinal: unit.ordinal,
@@ -301,9 +339,9 @@ export function evaluateL0Ingestion(state: IntakeState, runId: string): readonly
       );
       continue;
     }
-    if (item.anchor.target.kind !== 'text_range') continue;
     const text = state.textBySourceId.get(item.sourceId);
-    if (text === undefined) {
+    const kind = item.anchor.target.kind;
+    if (textOffsetsOf(item.anchor.target as never) !== null && text === undefined) {
       findings.push(
         finding(runId, 'L0-ING-003', { sourceId: item.sourceId, requirementId: item.id }, {
           detail: 'no stored text for the cited source, so the anchor cannot be re-verified',
@@ -311,8 +349,22 @@ export function evaluateL0Ingestion(state: IntakeState, runId: string): readonly
       );
       continue;
     }
-    const resolution = resolveTextAnchor(item.anchor as PureAnchor, text);
-    if (resolution.status !== 'resolved') {
+    const resolution = resolveAnchor(item.anchor as PureAnchor, {
+      ...(text === undefined ? {} : { storedText: text }),
+      ...(kind === 'image_region'
+        ? (() => {
+            const image = state.imagesById?.get(item.anchor.target.imageId);
+            return image === undefined ? {} : { storedImage: image };
+          })()
+        : {}),
+      ...(kind === 'bpmn_element' || kind === 'dmn_rule' || kind === 'form_field'
+        ? (() => {
+            const model = state.modelsBySourceId?.get(item.sourceId);
+            return model === undefined ? {} : { storedModel: model };
+          })()
+        : {}),
+    });
+    if (!isCitable(resolution.status)) {
       findings.push(
         finding(runId, 'L0-ING-003', { sourceId: item.sourceId, requirementId: item.id }, {
           status: resolution.status,
@@ -362,11 +414,24 @@ export function evaluateL0Ingestion(state: IntakeState, runId: string): readonly
     const text = state.textBySourceId.get(source.id);
     const units = unitsBySource.get(source.id) ?? [];
 
-    if (source.byteSize > 0 && (source.textLength ?? 0) === 0) {
+    // A vision-read source has no text layer by nature, so "bytes but no text" is
+    // expected rather than suspicious. What IS worth reporting for such a source
+    // is producing no units, which the next branch covers.
+    const visionRead = source.extractionMethod === 'vision' || source.extractionMethod === 'mixed';
+    if (!visionRead && source.byteSize > 0 && (source.textLength ?? 0) === 0) {
       findings.push(
         finding(runId, 'L0-ING-005', { sourceId: source.id }, {
           filename: source.filename,
           detail: `${source.byteSize} bytes ingested but no text extracted`,
+        }),
+      );
+      continue;
+    }
+    if (visionRead && units.length === 0) {
+      findings.push(
+        finding(runId, 'L0-ING-005', { sourceId: source.id }, {
+          filename: source.filename,
+          detail: 'a vision-read source produced no regions, so nothing can cite it',
         }),
       );
       continue;
@@ -382,12 +447,21 @@ export function evaluateL0Ingestion(state: IntakeState, runId: string): readonly
       }
       continue;
     }
+    // Coverage is only meaningful for units that INDEX INTO the text. An
+    // element-anchored source (BPMN/DMN/form) or an image-anchored one addresses
+    // its content by identity, so measuring text coverage over it would report a
+    // truncation that did not happen.
     let covered = 0;
+    let offsetBearing = 0;
     for (const unit of units) {
-      if (unit.anchor.target.kind === 'text_range') {
-        covered += unit.anchor.target.charEnd - unit.anchor.target.charStart;
+      const offsets = textOffsetsOf(unit.anchor.target as never);
+      if (offsets !== null) {
+        offsetBearing++;
+        covered += offsets.end - offsets.start;
       }
     }
+    if (offsetBearing === 0) continue;
+
     const total = cpLength(text);
     if (total > 0 && covered / total < MIN_UNIT_COVERAGE) {
       findings.push(

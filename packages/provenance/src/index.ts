@@ -21,9 +21,22 @@ export { spanChecksum, sha256 } from './checksum.ts';
 export {
   type Resolution,
   type ResolutionStatus,
+  type ResolutionContext,
   resolveTextAnchor,
+  resolveAnchor,
   assertAnchorResolvable,
+  isCitable,
 } from './resolve.ts';
+
+export {
+  type ContentVerifiability,
+  type StoredImage,
+  type StoredModel,
+  type TargetVerification,
+  contentVerifiability,
+  verifyImageTarget,
+  verifyElementTarget,
+} from './verify.ts';
 
 export {
   type LocateOutcome,

@@ -17,13 +17,49 @@ export const PPTX =
   'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 export const PDF = 'application/pdf';
 
-/** Media types V2 can parse. */
-export const ADMITTED = [TEXT_PLAIN, TEXT_MARKDOWN, DOCX] as const;
+// --- V3: images and structural models -----------------------------------
+
+export const PNG = 'image/png';
+export const JPEG = 'image/jpeg';
+export const WEBP = 'image/webp';
+export const GIF = 'image/gif';
+export const BMP = 'image/bmp';
+
+export const BPMN = 'application/bpmn+xml';
+export const DMN = 'application/dmn+xml';
+export const CAMUNDA_FORM = 'application/vnd.camunda.form+json';
+
+export const IMAGE_TYPES = [PNG, JPEG, WEBP, GIF, BMP] as const;
+export const MODEL_TYPES = [BPMN, DMN, CAMUNDA_FORM] as const;
+
+/** Media types this build can parse. */
+export const ADMITTED = [
+  TEXT_PLAIN,
+  TEXT_MARKDOWN,
+  DOCX,
+  ...IMAGE_TYPES,
+  ...MODEL_TYPES,
+] as const;
 export type AdmittedMediaType = (typeof ADMITTED)[number];
 
-/** Families, because the guard's obligations differ by family. */
-export type MediaFamily = 'text' | 'ooxml';
+/**
+ * Families, because the guard's obligations differ by family.
+ *
+ *   text   decode and validate UTF-8; the adapter reads the decoded string
+ *   ooxml  a ZIP of XML parts; the adapter assembles the text
+ *   image  no text at all; dimensions are read so provenance bounds are checkable
+ *   model  decodable text, but a structured model — parsed, never interpreted
+ */
+export type MediaFamily = 'text' | 'ooxml' | 'image' | 'model';
 
 export function familyOf(mediaType: AdmittedMediaType): MediaFamily {
-  return mediaType === DOCX ? 'ooxml' : 'text';
+  if (mediaType === DOCX) return 'ooxml';
+  if ((IMAGE_TYPES as readonly string[]).includes(mediaType)) return 'image';
+  if ((MODEL_TYPES as readonly string[]).includes(mediaType)) return 'model';
+  return 'text';
+}
+
+/** True when this media type's content is read by a vision model. */
+export function requiresVision(mediaType: string): boolean {
+  return (IMAGE_TYPES as readonly string[]).includes(mediaType);
 }

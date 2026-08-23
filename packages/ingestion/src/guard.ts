@@ -19,6 +19,9 @@ import { createHash } from 'node:crypto';
 import type { SourceKind } from '@asdp/schemas';
 import { readZipEntries, ZipError } from './zip.ts';
 import {
+  BPMN,
+  CAMUNDA_FORM,
+  DMN,
   DOCX,
   PPTX,
   TEXT_MARKDOWN,
@@ -28,6 +31,7 @@ import {
   type AdmittedMediaType,
   type MediaFamily,
 } from './media-types.ts';
+import { ImageError, looksLikeImage, readImageInfo, type ImageInfo } from './image.ts';
 
 /** Content types V2 can parse. Everything else is refused by name. */
 export type AcceptedMediaType = AdmittedMediaType;
@@ -41,7 +45,8 @@ export type RefusalCode =
   | 'unsupported_text_encoding'
   | 'embedded_nul'
   | 'unreadable_archive'
-  | 'unsupported_ooxml_kind';
+  | 'unsupported_ooxml_kind'
+  | 'unreadable_image';
 
 export interface GuardOptions {
   readonly filename: string;
@@ -66,12 +71,24 @@ export interface AcceptedSource {
    * the bytes the guard admitted are the bytes that get extracted.
    */
   readonly rawText?: string;
+  /**
+   * Format and dimensions — **image family only**.
+   *
+   * Not metadata: ADR-0038 target verification checks that an `image_region`
+   * rectangle lies within these bounds, so without them visual provenance is
+   * unverifiable.
+   */
+  readonly imageInfo?: ImageInfo;
   /** How the type was decided, so the decision is auditable. */
   readonly detection: {
-    readonly binarySniff: 'clean' | 'ooxml';
+    readonly binarySniff: 'clean' | 'ooxml' | 'image';
     readonly encoding: 'utf-8' | 'utf-8-bom' | 'n/a';
-    /** `text/plain` vs `text/markdown` is the one choice the extension makes. */
-    readonly adapterSelectedBy: 'extension' | 'default' | 'archive-contents';
+    readonly adapterSelectedBy:
+      | 'extension'
+      | 'default'
+      | 'archive-contents'
+      | 'image-header'
+      | 'document-markup';
   };
 }
 
@@ -178,6 +195,34 @@ function selectTextType(filename: string): {
   return { mimeType: TEXT_PLAIN, kind: 'freetext', by: 'default' };
 }
 
+/**
+ * Recognise a structural model file from its content.
+ *
+ * Namespaces and schema markers, not extensions. A `.bpmn` file that is actually
+ * a note is read as text; a `.xml` file carrying the BPMN namespace is read as
+ * BPMN. Content decides, as everywhere else in the guard.
+ */
+function sniffModel(
+  text: string,
+): { readonly mediaType: AdmittedMediaType; readonly kind: SourceKind } | null {
+  // Look only at the head: a namespace declaration is near the root element, and
+  // scanning a whole document for a substring would be both slower and looser.
+  const head = text.slice(0, 4096);
+
+  if (/xmlns[^=]*=\s*["']http:\/\/www\.omg\.org\/spec\/BPMN\/20100524\/MODEL["']/.test(head)) {
+    return { mediaType: BPMN, kind: 'bpmn' };
+  }
+  if (/xmlns[^=]*=\s*["']https?:\/\/www\.omg\.org\/spec\/DMN\//.test(head)) {
+    return { mediaType: DMN, kind: 'dmn' };
+  }
+  // A Camunda form is JSON declaring a schema version and a component list.
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith('{') && /"(?:schemaVersion|executionPlatform)"/.test(head) && /"components"/.test(head)) {
+    return { mediaType: CAMUNDA_FORM, kind: 'form' };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // The guard
 // ---------------------------------------------------------------------------
@@ -275,6 +320,37 @@ export function guardSource(data: Uint8Array, options: GuardOptions): GuardResul
     );
   }
 
+  // --- images -------------------------------------------------------------
+  // Checked BEFORE the generic binary sniff, because PNG/JPEG/GIF/BMP are listed
+  // there as refusals from V1 and V3 turns them into admissions. A RIFF file that
+  // is not WEBP falls through and is still refused as a RIFF container.
+  if (looksLikeImage(data)) {
+    let info: ImageInfo;
+    try {
+      info = readImageInfo(data);
+    } catch (err) {
+      return refuse(
+        'unreadable_image',
+        `content looks like an image but its header could not be read: ` +
+          `${err instanceof ImageError ? err.message : String(err)}. Dimensions are required, ` +
+          'because provenance verification checks that a cited region lies within them.',
+      );
+    }
+    return {
+      accepted: true,
+      mimeType: info.mediaType,
+      family: 'image',
+      // `screenshot` is the conservative default: it carries the same L2 ceiling
+      // as `diagram_image` but without the element-wise confirmation obligation,
+      // which the caller should opt into by declaring the kind.
+      kind: 'screenshot',
+      sha256,
+      byteSize,
+      imageInfo: info,
+      detection: { binarySniff: 'image', encoding: 'n/a', adapterSelectedBy: 'image-header' },
+    };
+  }
+
   const binary = sniffBinary(data);
   if (binary !== null) {
     const when =
@@ -325,6 +401,27 @@ export function guardSource(data: Uint8Array, options: GuardOptions): GuardResul
       'embedded_nul',
       'content contains NUL bytes, which indicates binary data rather than text',
     );
+  }
+
+  // --- structural model files --------------------------------------------
+  // Sniffed from the decoded CONTENT, not the extension: a BPMN file is
+  // recognisable by its namespace, which is a far stronger signal than `.bpmn`.
+  const model = sniffModel(rawText);
+  if (model !== null) {
+    return {
+      accepted: true,
+      family: 'model',
+      mimeType: model.mediaType,
+      kind: model.kind,
+      sha256,
+      byteSize,
+      rawText,
+      detection: {
+        binarySniff: 'clean',
+        encoding: hasBom ? 'utf-8-bom' : 'utf-8',
+        adapterSelectedBy: 'document-markup',
+      },
+    };
   }
 
   const selected = selectTextType(options.filename);

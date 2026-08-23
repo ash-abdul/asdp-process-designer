@@ -35,9 +35,38 @@ export {
   XLSX,
   PPTX,
   PDF,
+  PNG,
+  JPEG,
+  WEBP,
+  GIF,
+  BMP,
+  BPMN,
+  DMN,
+  CAMUNDA_FORM,
+  IMAGE_TYPES,
+  MODEL_TYPES,
   ADMITTED,
   familyOf,
+  requiresVision,
 } from './media-types.ts';
+
+export {
+  type ImageInfo,
+  ImageError,
+  readImageInfo,
+  looksLikeImage,
+} from './image.ts';
+
+export {
+  BPMN_MEDIA_TYPE,
+  DMN_MEDIA_TYPE,
+  FORM_MEDIA_TYPE,
+  MODEL_EXTRACTOR_VERSION,
+  ModelImportError,
+  extractModel,
+  modelElementIds,
+  modelExtractor,
+} from './model-import.ts';
 
 export {
   type ExtractionInput,
@@ -59,6 +88,15 @@ export {
   markdownExtractor,
   defaultExtractors,
 } from './extractors.ts';
+
+export {
+  type VisionExtractor,
+  type VisionInput,
+  type VisionOutcome,
+  VisionUnavailableError,
+  unavailableVisionExtractor,
+  regionsToUnits,
+} from './vision.ts';
 
 export {
   type ExtractedUnit,

@@ -27,14 +27,24 @@ import {
   hashBytes,
   highlightForAnchor,
   highlightForRange,
+  regionsToUnits,
   selectExtractor,
   type ExtractionOutput,
   type RefusalCode,
   type TextExtractor,
+  type VisionExtractor,
 } from '@asdp/ingestion';
-import { assertAnchorResolvable, resolveTextAnchor, spanChecksum } from '@asdp/provenance';
+import {
+  assertAnchorResolvable,
+  isCitable,
+  resolveAnchor,
+  resolveTextAnchor,
+  spanChecksum,
+  type ResolutionContext,
+} from '@asdp/provenance';
 import { codePointLength, sliceByCodePoints, baseDirection, normalise } from '@asdp/text';
 import { evaluateL0Ingestion, summariseFindings } from '@asdp/validation';
+import { modelElementIds } from '@asdp/ingestion';
 import { classificationRank } from '@asdp/schemas';
 import type {
   Classification,
@@ -73,6 +83,15 @@ export interface IntakeContext extends CommandContext {
    * and ADR-0037.
    */
   readonly extractors: readonly TextExtractor[];
+  /**
+   * The A3 `VisionExtractor`.
+   *
+   * A separate port from `TextExtractor` because reading pixels is a different
+   * act: it calls a model, it is subject to the egress policy, and its output is
+   * an interpretation. Keeping them apart is what stops "extract text" quietly
+   * meaning "ask an AI".
+   */
+  readonly vision: VisionExtractor;
 }
 
 /** Raised when the guard refuses a source. Carries the code for the API. */
@@ -151,10 +170,86 @@ function extensionFor(mediaType: string): string {
       return 'md';
     case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       return 'docx';
+    case 'image/png':
+      return 'png';
+    case 'image/jpeg':
+      return 'jpg';
+    case 'image/webp':
+      return 'webp';
+    case 'image/gif':
+      return 'gif';
+    case 'image/bmp':
+      return 'bmp';
+    case 'application/bpmn+xml':
+      return 'bpmn';
+    case 'application/dmn+xml':
+      return 'dmn';
+    case 'application/vnd.camunda.form+json':
+      return 'form.json';
     default:
       return 'txt';
   }
 }
+
+/**
+ * Build the resolution context for a source (ADR-0038).
+ *
+ * Which stored facts are needed depends on the anchor kind, so this assembles all
+ * of them and lets the resolver pick. Loading eagerly is cheap — a source has one
+ * text and at most a handful of images — and it keeps the branching in one place
+ * rather than at every call site.
+ */
+async function resolutionContextFor(
+  ctx: IntakeContext,
+  source: Source,
+  imageId?: string,
+): Promise<ResolutionContext> {
+  const text = await ctx.repos.sources.getText(source.id);
+  const context: {
+    storedText?: string;
+    storedImage?: { imageId: string; sha256: string; width: number; height: number };
+    storedModel?: { fileId: string; sha256: string; elementIds: ReadonlySet<string> };
+    expectedSha256?: string;
+  } = {};
+
+  if (text !== undefined) context.storedText = text;
+
+  if (imageId !== undefined) {
+    const image = await ctx.repos.pageImages.get(imageId);
+    if (image !== undefined) {
+      context.storedImage = {
+        imageId: image.id,
+        sha256: image.sha256,
+        width: image.width,
+        height: image.height,
+      };
+      // Supplying the expected checksum is what turns "the image exists" into
+      // "the image is unchanged" — the difference between a weak guarantee and
+      // a real one.
+      context.expectedSha256 = image.sha256;
+    }
+  }
+
+  if (MODEL_MEDIA_TYPES.has(source.mimeType) && text !== undefined) {
+    // Element ids are RECOMPUTED from the stored text every time, so tampering
+    // with the file makes the cited element disappear and the anchor break. No
+    // `expectedSha256` is set: comparing the stored checksum against itself would
+    // always match, which is the vacuous check ADR-0038 exists to prevent.
+    context.storedModel = {
+      fileId: source.id,
+      sha256: '',
+      elementIds: modelElementIds(source.mimeType, text),
+    };
+  }
+
+  return context;
+}
+
+const MODEL_MEDIA_TYPES = new Set([
+  'application/bpmn+xml',
+  'application/dmn+xml',
+  'application/vnd.camunda.form+json',
+]);
 
 // ---------------------------------------------------------------------------
 // ingestSource
@@ -260,6 +355,15 @@ export async function ingestSource(
 
   const sourceId = ctx.ids.next('src');
 
+  // --- image family: store a PageImage, then read it by vision ------------
+  // A separate branch because an image has no text layer, so there is nothing for
+  // a TextExtractor to read. The image is stored FIRST and its checksum and
+  // dimensions recorded, because ADR-0038 target verification depends on all
+  // three — an anchor minted before the image was recorded would be unverifiable.
+  if (guarded.family === 'image') {
+    return ingestImageSource(ctx, actor, input, project, guarded, blobKey, classification, sourceId);
+  }
+
   // --- extract -----------------------------------------------------------
   // The extractor owns normalisation, because the canonical text differs by
   // format: for text it is the normalised file, for a DOCX it is assembled from
@@ -293,17 +397,37 @@ export async function ingestSource(
     }));
 
     // --- VERIFY --------------------------------------------------------
-    // Every anchor is resolved against the text that is about to be stored,
-    // before anything is written. A failure here is an adapter defect, and the
-    // response is to refuse the write rather than to store a unit whose
-    // provenance cannot be demonstrated (ADR-0008).
+    // Every anchor is verified against what is about to be stored, before
+    // anything is written. A failure here is an adapter defect, and the response
+    // is to refuse the write rather than to store a unit whose provenance cannot
+    // be demonstrated (ADR-0008).
+    //
+    // Which axis applies depends on the anchor kind (ADR-0038): a text anchor is
+    // resolved against the canonical text, an element anchor against the element
+    // ids present in the stored file. Using the text resolver for both would fail
+    // every model import, because an element anchor carries no offsets.
+    // For a model file the substantive check is ELEMENT EXISTENCE, and the
+    // element ids are recomputed from the stored text on every resolution — so
+    // tampering with the file makes the cited element vanish. No checksum
+    // comparison is passed, because comparing a stored value against itself is
+    // the vacuous check ADR-0038 exists to prevent.
+    const verificationModel = MODEL_MEDIA_TYPES.has(guarded.mimeType)
+      ? {
+          fileId: sourceId,
+          sha256: '',
+          elementIds: modelElementIds(guarded.mimeType, extraction.canonicalText),
+        }
+      : undefined;
+
     for (const unit of units) {
-      try {
-        assertAnchorResolvable(unit.anchor, extraction.canonicalText);
-      } catch (err) {
+      const resolution = resolveAnchor(unit.anchor, {
+        storedText: extraction.canonicalText,
+        ...(verificationModel === undefined ? {} : { storedModel: verificationModel }),
+      });
+      if (!isCitable(resolution.status)) {
         throw new AnchorVerificationError(
-          `unit ${unit.ordinal} of '${input.filename}' produced an unresolvable anchor: ` +
-            `${err instanceof Error ? err.message : String(err)}`,
+          `unit ${unit.ordinal} of '${input.filename}' produced an unverifiable anchor: ` +
+            `${resolution.detail ?? 'unknown reason'}`,
         );
       }
     }
@@ -387,6 +511,199 @@ export async function ingestSource(
         detection: guarded.detection,
         declaredMimeType: input.declaredMimeType,
         parseError,
+      },
+    });
+
+    return { source, units, deduplicated: false };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Image ingest
+// ---------------------------------------------------------------------------
+
+/**
+ * Ingest an image source: store the page image, then read it by vision.
+ *
+ * Order matters. The `PageImage` — with its checksum and dimensions — is written
+ * before any anchor is minted, because ADR-0038 target verification checks a
+ * cited rectangle against those dimensions. Minting first would produce anchors
+ * nothing could verify.
+ *
+ * A vision refusal is **not** a failure of the source. The image is stored, the
+ * source is `parsed`, and it simply has no units yet — which is honest: the bytes
+ * are held and readable, and the reading was declined. Recording it as
+ * `parse_failed` would say the document was unreadable, which is a different and
+ * false claim.
+ */
+async function ingestImageSource(
+  ctx: IntakeContext,
+  actor: Actor,
+  input: IngestSourceInput,
+  project: { settings: { classificationDefault: Classification; classificationCeiling: Classification } },
+  guarded: Extract<ReturnType<typeof guardSource>, { accepted: true }>,
+  blobKey: string,
+  classification: Classification,
+  sourceId: string,
+): Promise<IngestSourceResult> {
+  const info = guarded.imageInfo;
+  if (info === undefined) {
+    throw new AnchorVerificationError(
+      'the guard admitted an image without dimensions; provenance bounds would be unverifiable',
+    );
+  }
+  void project;
+
+  const imageId = ctx.ids.next('img');
+  const kind = input.kind ?? guarded.kind;
+
+  const pageImage = {
+    id: imageId,
+    projectId: input.projectId,
+    sourceId,
+    pageNo: 1,
+    blobRef: blobKey,
+    sha256: guarded.sha256,
+    width: info.width,
+    height: info.height,
+    mediaType: info.mediaType,
+    byteSize: guarded.byteSize,
+    createdAt: ctx.clock.nowIso(),
+  };
+
+  // --- vision -----------------------------------------------------------
+  const outcome = await ctx.vision.extract({
+    sourceId,
+    imageId,
+    data: input.data,
+    mediaType: info.mediaType,
+    width: info.width,
+    height: info.height,
+    sha256: guarded.sha256,
+    kind,
+  });
+
+  const limitations: string[] = [];
+  let units: SourceUnit[] = [];
+  let interactionId: string | undefined;
+
+  if (outcome.kind === 'refused') {
+    limitations.push(`vision extraction was refused: ${outcome.reason}`);
+    for (const degradation of outcome.degradations) {
+      limitations.push(`degradation recorded: ${degradation}`);
+    }
+  } else {
+    interactionId = outcome.interactionId;
+    const converted = regionsToUnits(
+      {
+        sourceId, imageId, data: input.data, mediaType: info.mediaType,
+        width: info.width, height: info.height, sha256: guarded.sha256, kind,
+      },
+      outcome.result,
+      `vision@1`,
+    );
+    units = converted.units.map((unit) => ({
+      id: ctx.ids.next('su'),
+      sourceId,
+      projectId: input.projectId,
+      ordinal: unit.ordinal,
+      type: unit.type,
+      text: unit.text,
+      language: unit.language,
+      direction: unit.direction,
+      anchor: unit.anchor,
+    }));
+    if (converted.dropped > 0) {
+      // Dropped, not clamped: a clamped rectangle is a different claim from the
+      // one the model made, and correcting it silently would hide the fact that
+      // the model reported a region that does not exist.
+      limitations.push(
+        `${converted.dropped} reported region(s) were dropped for lying outside the image bounds ` +
+          'or carrying no text; they were not clamped, because a clamped rectangle is a different claim',
+      );
+    }
+    limitations.push(...outcome.result.limitations);
+  }
+
+  // --- VERIFY, against the stored image ---------------------------------
+  const storedImage = {
+    imageId,
+    sha256: pageImage.sha256,
+    width: pageImage.width,
+    height: pageImage.height,
+  };
+  for (const unit of units) {
+    const resolution = resolveAnchor(unit.anchor, { storedImage, expectedSha256: pageImage.sha256 });
+    if (!isCitable(resolution.status)) {
+      throw new AnchorVerificationError(
+        `region ${unit.ordinal} of '${input.filename}' produced an unverifiable anchor: ` +
+          `${resolution.detail ?? 'unknown reason'}`,
+      );
+    }
+  }
+
+  const source: Source = {
+    id: sourceId,
+    projectId: input.projectId,
+    filename: input.filename,
+    mimeType: info.mediaType,
+    byteSize: guarded.byteSize,
+    sha256: guarded.sha256,
+    blobRef: blobKey,
+    uploadedBy: actor.subject,
+    uploadedAt: ctx.clock.nowIso(),
+    kind,
+    authorityRank: input.authorityRank ?? 0,
+    ...(input.effectiveDate === undefined ? {} : { effectiveDate: input.effectiveDate }),
+    ...(input.supersedesSourceId === undefined ? {} : { supersedesSourceId: input.supersedesSourceId }),
+    // An image has no text, so there is no language to detect from content. The
+    // vision result's regions carry their own language tags; the source-level
+    // value stays undetermined rather than guessed.
+    primaryLanguage: 'und',
+    direction: 'neutral',
+    languageRuns: [],
+    classification,
+    status: 'parsed',
+    textLength: 0,
+    extractorVersion: 'vision@1',
+    // `vision`, and the page count is 1 — so `L0-ING-007` can verify that a
+    // vision read was RECORDED as such rather than passing as a text read.
+    extractionMethod: 'vision',
+    visionPageCount: 1,
+  };
+
+  return ctx.uow.run(async (repos) => {
+    // An image source stores an empty canonical text: there is no text layer, and
+    // the vision transcript is deliberately NOT stored as canonical truth
+    // (ADR-0038) — resolving AI output against AI output would be vacuous.
+    await repos.sources.insert(source, {
+      sourceId,
+      text: '',
+      sha256: hashBytes(new TextEncoder().encode('')),
+      codePointLength: 0,
+    });
+    await repos.pageImages.insert(pageImage);
+    if (units.length > 0) await repos.sourceUnits.insertAll(units);
+
+    await audit(repos, ctx, actor, {
+      projectId: input.projectId,
+      action: outcome.kind === 'refused' ? 'source.visionRefused' : 'source.ingested',
+      entityType: 'Source',
+      entityId: sourceId,
+      after: {
+        filename: source.filename,
+        mimeType: source.mimeType,
+        kind: source.kind,
+        sha256: source.sha256,
+        classification: source.classification,
+        imageId,
+        width: info.width,
+        height: info.height,
+        extractionMethod: 'vision',
+        unitCount: units.length,
+        aiInteractionId: interactionId,
+        limitations,
+        detection: guarded.detection,
       },
     });
 
@@ -533,11 +850,20 @@ export async function recordEvidence(
     anchor = mintRangeAnchor(source, text, input.charStart, input.charEnd);
   }
 
-  // VERIFY before persisting. A broken anchor is refused; a drifted one is too,
-  // because within one extractor version drift means the stored text and the
-  // anchor disagree, which is a defect rather than version skew.
-  const resolution = resolveTextAnchor(anchor, text);
-  if (resolution.status !== 'resolved') {
+  // VERIFY before persisting (ADR-0038).
+  //
+  // `broken` and `drifted` are both refused: within one extractor version, drift
+  // means the stored text and the anchor disagree, which is a defect rather than
+  // version skew. `content_unverified` is ACCEPTED — the target is sound, and the
+  // epistemic ceiling, not the anchor, is what limits what such evidence may
+  // support.
+  const verificationContext = await resolutionContextFor(
+    ctx,
+    source,
+    anchor.target.kind === 'image_region' ? anchor.target.imageId : undefined,
+  );
+  const resolution = resolveAnchor(anchor, verificationContext);
+  if (!isCitable(resolution.status)) {
     throw new AnchorVerificationError(
       `refusing to store evidence with a ${resolution.status} anchor: ` +
         `${resolution.detail ?? 'unknown reason'}`,
@@ -716,7 +1042,7 @@ export async function readHighlights(
         `evidence ${query.evidenceId} does not cite source ${source.id}`,
       );
     }
-    return [highlightForAnchor(item.anchor, text)];
+    return [await highlightFor(ctx, source, item.anchor, text)];
   }
 
   if (query.unitId !== undefined) {
@@ -724,7 +1050,7 @@ export async function readHighlights(
     if (unit === undefined) {
       throw new ValidationError(`unknown unit ${query.unitId} in source ${source.id}`);
     }
-    return [highlightForAnchor(unit.anchor, text)];
+    return [await highlightFor(ctx, source, unit.anchor, text)];
   }
 
   if (query.charStart !== undefined && query.charEnd !== undefined) {
@@ -733,7 +1059,61 @@ export async function readHighlights(
 
   // No selector: every unit, which is what the viewer needs to paint a document
   // outline over the text in one request.
-  return units.map((unit) => highlightForAnchor(unit.anchor, text));
+  return Promise.all(units.map((unit) => highlightFor(ctx, source, unit.anchor, text)));
+}
+
+/**
+ * Highlight one anchor, choosing the path by anchor kind (ADR-0038).
+ *
+ * A text anchor paints direction-homogeneous segments. An `image_region` anchor
+ * paints a **rectangle over stored pixels** and comes back
+ * `content_unverified` — never `resolved` — so the viewer can render a vision
+ * citation differently from a verified one.
+ */
+async function highlightFor(
+  ctx: IntakeContext,
+  source: Source,
+  anchor: ProvenanceAnchor,
+  text: string,
+): Promise<HighlightRange> {
+  if (anchor.target.kind === 'image_region') {
+    const imageId = anchor.target.imageId;
+    const context = await resolutionContextFor(ctx, source, imageId);
+    const resolution = resolveAnchor(anchor, context);
+    return {
+      sourceId: source.id,
+      // An image highlight has no text extent. Zeroes rather than fabricated
+      // offsets: a viewer that reads them gets nothing, not something wrong.
+      start: 0,
+      end: 0,
+      baseDirection: anchor.direction,
+      segments: [],
+      resolution: resolution.status,
+      ...(resolution.detail === undefined ? {} : { detail: resolution.detail }),
+      imageId,
+      imageRect: anchor.target.rect,
+    };
+  }
+
+  if (
+    anchor.target.kind === 'bpmn_element' ||
+    anchor.target.kind === 'dmn_rule' ||
+    anchor.target.kind === 'form_field'
+  ) {
+    const context = await resolutionContextFor(ctx, source);
+    const resolution = resolveAnchor(anchor, context);
+    return {
+      sourceId: source.id,
+      start: 0,
+      end: 0,
+      baseDirection: anchor.direction,
+      segments: [],
+      resolution: resolution.status,
+      ...(resolution.detail === undefined ? {} : { detail: resolution.detail }),
+    };
+  }
+
+  return highlightForAnchor(anchor, text);
 }
 
 // ---------------------------------------------------------------------------
@@ -769,13 +1149,44 @@ export async function validateIntake(
   const evidence = await ctx.repos.evidence.listForProject(projectId);
 
   const textBySourceId = new Map<string, string>();
+  const imagesById = new Map<
+    string,
+    { imageId: string; sha256: string; width: number; height: number }
+  >();
+  const modelsBySourceId = new Map<
+    string,
+    { fileId: string; sha256: string; elementIds: ReadonlySet<string> }
+  >();
   for (const source of sources) {
     const text = await ctx.repos.sources.getText(source.id);
     if (text !== undefined) textBySourceId.set(source.id, text);
+    // Images are loaded so ADR-0038 target verification can run inside the rule
+    // pack: without the checksum and dimensions, an image anchor could not be
+    // checked at all and `L0-ING-002` would silently skip it.
+    // Element ids are recomputed from the stored text, so a tampered model file
+    // makes its cited elements vanish and the anchors break.
+    if (MODEL_MEDIA_TYPES.has(source.mimeType) && text !== undefined) {
+      modelsBySourceId.set(source.id, {
+        fileId: source.id,
+        sha256: '',
+        elementIds: modelElementIds(source.mimeType, text),
+      });
+    }
+    for (const image of await ctx.repos.pageImages.listForSource(source.id)) {
+      imagesById.set(image.id, {
+        imageId: image.id,
+        sha256: image.sha256,
+        width: image.width,
+        height: image.height,
+      });
+    }
   }
 
   const runId = ctx.ids.next('vr');
-  const findings = evaluateL0Ingestion({ sources, units, evidence, textBySourceId }, runId);
+  const findings = evaluateL0Ingestion(
+    { sources, units, evidence, textBySourceId, imagesById, modelsBySourceId },
+    runId,
+  );
 
   return { runId, findings, summary: summariseFindings(findings, 'G1') };
 }

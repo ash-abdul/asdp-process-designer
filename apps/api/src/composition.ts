@@ -20,8 +20,10 @@ import type { BlobStore } from './blob/blob-store.ts';
 import {
   defaultExtractors,
   unavailableRasteriser,
+  unavailableVisionExtractor,
   type PageRasteriser,
   type TextExtractor,
+  type VisionExtractor,
 } from '@asdp/ingestion';
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
 import { counterIdGenerator, createMemoryRepositories, systemClock } from './repo-memory.ts';
@@ -35,6 +37,14 @@ export interface Adapters {
   readonly extractors: readonly TextExtractor[];
   /** A3 PageRasteriser. Refuses in V2 — see `unavailableRasteriser`. */
   readonly pageRasteriser: PageRasteriser;
+  /**
+   * A3 VisionExtractor.
+   *
+   * The default REFUSES, because no provider is configured by default. Refusing
+   * is not a degraded mode — it is the correct answer when nothing is wired, and
+   * it is distinguishable from "the image contained no text".
+   */
+  readonly visionExtractor: VisionExtractor;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   close(): Promise<void>;
@@ -88,6 +98,7 @@ export async function createAdapters(
       unitOfWork: passThroughUnitOfWork(repositories),
       extractors: defaultExtractors(),
       pageRasteriser: unavailableRasteriser(),
+      visionExtractor: unavailableVisionExtractor(),
       clock,
       ids,
       close: async () => undefined,
@@ -114,6 +125,7 @@ export async function createAdapters(
     unitOfWork: { run: (fn) => withTransaction(database, fn) },
     extractors: defaultExtractors(),
     pageRasteriser: unavailableRasteriser(),
+    visionExtractor: unavailableVisionExtractor(),
     clock,
     ids,
     close: () => database.close(),

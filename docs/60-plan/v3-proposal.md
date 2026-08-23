@@ -1,6 +1,8 @@
 # V3 — Multimodal and Structural Source Intake · PROPOSAL
 
-> **Status:** **PROVISIONAL — awaiting approval. Nothing here is implemented.**
+> **Status:** **APPROVED 2026-08-23 and IMPLEMENTED.** Retained as the design record; the delivered
+> state is in [phase-2-status.md](phase-2-status.md) §5, and D1 became
+> [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
 > **Version:** 1.0 · **Updated:** 2026-08-23
 > **Supersedes:** the one-line V3 entry in [phase-2-plan.md](phase-2-plan.md) §3.5
 > **Related:** **A3**, **A7**, **A8**, [ADR-0007](../adr/ADR-0007-epistemic-ladder.md),
@@ -331,4 +333,5 @@ V2-PDF ⛔ ────────────┴──▶ scanned-PDF vision  
   population is V4/V5, and the boundary matters: V3 answers *"what does this image say?"*, not
   *"what does the business require?"*
 
-**Do not begin V3 until this boundary is approved.**
+**V3 was approved and implemented. The `content_unverified` state named in §3.2 was implemented
+under that name; the ADR records why the limitation, not the reassurance, is what the name states.**

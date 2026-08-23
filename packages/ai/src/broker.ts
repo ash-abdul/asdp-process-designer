@@ -45,6 +45,16 @@ export interface BrokerInvocation {
   readonly project: ProjectEgressSettings;
   readonly languageHints?: readonly string[];
   readonly outputSchema?: unknown;
+  /**
+   * Whether the transport will actually call a provider, or replay a recording.
+   *
+   * Supplied by the caller because the broker cannot observe it. Defaults to
+   * `replay`, which is the safe default: over-reporting a live call is harmless,
+   * under-reporting one hides egress (**A7**).
+   */
+  readonly mode?: 'live' | 'replay';
+  /** The source being read, when one is being read. */
+  readonly sourceId?: string;
 }
 
 export type BrokerOutcome =
@@ -150,6 +160,12 @@ export async function invoke(deps: BrokerDeps, call: BrokerInvocation): Promise<
     promptVersion: call.promptVersion,
     providerId: provider.id,
     modelId: record.selectedModel,
+    // The broker does not know whether the transport was live or a replay — the
+    // adapter does. It reports what the invocation told it, defaulting to
+    // `replay` because that is the safe assumption: over-reporting a live call
+    // is harmless, under-reporting one hides egress (A7).
+    mode: call.mode ?? 'replay',
+    ...(call.sourceId === undefined ? {} : { sourceId: call.sourceId }),
     deploymentClass: provider.descriptor().deploymentClass,
     capabilityTier: record.capabilityTier,
     routing: {

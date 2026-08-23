@@ -13,6 +13,7 @@ import type {
   EvidenceItem,
   Gate,
   GateCode,
+  PageImage,
   Project,
   Source,
   SourceStatus,
@@ -29,6 +30,7 @@ import {
   type EvidenceRepository,
   type GateRepository,
   type HealthReport,
+  type PageImageRepository,
   type IdGenerator,
   type ProjectRepository,
   type Repositories,
@@ -238,6 +240,33 @@ class MemorySourceUnitRepository implements SourceUnitRepository {
   }
 }
 
+/** Insert-only. A corrected image is a NEW source, never an edit. */
+class MemoryPageImageRepository implements PageImageRepository {
+  private readonly byId = new Map<string, PageImage>();
+
+  async insert(image: PageImage): Promise<void> {
+    if (this.byId.has(image.id)) {
+      throw new Error(`page image ${image.id} already exists; images are insert-only`);
+    }
+    for (const held of this.byId.values()) {
+      if (held.sourceId === image.sourceId && held.pageNo === image.pageNo) {
+        throw new Error(
+          `page ${image.pageNo} of source ${image.sourceId} already exists; images are insert-only`,
+        );
+      }
+    }
+    this.byId.set(image.id, image);
+  }
+  async get(id: string): Promise<PageImage | undefined> {
+    return this.byId.get(id);
+  }
+  async listForSource(sourceId: string): Promise<readonly PageImage[]> {
+    return [...this.byId.values()]
+      .filter((i) => i.sourceId === sourceId)
+      .sort((a, b) => a.pageNo - b.pageNo);
+  }
+}
+
 /** Insert-only (invariants D1, D8). No update, no delete. */
 class MemoryEvidenceRepository implements EvidenceRepository {
   private readonly byId = new Map<string, EvidenceItem>();
@@ -280,6 +309,7 @@ export function createMemoryRepositories(): Repositories {
     sources: new MemorySourceRepository(),
     sourceUnits: new MemorySourceUnitRepository(),
     evidence: new MemoryEvidenceRepository(),
+    pageImages: new MemoryPageImageRepository(),
   };
 }
 

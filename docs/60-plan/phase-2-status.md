@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0, V1, V2 (DOCX) complete and accepted. V2-PDF blocked on spike S2. V3 proposed, not approved.** · **Version:** 3.1 · **Updated:** 2026-08-23
+> **Status:** **V0, V1, V2 (DOCX) accepted. V3 complete, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.0 · **Updated:** 2026-08-23
 > **Working tree:** clean at the time of writing
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -11,15 +11,15 @@
 
 | | |
 |---|---|
-| Slices completed | **V0 — Foundation** · **V1 — Text intake and provenance** · **V2 — DOCX document intake** |
-| Next slice | **V3 — multimodal and structural intake.** A detailed boundary is **proposed, awaiting approval** — [v3-proposal.md](v3-proposal.md). **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **480 pass · 0 fail · 0 skipped · 0 suppressed** (288 at V0, 415 at V1) |
-| Verification | build · `check:arch` (98 files) · checker self-test (26 cases) · `check:docs` — all clean |
+| Slices completed | **V0 — Foundation** · **V1 — Text intake** · **V2 — DOCX intake** · **V3 — multimodal and structural intake** |
+| Next slice | **V4 — AI analysis passes.** **Provisional**, not approved. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Tests | **554 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2) |
+| Verification | build · `check:arch` (108 files) · checker self-test (29 cases) · `check:docs` — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
-| ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) in V0. **V1 and V2 added none.** [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) is **PROPOSED — HELD**, and no dependency from it is present |
+| ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
 | Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction |
-| Dependencies added | **NONE in V1 or V2.** Runtime dependencies stand at seven, unchanged since V0 |
-| Slices V3–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.5 |
+| Dependencies added | **NONE in V1, V2 or V3.** Runtime dependencies stand at seven, unchanged since V0 |
+| Slices V4–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.7 |
 
 Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`, `domain`,
 `validation`), three adapters (`ingestion`, `ai`, `eval`), one application (`api`).
@@ -29,6 +29,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
 | V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
+| V3 | *this change* — *image intake, vision, ADR-0038 verification, structural import* |
 
 ---
 
@@ -303,7 +304,7 @@ Verified end to end, through `jsonb` and back:
 - When ADR-0037 is approved this becomes a *confinement* rule naming the PDF adapter directory,
   rather than a prohibition.
 
-## 5. Accepted HTTP status posture
+## 6. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
 
@@ -348,7 +349,7 @@ behaviour as correct.
 
 ---
 
-## 6. Known limitations
+## 7. Known limitations
 
 | # | Limitation | Consequence |
 |---|---|---|
@@ -393,9 +394,24 @@ behaviour as correct.
 | 29 | **A DOCX reports no pages**, so page-level provenance is untested against a paginated format | Correct for DOCX — pagination is a rendering property. First exercised in V2-PDF |
 | 30 | **The `docx` source kind is format-shaped, not role-shaped** | Follows the V1 `freetext`/`markdown` precedent. A caller who knows the business role should pass `brd`, `sop` or `policy`. The modelling tension is inherited, not introduced |
 
+### V3 limitations
+
+| # | Limitation | Consequence |
+|---|---|---|
+| 31 | **No live provider has ever been called.** The transport exists and is unit-tested against an injected `fetch`; every end-to-end test replays a scripted stand-in | **A7** requires this of CI. It also means real vision **quality is unmeasured** — shape, refusals and egress are proven, accuracy is not |
+| 32 | **No recorded corpus of real vision responses exists yet** | Replay fixtures are scripted, not captured. The first live run against a corpus is what makes that corpus testable offline (ADR-0031) |
+| 33 | **Region coordinates are trusted as reported**, then bounds-checked | A model can report a plausible rectangle over the wrong glyphs. Bounds checking catches impossible rectangles, not wrong ones — which is why the L2 ceiling and element-wise confirmation exist |
+| 34 | **No visual verification of rendered highlights.** Rectangles are checked numerically, not by rendering | A rectangle can tile a range perfectly and still sit over the wrong pixels. Deferred with V2-PDF's M12, which needs a rasteriser |
+| 35 | **One image per source** (`pageNo: 1`). Multi-page images are not modelled | The table supports many; V2-PDF's rasteriser is what will produce them |
+| 36 | **Element-wise confirmation is computable but not recorded.** `ceilingFor` reports the obligation; there is no confirmation entity yet | V5 work. V3's job was to make each region individually addressable, which it does |
+| 37 | **Ceilings are not yet enforced anywhere**, because no requirements exist to enforce them on | V5. The function and its tests exist so V5 enforces rather than invents |
+| 38 | **BPMN import reads names and expressions only** — not lanes' membership, not message flows' endpoints, not full attribute sets | Sufficient for evidence. A fuller model would blur the evidence-only boundary |
+| 39 | **`sheet_cell` and `transcript` anchor kinds remain unexercised** | Spreadsheets are a separate proposed capability; interview transcripts arrive with the clarification queue |
+| 40 | **An image source stores an empty canonical text** | Deliberate (ADR-0038): the vision transcript is not canonical truth. It means the source viewer has no text to show for an image — only regions |
+
 ---
 
-## 7. Docker-deferred infrastructure
+## 8. Docker-deferred infrastructure
 
 Docker remains unavailable. Each item below is deferred **with a named trigger**, not dropped
 ([infra/README.md](../../infra/README.md)).
@@ -417,7 +433,7 @@ is **untested** until Docker exists.
 
 ---
 
-## 8. Not started, by instruction
+## 9. Not started, by instruction
 
 BPMN generation, DMN generation, form generation, Process IR compilation, layout, the
 requirements-analysis passes, the Specification Studio, and any graphical process designer.
@@ -428,30 +444,17 @@ excluded permanently, because it would reverse
 
 ---
 
-## 9. Next step
+## 10. Next step
 
-### V2 (DOCX) is complete and accepted. V2-PDF and V3 have not started.
+### V3 is complete and awaiting review. V4 and V2-PDF have not started.
 
 | | |
 |---|---|
-| **V2 — DOCX document intake** | **Complete and accepted** at `1bd8d8d`. Zero new dependencies |
-| **V2-PDF — PDF intake** | **BLOCKED.** Not started |
-| **V3 — multimodal and structural intake** | **Proposed**, not approved — [v3-proposal.md](v3-proposal.md). Unblocked from OD-1 by **A8**, but carries material decisions needing approval |
+| **V3 — multimodal and structural intake** | **Complete**, awaiting review. Zero new dependencies |
+| **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
+| **V4 — AI analysis passes** | **Provisional**, not approved |
 
-### V2-PDF is blocked on three things, all of them explicit
+`@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
+PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-1. **A representative Arabic PDF corpus.** Characteristics, sanitisation rules and handling are
-   specified in [s2-corpus-request.md](s2-corpus-request.md) §2–§3.
-2. **Spike S2 completed** against that material, producing the exact-precision yield rate its own
-   success criterion 6 demands — the number that does not exist yet.
-3. **[ADR-0037](../adr/ADR-0037-binary-document-extraction.md) explicitly approved.** It remains
-   **PROPOSED — HELD**.
-
-V2-PDF **remains part of Phase 2**. The split was a sequencing decision and removed nothing from the
-approved capability: every item of the approved V2 boundary
-([phase-2-plan.md](phase-2-plan.md) §3.1) is still to be built.
-
-`@embedpdf/pdfium` **is not installed**, and the checker rule `pdf-engine-not-approved` fails the
-build if any PDF engine is imported — so the block is mechanical, not remembered.
-
-**Do not begin V2-PDF or V3 without approval.**
+**Do not begin V4 or V2-PDF without approval.**

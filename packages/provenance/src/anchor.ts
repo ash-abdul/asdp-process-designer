@@ -48,7 +48,15 @@ export type AnchorTarget =
       readonly charStart?: number;
       readonly charEnd?: number;
     }
-  | { readonly kind: 'image_region'; readonly imageId: string; readonly rect: Rect }
+  | {
+      readonly kind: 'image_region';
+      readonly imageId: string;
+      readonly rect: Rect;
+      /** Checksum of the image as it was when this anchor was minted. Recorded
+       *  on the anchor, not read from the image row, because comparing a row
+       *  against itself is vacuous (ADR-0038). */
+      readonly imageSha256?: string;
+    }
   | { readonly kind: 'sheet_cell'; readonly sheet: string; readonly a1Range: string }
   | { readonly kind: 'bpmn_element'; readonly fileId: string; readonly elementId: string }
   | {

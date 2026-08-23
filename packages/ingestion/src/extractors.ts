@@ -11,6 +11,7 @@ import { normalise } from '@asdp/text';
 import { extractFreeText, FREETEXT_EXTRACTOR_VERSION } from './freetext.ts';
 import { extractMarkdown, MARKDOWN_EXTRACTOR_VERSION } from './markdown.ts';
 import { docxExtractor } from './docx.ts';
+import { modelExtractor } from './model-import.ts';
 import { TEXT_MARKDOWN, TEXT_PLAIN } from './media-types.ts';
 import type { ExtractionInput, ExtractionOutput, TextExtractor } from './ports.ts';
 
@@ -76,7 +77,15 @@ export function markdownExtractor(): TextExtractor {
  * spike S2 completing against representative Arabic material and on ADR-0037
  * being approved. A PDF therefore never reaches an extractor at all — the ingest
  * guard refuses it by name first, which is the better place to say no.
+ *
+ * There is also **no image extractor here**, and that is not an omission. An
+ * image's content is read by a `VisionExtractor`, which is a different port
+ * because it is a different kind of act: it calls a model, it is subject to the
+ * egress policy, and its output is an interpretation rather than an extraction.
+ * Keeping the two apart is what stops "extract text" quietly meaning "ask an AI"
+ * (the preserved V3 rule: if deterministic extraction can produce the evidence,
+ * do not invoke AI).
  */
 export function defaultExtractors(): readonly TextExtractor[] {
-  return [freeTextExtractor(), markdownExtractor(), docxExtractor()];
+  return [freeTextExtractor(), markdownExtractor(), docxExtractor(), modelExtractor()];
 }

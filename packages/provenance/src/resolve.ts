@@ -1,13 +1,9 @@
 /**
  * Anchor resolution.
  *
- * Given an anchor and the stored source, return the exact region and verify it.
- * Three outcomes (provenance-and-anchoring.md §3):
- *
- *   RESOLVED  checksum matches — the anchor is sound
- *   DRIFTED   the quote is found at a small offset delta — repair and flag
- *   BROKEN    the quote is not found — hard error; dependent evidence is
- *             quarantined and its requirements flagged
+ * Given an anchor and the stored source, return the exact region and verify it
+ * (provenance-and-anchoring.md §3). Four outcomes, because ADR-0038 separates
+ * target verification from content verification — see `ResolutionStatus`.
  *
  * Drift repair is bounded and recorded. It exists because re-parsing with an
  * upgraded adapter can shift offsets slightly; it must never become a
@@ -17,8 +13,31 @@
 import { sliceByCodePoints, buildMatchFormCollapsed, toMatchText } from '@asdp/text';
 import { textOffsetsOf, type ProvenanceAnchor } from './anchor.ts';
 import { spanChecksum } from './checksum.ts';
+import {
+  contentVerifiability,
+  verifyElementTarget,
+  verifyImageTarget,
+  type StoredImage,
+  type StoredModel,
+} from './verify.ts';
 
-export type ResolutionStatus = 'resolved' | 'drifted' | 'broken';
+/**
+ * Resolution outcome (ADR-0038).
+ *
+ *   resolved            target verified AND content verified
+ *   content_unverified  target verified; the quote is an AI interpretation and is
+ *                       NOT independently verified
+ *   drifted             content found at a small offset delta; repaired, flagged
+ *   broken              target missing, or content not found — hard error
+ *
+ * `content_unverified` is NOT a failure, so the reflex "anything other than
+ * resolved is a problem" is wrong. It is also deliberately named for the
+ * limitation rather than the reassurance: a consumer reading it cannot mistake it
+ * for a verification. `resolved` must never be reused for the visual case, or a
+ * vision citation becomes indistinguishable from a verified one in every overlay,
+ * trace query and disclosure report.
+ */
+export type ResolutionStatus = 'resolved' | 'content_unverified' | 'drifted' | 'broken';
 
 export interface Resolution {
   readonly status: ResolutionStatus;
@@ -131,4 +150,86 @@ export function assertAnchorResolvable(
       `unresolvable anchor for source ${anchor.sourceId}: ${r.detail ?? 'unknown reason'}`,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Unified resolution (ADR-0038)
+// ---------------------------------------------------------------------------
+
+/**
+ * Everything resolution may need, by anchor kind.
+ *
+ * Passed in rather than fetched, because this package is pure: it verifies, it
+ * does not load. The caller supplies the stored facts.
+ */
+export interface ResolutionContext {
+  /** Canonical text of the source, for content-verifiable text anchors. */
+  readonly storedText?: string;
+  /** The stored image, for `image_region`. */
+  readonly storedImage?: StoredImage;
+  /** The stored model file, for element anchors. */
+  readonly storedModel?: StoredModel;
+  /**
+   * Checksum the anchor was minted against, when the caller knows it.
+   *
+   * Supplying it turns "the target exists" into "the target is unchanged", which
+   * is the difference between a weak and a real guarantee.
+   */
+  readonly expectedSha256?: string;
+}
+
+/**
+ * Resolve any anchor.
+ *
+ * The single entry point, so the two verification axes are applied consistently
+ * rather than per-adapter. Which axes apply is derived from the anchor kind by
+ * `contentVerifiability`, never chosen by the caller.
+ */
+export function resolveAnchor(
+  anchor: ProvenanceAnchor,
+  context: ResolutionContext,
+): Resolution {
+  const kind = anchor.target.kind;
+
+  // --- image: target only ------------------------------------------------
+  if (kind === 'image_region') {
+    const target = verifyImageTarget(anchor, context.storedImage, context.expectedSha256);
+    if (!target.ok) return { status: 'broken', detail: target.reason };
+    // The target is intact. The quote came from a vision model and there is
+    // nothing independent to check it against, so it is reported as such.
+    return {
+      status: 'content_unverified',
+      text: anchor.quote,
+      detail:
+        'image target verified (identity, checksum, bounds); the quoted content is an AI ' +
+        'interpretation and is not independently verified (ADR-0038)',
+    };
+  }
+
+  // --- model elements: target verification settles content too -----------
+  if (kind === 'bpmn_element' || kind === 'dmn_rule' || kind === 'form_field') {
+    const target = verifyElementTarget(anchor, context.storedModel, context.expectedSha256);
+    if (!target.ok) return { status: 'broken', detail: target.reason };
+    return { status: 'resolved', text: anchor.quote };
+  }
+
+  // --- text-offset anchors ----------------------------------------------
+  if (context.storedText === undefined) {
+    return { status: 'broken', detail: `no stored text supplied for a '${kind}' anchor` };
+  }
+  if (contentVerifiability(kind) !== 'verifiable') {
+    return { status: 'broken', detail: `anchor kind '${kind}' has no content verification path` };
+  }
+  return resolveTextAnchor(anchor, context.storedText);
+}
+
+/**
+ * True when a resolution outcome permits the anchor to be stored and cited.
+ *
+ * `content_unverified` PASSES: the target is sound and the epistemic ceiling —
+ * not the anchor — is what limits what such evidence may support (ADR-0038,
+ * provenance-and-anchoring.md §5).
+ */
+export function isCitable(status: ResolutionStatus): boolean {
+  return status === 'resolved' || status === 'content_unverified';
 }

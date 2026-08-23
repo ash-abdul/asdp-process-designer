@@ -26,7 +26,7 @@ import { createSqlRepositories, withTransaction } from './persistence/repositori
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
 import { counterIdGenerator, systemClock } from './repo-memory.ts';
 import { resolveClassification } from './commands/intake.ts';
-import { defaultExtractors, unavailableRasteriser } from '@asdp/ingestion';
+import { defaultExtractors, unavailableRasteriser, unavailableVisionExtractor } from '@asdp/ingestion';
 import { ValidationError } from './commands.ts';
 import type { Database } from './persistence/db.ts';
 
@@ -1438,6 +1438,378 @@ describe('V2-PDF is not implemented', () => {
   test('no extractor claims PDF', () => {
     for (const extractor of defaultExtractors()) {
       assert.equal(extractor.supports('application/pdf'), false);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// V3 — images, vision, and structural model import, end to end
+// ---------------------------------------------------------------------------
+
+/** A PNG header with the dimensions actually encoded, so bounds checks are real. */
+function pngOf(width: number, height: number): Uint8Array {
+  const be = (v: number): number[] => [(v >>> 24) & 0xff, (v >>> 16) & 0xff, (v >>> 8) & 0xff, v & 0xff];
+  return new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ...be(13), 0x49, 0x48, 0x44, 0x52,
+    ...be(width), ...be(height),
+    8, 2, 0, 0, 0, 0, 0, 0, 0,
+  ]);
+}
+
+const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" name="Customer Onboarding">
+    <bpmn:userTask id="Activity_1" name="${ARABIC}"/>
+    <bpmn:exclusiveGateway id="Gateway_1" name="Amount over 1000?"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+
+/**
+ * A vision extractor driven by a fixed script — the replay stand-in.
+ *
+ * **A7:** no live call. This is what CI exercises, and the checker rule
+ * `no-live-ai-in-tests` prevents a real transport appearing here.
+ */
+function scriptedVision(
+  regions: readonly { rect: { x: number; y: number; w: number; h: number }; text: string; language?: string; direction?: 'ltr' | 'rtl' | 'neutral' }[],
+): any {
+  return {
+    id: 'vision-replay@test',
+    supports: (mediaType: string) => mediaType.startsWith('image/'),
+    extract: async () => ({
+      kind: 'extracted',
+      interactionId: 'ai-replay-1',
+      result: {
+        regions: regions.map((r) => ({
+          rect: r.rect,
+          text: r.text,
+          language: r.language ?? 'en',
+          direction: r.direction ?? 'ltr',
+          role: 'label' as const,
+        })),
+        limitations: [],
+      },
+    }),
+  };
+}
+
+/** A vision extractor that fails the test if it is ever called. */
+const forbiddenVision: any = {
+  id: 'must-not-be-called@test',
+  supports: () => true,
+  extract: async () => {
+    throw new Error('vision was invoked for a source a deterministic reader can handle');
+  },
+};
+
+async function startServerWith(vision: any, options: { dataDir?: string } = {}): Promise<Server> {
+  const blobRoot = await mkdtemp(join(tmpdir(), 'asdp-v3-blob-'));
+  const config = loadConfig({ PORT: '0', ASDP_LOG_LEVEL: 'error', ASDP_BLOB_ROOT: blobRoot });
+  const database = await createPgliteDatabase(
+    options.dataDir === undefined ? {} : { dataDir: options.dataDir },
+  );
+  await migrate(database);
+  const blobStore = await createFilesystemBlobStore({ rootDirectory: blobRoot });
+  const running = await listen(
+    {
+      config, database, blobStore, clock: systemClock(), ids: counterIdGenerator(),
+      visionExtractor: vision,
+    },
+    0,
+  );
+  return {
+    ...running,
+    database,
+    blobRoot,
+    close: async () => {
+      await running.close();
+      await database.close();
+    },
+  };
+}
+
+describe('image intake and vision', () => {
+  test('ingests a screenshot, stores a PageImage, and records the vision read', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 10, y: 20, w: 200, h: 30 }, text: 'Submit application' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png',
+        contentBase64: asBase64(pngOf(800, 600)),
+      });
+
+      assert.equal(result.source.mimeType, 'image/png');
+      assert.equal(result.source.kind, 'screenshot');
+      assert.equal(result.source.status, 'parsed');
+      // L0-ING-007 depends on this being recorded rather than inferred.
+      assert.equal(result.source.extractionMethod, 'vision');
+      assert.equal(result.source.visionPageCount, 1);
+      assert.equal(result.source.textLength, 0, 'an image has no text layer');
+      assert.equal(result.source.primaryLanguage, 'und', 'no language is guessed from pixels');
+      assert.equal(result.unitCount, 1);
+      assert.match(result.source.blobRef, /\.png$/);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('AN IMAGE ANCHOR NEVER RESOLVES — it comes back content_unverified', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 10, y: 20, w: 200, h: 30 }, text: 'Submit application' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png',
+        contentBase64: asBase64(pngOf(800, 600)),
+      });
+      const h = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/highlights`,
+        undefined, asAnalyst,
+      );
+      assert.equal(h.json.total, 1);
+      const range = h.json.ranges[0];
+      assert.equal(range.resolution, 'content_unverified', 'ADR-0038');
+      assert.notEqual(range.resolution, 'resolved');
+      // The rectangle is what a viewer paints — there are no text segments.
+      assert.deepEqual(range.imageRect, { x: 10, y: 20, w: 200, h: 30 });
+      assert.deepEqual(range.segments, []);
+      assert.ok(String(range.detail).includes('not independently verified'));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('anchors are page precision, so the L2 ceiling applies', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 0, y: 0, w: 100, h: 100 }, text: 'Label' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(800, 600)),
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      assert.equal(units.json.units[0].anchor.precision, 'page');
+      assert.equal(units.json.units[0].anchor.target.kind, 'image_region');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('an out-of-bounds region is DROPPED, not clamped', async () => {
+    const s = await startServerWith(
+      scriptedVision([
+        { rect: { x: 700, y: 10, w: 400, h: 30 }, text: 'Overflows the image' },
+        { rect: { x: 10, y: 10, w: 100, h: 30 }, text: 'Inside' },
+      ]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(800, 600)),
+      });
+      assert.equal(result.unitCount, 1, 'the overflowing region is dropped');
+
+      const audit = await call(s, 'GET', `/projects/${projectId}/audit`, undefined, asAdmin);
+      const ingested = audit.json.find((e: any) => e.action === 'source.ingested');
+      assert.ok(
+        (ingested.after.limitations as string[]).some((l) => /not clamped/.test(l)),
+        'the drop must be reported, because a clamped rectangle is a different claim',
+      );
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('Arabic region text round-trips, and is citable as evidence', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 5, y: 5, w: 300, h: 40 }, text: ARABIC, language: 'ar', direction: 'rtl' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'ar-screen.png', contentBase64: asBase64(pngOf(800, 600)), kind: 'diagram_image',
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      assert.equal(units.json.units[0].text, ARABIC);
+      assert.equal(units.json.units[0].direction, 'rtl');
+
+      const created = await call(
+        s, 'POST', `/projects/${projectId}/evidence`,
+        { sourceId: result.source.id, sourceUnitId: units.json.units[0].id }, asAnalyst,
+      );
+      assert.equal(created.status, 201, JSON.stringify(created.json));
+      // content_unverified is CITABLE: the target is sound, and the ceiling —
+      // not the anchor — limits what it may support.
+      assert.equal(created.json.anchorVerified, true);
+      assert.equal(created.json.verbatimText, ARABIC);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a vision REFUSAL leaves the image stored and the source parsed, with no units', async () => {
+    // Not `parse_failed`: the bytes are held and readable, and the reading was
+    // declined. Calling it a parse failure would be a different, false claim.
+    const s = await startServerWith(unavailableVisionExtractor());
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(400, 300)),
+      });
+      assert.equal(result.source.status, 'parsed');
+      assert.equal(result.unitCount, 0);
+
+      const audit = await call(s, 'GET', `/projects/${projectId}/audit`, undefined, asAdmin);
+      const event = audit.json.find((e: any) => e.action === 'source.visionRefused');
+      assert.ok(event !== undefined, 'the refusal must be audited');
+      assert.ok((event.after.limitations as string[]).some((l) => /refused/.test(l)));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('TAMPERING with the stored image breaks every anchor over it', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 1, y: 1, w: 50, h: 20 }, text: 'Label' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(800, 600)),
+      });
+
+      // Rewrite the stored checksum to simulate the bytes having changed.
+      await s.database.query('update page_image set sha256 = $1 where source_id = $2', [
+        'f'.repeat(64),
+        result.source.id,
+      ]);
+
+      const h = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/highlights`,
+        undefined, asAnalyst,
+      );
+      assert.equal(h.json.ranges[0].resolution, 'broken');
+      assert.match(String(h.json.ranges[0].detail), /has changed/);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L0-ING-007 fires when a vision read produced no regions', async () => {
+    const s = await startServerWith(unavailableVisionExtractor());
+    try {
+      const projectId = await createProjectVia(s);
+      await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(400, 300)),
+        authorityRank: 100, effectiveDate: '2026-01-01T00:00:00.000Z',
+      });
+      const v = await call(s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst);
+      const ids = v.json.findings.map((f: any) => f.ruleId);
+      // A vision source with no regions is a truncation warning, and the vision
+      // read itself is recorded — so 007 does NOT fire (pages ARE recorded).
+      assert.ok(ids.includes('L0-ING-005'), 'no regions is worth a warning');
+      assert.equal(v.json.summary.errors, 0, 'and it does not block G1');
+    } finally {
+      await s.close();
+    }
+  });
+});
+
+describe('no AI for sources a deterministic reader can handle', () => {
+  test('text, Markdown, DOCX and BPMN are ingested with a provider that THROWS if called', async () => {
+    // The preserved V3 rule, asserted rather than assumed.
+    const s = await startServerWith(forbiddenVision);
+    try {
+      const projectId = await createProjectVia(s);
+      const cases: readonly (readonly [string, Record<string, unknown>])[] = [
+        ['notes.txt', { text: 'The applicant must supply a document.' }],
+        ['brd.md', { text: '# Heading\n\nBody text.' }],
+        ['brd.docx', { contentBase64: asBase64(BILINGUAL_DOCX) }],
+        ['legacy.bpmn', { text: BPMN_XML }],
+      ];
+      for (const [filename, body] of cases) {
+        const r = await call(
+          s, 'POST', `/projects/${projectId}/sources`, { filename, ...body }, asAnalyst,
+        );
+        assert.equal(r.status, 201, `${filename}: ${JSON.stringify(r.json)}`);
+        assert.notEqual(r.json.source.extractionMethod, 'vision', filename);
+      }
+    } finally {
+      await s.close();
+    }
+  });
+});
+
+describe('structural model import as evidence', () => {
+  test('imports BPMN elements with bpmn_element anchors that RESOLVE', async () => {
+    const s = await startServerWith(forbiddenVision);
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, { filename: 'legacy.bpmn', text: BPMN_XML });
+      assert.equal(result.source.kind, 'bpmn');
+      assert.equal(result.source.extractorVersion, 'model@1');
+
+      const h = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/highlights`,
+        undefined, asAnalyst,
+      );
+      assert.ok(
+        h.json.ranges.every((r: any) => r.resolution === 'resolved'),
+        'a parser read a structured file, so content IS verified',
+      );
+
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      assert.ok(units.json.units.every((u: any) => u.anchor.target.kind === 'bpmn_element'));
+      assert.ok(units.json.units.some((u: any) => u.text === ARABIC), 'Arabic element names survive');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('an imported model is EVIDENCE ONLY — no endpoint edits it', async () => {
+    const s = await startServerWith(forbiddenVision);
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, { filename: 'legacy.bpmn', text: BPMN_XML });
+      for (const method of ['PUT', 'PATCH', 'DELETE']) {
+        const r = await call(
+          s, method, `/projects/${projectId}/sources/${result.source.id}`, { x: 1 }, asAnalyst,
+        );
+        assert.equal(r.status, 404, `${method} must not exist`);
+      }
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L0-ING-005 does NOT report truncation for an element-anchored source', async () => {
+    // Coverage is meaningless for element anchors: they address content by
+    // identity, not by offset. Measuring text coverage would report a truncation
+    // that did not happen.
+    const s = await startServerWith(forbiddenVision);
+    try {
+      const projectId = await createProjectVia(s);
+      await ingest(s, projectId, {
+        filename: 'legacy.bpmn', text: BPMN_XML,
+        authorityRank: 500, effectiveDate: '2026-01-01T00:00:00.000Z',
+      });
+      const v = await call(s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst);
+      const ids = v.json.findings.map((f: any) => f.ruleId);
+      assert.ok(!ids.includes('L0-ING-005'), JSON.stringify(v.json.findings));
+      assert.deepEqual(v.json.summary.blocking, []);
+    } finally {
+      await s.close();
     }
   });
 });

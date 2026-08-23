@@ -114,6 +114,25 @@ const PDF_ENGINES = [
   'canvas',
 ];
 
+/**
+ * A7 / D5: no live AI transport in normal tests or CI.
+ *
+ * A7 approved that normal verification uses deterministic recorded/replay
+ * fixtures and makes no live model call. That was a convention; this makes it
+ * mechanical, like every other load-bearing rule here.
+ *
+ * A test file may not construct a live transport, and may not read an API key
+ * from the environment. Live evaluation stays a separately invoked capability
+ * outside pass/fail — so a provider outage or a model revision can never turn
+ * the build red.
+ */
+const LIVE_AI_IN_TEST_PATTERNS = [
+  { re: /\bcreateClaudeTransport\s*\(/, why: 'constructs a LIVE Claude transport' },
+  { re: /\bANTHROPIC_API_KEY\b/, why: 'reads a provider API key' },
+  { re: /\bASDP_AI_API_KEY\b/, why: 'reads a provider API key' },
+  { re: /api\.anthropic\.com/, why: 'names a provider endpoint' },
+];
+
 /** BPMN/DMN serialisation libraries. Permitted only in compiler-* and ingestion (ADR-0005). */
 const MODEL_SERIALISATION_LIBS = [
   'bpmn-moddle',
@@ -231,6 +250,11 @@ const SQL_INTERPOLATION_PATTERNS = [
  * @typedef {{ path: string, pkg: string, cls: string, text: string }} SourceFile
  * @typedef {{ rule: string, file: string, detail: string }} Violation
  */
+
+/** Path with forward slashes, so rules read the same on every platform. */
+function normalisedPathOf(f) {
+  return f.path.split(sep).join('/');
+}
 
 /** Extract module specifiers from import/export/require forms. */
 export function extractImports(text) {
@@ -356,6 +380,21 @@ export function evaluateRules(files) {
     for (const { re, why } of ENV_BRANCH_PATTERNS) {
       if (re.test(f.text)) {
         violations.push({ rule: 'env-branching', file: f.path, detail: why });
+      }
+    }
+
+    // --- A7 / D5: no live AI transport in tests -------------------------
+    if (/\.test\.ts$/.test(normalisedPathOf(f))) {
+      for (const { re, why } of LIVE_AI_IN_TEST_PATTERNS) {
+        if (re.test(f.text)) {
+          violations.push({
+            rule: 'no-live-ai-in-tests',
+            file: f.path,
+            detail:
+              `${why}: normal tests and CI must make no live model call (A7). Use a recorded ` +
+              'fixture through @asdp/eval, or move this to the separately invoked live evaluation',
+          });
+        }
       }
     }
 
@@ -680,6 +719,18 @@ const SELF_TEST_CASES = [
     rule: 'controller-thinness',
     file: { path: 'apps/api/src/http/big.controller.ts', pkg: '@asdp/api', cls: 'application',
             text: Array.from({ length: 240 }, (_, i) => `// line ${i}`).join('\n') },
+  },
+  {
+    name: 'a test constructing a live AI transport is rejected (A7 / D5)',
+    rule: 'no-live-ai-in-tests',
+    file: { path: 'packages/ai/src/live.test.ts', pkg: '@asdp/ai', cls: 'adapter',
+            text: `const t = createClaudeTransport({ apiKey: 'x' });\n` },
+  },
+  {
+    name: 'a test reading a provider API key is rejected (A7 / D5)',
+    rule: 'no-live-ai-in-tests',
+    file: { path: 'apps/api/src/x.test.ts', pkg: '@asdp/api', cls: 'application',
+            text: `const key = process.env.ANTHROPIC_API_KEY;\n` },
   },
   {
     name: 'importing a PDF engine is rejected while ADR-0037 is unapproved',

@@ -66,3 +66,8 @@ export {
   type PrivateEndpointConfig,
 } from './adapters/private-endpoint.ts';
 export { createClaudeProvider, type ClaudeAdapterConfig } from './adapters/claude.ts';
+export {
+  createClaudeTransport,
+  ClaudeTransportError,
+  type ClaudeTransportConfig,
+} from './adapters/claude-transport.ts';

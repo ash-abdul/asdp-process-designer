@@ -2,10 +2,10 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0, V1 and V2 (DOCX) complete** · V2-PDF blocked on spike S2
+> **Phase 2 V0–V3 complete** · V2-PDF blocked on spike S2
 > Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
-> composition layer, durable PGlite persistence, and text and Word-document intake with resolvable
-> provenance. **480 tests pass, none skipped.**
+> composition layer, durable PGlite persistence, and text, Word-document, image and structural-model
+> intake with resolvable provenance. **554 tests pass, none skipped.**
 > No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-23
 > **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)
@@ -90,16 +90,20 @@ Start here: **[`docs/README.md`](docs/README.md)** — the full index.
 **Phase 2 V0** — compiled build toolchain, NestJS composition layer, PGlite persistence,
 development BlobStore — is complete at commit `8f2a665`.
 **Phase 2 V1** — text intake and provenance end to end — is complete and accepted.
-**Phase 2 V2** — DOCX document intake — is complete and awaiting review, and added **no new
-dependency**. **V2-PDF** is blocked on a representative Arabic PDF corpus, on spike S2, and on
+**Phase 2 V2** — DOCX document intake — is complete and accepted.
+**Phase 2 V3** — image intake, vision evidence and structural BPMN/DMN/Form import — is complete and
+awaiting review. Neither added a new dependency.
+**V2-PDF** is blocked on a representative Arabic PDF corpus, on spike S2, and on
 [`ADR-0037`](docs/adr/ADR-0037-binary-document-extraction.md) being approved.
 
 The application runs, persists durable state across restarts, enforces authentication and gate
 read-locks, and shuts down gracefully. It ingests UTF-8 free text, Markdown and **Word documents**
 behind a content-sniffing guard, anchors every extracted unit to the exact region it came from in
 Arabic and English, serves RTL-correct highlight ranges for a read-only source viewer, and
-implements the ten catalogued `L0-ING` ingestion rules. **480 tests pass; none are skipped or
-suppressed.**
+implements the ten catalogued `L0-ING` ingestion rules. Image evidence is read by vision through the
+AI Provider Abstraction and is marked **`content_unverified`** — target verified, interpreted content
+not — so a vision citation is never mistaken for a verified one. **554 tests pass; none are skipped
+or suppressed.**
 
 **No generation capability exists.** BPMN, DMN and form generation, Process IR compilation, the
 Specification Studio, and any graphical designer are out of scope for Phase 2.
@@ -114,7 +118,7 @@ Runs build → architecture checks → checker self-test → documentation check
 |---|---|
 | Working on this repository | [`CLAUDE.md`](CLAUDE.md) |
 | Current implementation state | [`docs/60-plan/phase-2-status.md`](docs/60-plan/phase-2-status.md) |
-| Phase 2 plan, decisions A1–A7, acceptance criteria | [`docs/60-plan/phase-2-plan.md`](docs/60-plan/phase-2-plan.md) |
+| Phase 2 plan, decisions A1–A8, acceptance criteria | [`docs/60-plan/phase-2-plan.md`](docs/60-plan/phase-2-plan.md) |
 | What still blocks implementation | [`docs/60-plan/open-decisions.md`](docs/60-plan/open-decisions.md) |
 
 Docker is unavailable in the current development environment, so the PostgreSQL container, MinIO,
