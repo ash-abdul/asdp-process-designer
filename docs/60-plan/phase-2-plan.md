@@ -184,8 +184,8 @@ renumber would turn two live references into wrong ones.
 ### 3.6 V3 — approved boundary ✅ **ACCEPTED 2026-08-23**
 
 **Approved 2026-08-23** as an **evidence-ingestion slice only**, and implemented at commit
-`dc2e683`. Delivered state: [phase-2-status.md](phase-2-status.md) §5; pre-acceptance corrections:
-§5.9; checkpoint: §0. Full rationale and design in
+`dc2e683` and **accepted at `bea4041`**. Delivered state:
+[phase-2-status.md](phase-2-status.md) §5; acceptance corrections: §5.9; checkpoint: §0. Full rationale and design in
 [v3-proposal.md](v3-proposal.md); the governing decision on provenance is
 [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
 

@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
 > **Status:** **V0, V1, V2, V3 ACCEPTED. V2-PDF blocked on spike S2.** · **Version:** 4.3 · **Updated:** 2026-08-23
-> **Checkpoint:** §0 · **Commit:** `dc2e683` (V3) + the acceptance-correction commit (§5.9)
+> **Checkpoint:** §0 · **Commit:** `bea4041` — V3 accepted (`dc2e683` implementation + `bea4041` corrections)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -16,7 +16,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
 | **Current slice** | **None in progress.** **V3 — multimodal and structural intake — is ACCEPTED / COMPLETE** (accepted 2026-08-23, after the three corrections in §5.9) |
-| **Commit** | **`dc2e683`** — *Phase 2 V3: image intake, vision evidence, ADR-0038 verification, structural import* |
+| **Commit** | **`bea4041`** — *Phase 2 V3 acceptance: AI attribution defect, test-rule refinement, durable §5*. V3 was implemented at **`dc2e683`** |
 | **Working tree** | **Clean.** The §5.9 corrections are committed |
 | **Work in progress** | **None.** No partial implementation, no scratch state. Spike S2's probe scripts lived outside the repo and were never committed |
 | **Next approved action** | **None — awaiting a decision.** V4's boundary and V2-PDF both need approval before any work begins. The **H1/H2** hardening candidates (§5.12) are proposed, not approved |
@@ -28,7 +28,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V0** — Foundation: compiled toolchain, NestJS composition, PGlite persistence, BlobStore | `8f2a665` | **Accepted** |
 | **V1** — Text intake, resolvable provenance, source viewer, `L0-ING` rules | `922761a` | **Accepted** |
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
-| **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + §5.9 | **Accepted** — 2026-08-23 |
+| **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -114,7 +114,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
 | V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
-| V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** (with the §5.9 correction commit) |
+| V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** at `bea4041` |
 
 ---
 
@@ -393,7 +393,7 @@ Verified end to end, through `jsonb` and back:
 
 **ACCEPTED 2026-08-23.** **Image intake read by vision, and structural model files read by a parser,
 both landing as evidence with resolvable targets.** Delivered at `dc2e683`, plus the acceptance
-corrections described in §5.9. **No new dependency:** `fetch` is built into Node 22 (**D2**), the XML tokeniser
+corrections of §5.9 at `bea4041`. **No new dependency:** `fetch` is built into Node 22 (**D2**), the XML tokeniser
 already existed (**D3**), and image dimensions are read from file headers.
 
 The V3 boundary is [phase-2-plan.md](phase-2-plan.md) §3.6; the design record is
