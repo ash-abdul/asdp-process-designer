@@ -10,7 +10,7 @@
  *                         to prevent, so it must be measured, not assumed away.
  */
 
-import type { CorpusTier } from './corpus.ts';
+import { tierRank, type CorpusTier } from './corpus.ts';
 
 export type ExtractionMode = 'extracted' | 'interpreted' | 'inferred';
 export type AnchorPrecision = 'exact' | 'cell' | 'page' | 'document' | 'none';
@@ -230,5 +230,152 @@ export function buildReport(input: {
     slotAccuracy: input.slotAccuracy,
     usableForRoutingDecision: input.corpusTier !== 'synthetic',
     caveats,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pass baseline (V4a) — E5
+// ---------------------------------------------------------------------------
+
+/**
+ * One pass observation, as the baseline runner produces it.
+ *
+ * Deliberately not `ExtractedItem`: a pass that extracts nothing has no items,
+ * and forcing it through the extraction shape would either divide by zero or
+ * report a fabricated 100%.
+ */
+export interface PassObservation {
+  readonly caseId: string;
+  /** Did the response validate against the task's output schema? */
+  readonly schemaValid: boolean;
+  /** Did a second identical run produce a byte-identical result? */
+  readonly reproducible: boolean;
+  /** Named degradations recorded on the interaction. */
+  readonly degradations: readonly string[];
+  /** True when the pass refused — a legitimate outcome, counted separately. */
+  readonly refused: boolean;
+  /** Label agreement, where the corpus carries a label to compare against. */
+  readonly labelExpected?: string;
+  readonly labelActual?: string;
+}
+
+/**
+ * The baseline for one pass on one corpus.
+ *
+ * **E5:** a pass is not successful merely because the call and the schema worked,
+ * so this report states what was measured AND what could not be. Metrics that
+ * belong to `EXTRACT_EVIDENCE` are listed in `notApplicable` rather than omitted:
+ * an omitted metric reads as "fine", and a named gap reads as a gap.
+ */
+export interface PassBaselineReport {
+  readonly corpusId: string;
+  readonly corpusTier: CorpusTier;
+  readonly taskType: string;
+  readonly promptVersion: string;
+  readonly providerId: string;
+  readonly modelId: string;
+  readonly cases: number;
+  readonly schemaValidityRate: number;
+  readonly reproducibilityRate: number;
+  readonly refusalRate: number;
+  readonly degradationCounts: Readonly<Record<string, number>>;
+  readonly labelAgreement?: { readonly scored: number; readonly agreed: number; readonly rate: number };
+  /** Metrics this pass cannot produce, each with the reason. */
+  readonly notApplicable: readonly { readonly metric: string; readonly reason: string }[];
+  /** False when the tier is too low to justify a routing decision (ADR-0031). */
+  readonly usableForRoutingDecision: boolean;
+  readonly caveats: readonly string[];
+  /** True when a target that must hold did not. Reproducibility is one. */
+  readonly isDefect: boolean;
+  readonly defectReasons: readonly string[];
+}
+
+/**
+ * Build a pass baseline.
+ *
+ * Fails without a corpus tier, for the same reason `buildReport` does: a metric
+ * with no stated provenance is worse than no metric, because it gets quoted as if
+ * it were validated.
+ *
+ * **Reproducibility below 100% is a DEFECT, not a score.** Replay exists so that
+ * the same input yields the same output; if it does not, the harness is not
+ * measuring the pass, it is measuring noise.
+ */
+export function buildPassBaseline(input: {
+  readonly corpusId: string;
+  readonly corpusTier?: CorpusTier;
+  readonly taskType: string;
+  readonly promptVersion: string;
+  readonly providerId: string;
+  readonly modelId: string;
+  readonly observations: readonly PassObservation[];
+  readonly notApplicable: readonly { readonly metric: string; readonly reason: string }[];
+  readonly extraCaveats?: readonly string[];
+}): PassBaselineReport {
+  if (input.corpusTier === undefined) {
+    throw new ReportIncompleteError(
+      `baseline for corpus '${input.corpusId}' has no tier; a metric with no stated provenance ` +
+        'will be quoted as though it were validated (ADR-0031)',
+    );
+  }
+
+  const observations = input.observations;
+  const cases = observations.length;
+  const rate = (n: number): number => (cases === 0 ? 0 : n / cases);
+
+  const degradationCounts: Record<string, number> = {};
+  for (const o of observations) {
+    for (const d of o.degradations) degradationCounts[d] = (degradationCounts[d] ?? 0) + 1;
+  }
+
+  const scored = observations.filter(
+    (o) => o.labelExpected !== undefined && o.labelActual !== undefined,
+  );
+  const agreed = scored.filter((o) => o.labelExpected === o.labelActual).length;
+
+  const schemaValidityRate = rate(observations.filter((o) => o.schemaValid).length);
+  const reproducibilityRate = rate(observations.filter((o) => o.reproducible).length);
+
+  const defectReasons: string[] = [];
+  if (cases === 0) defectReasons.push('the baseline ran zero cases, so it measures nothing');
+  if (cases > 0 && reproducibilityRate < 1) {
+    defectReasons.push(
+      `reproducibility is ${(reproducibilityRate * 100).toFixed(1)}%; replay must be deterministic, ` +
+        'so anything below 100% is a defect rather than a score',
+    );
+  }
+
+  const caveats: string[] = [
+    `metrics measured on a '${input.corpusTier}' corpus` +
+      (input.corpusTier === 'synthetic'
+        ? ' — synthetic material is weighted 0.25 and cannot justify a routing decision, nor a ' +
+          'claim about real-document behaviour'
+        : ''),
+    ...(input.notApplicable.length > 0
+      ? [`${input.notApplicable.length} metric(s) are not applicable to this pass and are listed, not omitted`]
+      : []),
+    ...(input.extraCaveats ?? []),
+  ];
+
+  return {
+    corpusId: input.corpusId,
+    corpusTier: input.corpusTier,
+    taskType: input.taskType,
+    promptVersion: input.promptVersion,
+    providerId: input.providerId,
+    modelId: input.modelId,
+    cases,
+    schemaValidityRate,
+    reproducibilityRate,
+    refusalRate: rate(observations.filter((o) => o.refused).length),
+    degradationCounts,
+    ...(scored.length === 0
+      ? {}
+      : { labelAgreement: { scored: scored.length, agreed, rate: agreed / scored.length } }),
+    notApplicable: input.notApplicable,
+    usableForRoutingDecision: tierRank(input.corpusTier) >= tierRank('representative'),
+    caveats,
+    isDefect: defectReasons.length > 0,
+    defectReasons,
   };
 }

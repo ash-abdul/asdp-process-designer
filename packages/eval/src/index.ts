@@ -47,4 +47,15 @@ export {
   computeExtractionQuality,
   computeSlotAccuracy,
   buildReport,
+  type PassObservation,
+  type PassBaselineReport,
+  buildPassBaseline,
 } from './metrics.ts';
+
+export {
+  StoreError,
+  type FilesystemCorpusStoreConfig,
+  type FilesystemRecordingStoreConfig,
+  createFilesystemCorpusStore,
+  createFilesystemRecordingStore,
+} from './stores.ts';

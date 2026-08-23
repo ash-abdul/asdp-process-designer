@@ -286,10 +286,10 @@ already exist and should be read from their own documents rather than paraphrase
 | V6 | [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md); [traceability-model.md](../20-domain/traceability-model.md) |
 | V7 | [governance-and-gates.md](../50-governance/governance-and-gates.md); [ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) |
 
-### 3.8 V4 — approved boundary (V4a) and approved shape (V4b)
+### 3.8 V4 — approved boundary (V4a, **implemented**) and approved shape (V4b)
 
 **Approved 2026-08-23.** V4 is **split**: **V4a — AI Broker and Live-Path Foundation** is approved
-and cleared to begin; **V4b — AI Evidence Extraction** is approved in shape only and does not begin
+and **implemented** — delivered state in [phase-2-status.md](phase-2-status.md) §6, awaiting review; **V4b — AI Evidence Extraction** is approved in shape only and does not begin
 until V4a is reviewed and accepted. Full boundary, acceptance criteria and the recorded E2 conflict
 are in [v4-proposal.md](v4-proposal.md).
 

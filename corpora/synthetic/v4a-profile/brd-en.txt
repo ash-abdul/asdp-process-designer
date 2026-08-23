@@ -1,0 +1,27 @@
+# Trade Licence Renewal — Business Requirements
+
+## 1. Purpose
+This document describes the renewal of a commercial trade licence for an
+establishment already registered with the authority.
+
+## 2. Scope
+Renewal only. New registrations and cancellations are out of scope.
+
+## 3. Eligibility
+An establishment may renew when its licence expires within ninety days, its
+registration is active, and no unpaid administrative fine is outstanding.
+
+## 4. Required documents
+| Document | Condition |
+|---|---|
+| Tenancy contract | Required when the registered address changed |
+| Authorised signatory letter | Required when the applicant is not the owner |
+
+## 5. Fees
+A renewal fee applies per licensed activity. A late renewal adds a monthly
+surcharge for each month after expiry.
+
+## 6. Decision
+An application is approved when eligibility holds and documents are complete;
+returned for correction when a document is missing; and refused when the
+establishment's registration has lapsed for more than one year.

@@ -21,3 +21,6 @@ export const EXTRACTORS = Symbol('ASDP_EXTRACTORS');
 export const PAGE_RASTERISER = Symbol('ASDP_PAGE_RASTERISER');
 /** The A3 VisionExtractor (V3). Refuses when no provider is configured. */
 export const VISION_EXTRACTOR = Symbol('ASDP_VISION_EXTRACTOR');
+
+/** The V4a `SourceProfiler` (`PROFILE_SOURCE`). Refuses when no provider is wired. */
+export const SOURCE_PROFILER = Symbol('ASDP_SOURCE_PROFILER');

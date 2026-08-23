@@ -18,12 +18,14 @@ import type {
   AiRequest,
   AiResponse,
   AiTaskType,
+  Capability,
   ContentPart,
   Proposal,
 } from '@asdp/schemas';
 import { classifyContent, type EgressPolicy, type ProjectEgressSettings } from './egress.ts';
 import { route, type RoutingConfig, type RoutingRecord } from './routing.ts';
 import { TaskRefusedError, type AiProvider } from './port.ts';
+import { requiredCapabilitiesFor, taskSpec } from './tasks.ts';
 
 export interface BrokerDeps {
   readonly providers: readonly AiProvider[];
@@ -55,6 +57,25 @@ export interface BrokerInvocation {
   readonly mode?: 'live' | 'replay';
   /** The source being read, when one is being read. */
   readonly sourceId?: string;
+
+  // --- V4a ----------------------------------------------------------------
+  /** Joins this interaction to the HTTP request and audit events around it. */
+  readonly correlationId?: string;
+  /**
+   * Whether the caller assembled the whole source or a chunk of it (**E4**).
+   *
+   * Supplied by the caller because context assembly is the caller's act. It
+   * defaults to `full`, and a caller that chunks without saying so is the silent
+   * degradation E4 exists to forbid.
+   */
+  readonly contextMode?: 'full' | 'chunked';
+  readonly chunkCount?: number;
+  readonly chunkRanges?: readonly {
+    readonly chunkId: string;
+    readonly charStart: number;
+    readonly charEnd: number;
+  }[];
+  readonly chunkStrategyVersion?: string;
 }
 
 export type BrokerOutcome =
@@ -180,6 +201,35 @@ export async function invoke(deps: BrokerDeps, call: BrokerInvocation): Promise<
     },
     usage: response.usage,
     humanVerdict: 'pending',
+
+    // --- V4a: what this answer actually rested on ------------------------
+    //
+    // Recorded rather than derivable. A provider descriptor changes when a
+    // provider is reconfigured, and an interaction is immutable history — so
+    // "which capabilities did this answer use?" has to be answered from the row.
+    capabilitiesUsed: capabilitiesUsedFor(
+      call,
+      // Capabilities belong to the MODEL, not the provider: two models behind one
+      // provider can differ on vision or context size, and the record must name
+      // what the model that answered could do.
+      provider.descriptor().models.find((m) => m.modelId === record.selectedModel)?.capabilities ?? [],
+    ),
+    // Reaching this line means the egress gate permitted the call: a refusal
+    // returns above, before any provider is contacted. Stored anyway, because a
+    // disclosure report that must INFER that egress was evaluated is not an audit.
+    egressDecision: 'permitted',
+    egressReason:
+      `classification ${record.classification} permitted to a ` +
+      `${provider.descriptor().deploymentClass} provider`,
+    // E4: full is not a safe assumption, so it is stated. Chunking itself is V4b;
+    // an over-context source is refused by name until then, never truncated.
+    contextMode: call.contextMode ?? 'full',
+    ...(call.chunkCount === undefined ? {} : { chunkCount: call.chunkCount }),
+    chunkRanges: [...(call.chunkRanges ?? [])],
+    ...(call.chunkStrategyVersion === undefined
+      ? {}
+      : { chunkStrategyVersion: call.chunkStrategyVersion }),
+    ...(call.correlationId === undefined ? {} : { correlationId: call.correlationId }),
   };
 
   const proposal: Proposal = {
@@ -204,6 +254,27 @@ export async function invoke(deps: BrokerDeps, call: BrokerInvocation): Promise<
   await deps.recordInteraction(withProposal);
 
   return { kind: 'proposal', proposal, interaction: withProposal, routing: record };
+}
+
+/**
+ * Capabilities this call actually rested on.
+ *
+ * The intersection of what the task asked for — required plus preferred — with
+ * what the selected provider declares. Not the provider's whole capability list:
+ * that would record what the provider *can* do rather than what this answer
+ * *used*, and the disclosure report needs the second.
+ */
+function capabilitiesUsedFor(
+  call: BrokerInvocation,
+  declared: readonly Capability[],
+): Capability[] {
+  const spec = taskSpec(call.taskType);
+  const hasVisual = call.content.some((c) => c.kind === 'image');
+  const wanted = new Set<Capability>([
+    ...requiredCapabilitiesFor(call.taskType, hasVisual),
+    ...spec.preferred,
+  ]);
+  return declared.filter((c) => wanted.has(c));
 }
 
 /** Concrete options offered on refusal, rather than a bare error. */

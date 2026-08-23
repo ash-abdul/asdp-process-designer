@@ -32,6 +32,7 @@ export {
   hasVisualContent,
   evaluateEgress,
   assertTransportPermitted,
+  assertDevelopmentCeiling,
 } from './egress.ts';
 
 export {

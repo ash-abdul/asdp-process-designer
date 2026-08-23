@@ -7,6 +7,7 @@
  */
 
 import type {
+  AiInteraction,
   Approval,
   AuditEvent,
   Baseline,
@@ -22,6 +23,7 @@ import type {
 import {
   ConcurrencyError,
   NotFoundError,
+  type AiInteractionRepository,
   type ApprovalRepository,
   type AuditRepository,
   type BaselineRepository,
@@ -299,6 +301,36 @@ class MemoryEvidenceRepository implements EvidenceRepository {
   }
 }
 
+
+/** Append-only, like its SQL counterpart: no update, no delete (invariant I8). */
+class MemoryAiInteractionRepository implements AiInteractionRepository {
+  private readonly byId = new Map<string, AiInteraction>();
+
+  async insert(interaction: AiInteraction): Promise<void> {
+    if (this.byId.has(interaction.id)) {
+      throw new Error(`ai interaction ${interaction.id} already exists; interactions are append-only`);
+    }
+    this.byId.set(interaction.id, interaction);
+  }
+  async get(id: string): Promise<AiInteraction | undefined> {
+    return this.byId.get(id);
+  }
+  async listForProject(projectId: string): Promise<readonly AiInteraction[]> {
+    return [...this.byId.values()]
+      .filter((i) => i.projectId === projectId)
+      .sort((a, b) => (a.at === b.at ? a.id.localeCompare(b.id) : a.at.localeCompare(b.at)));
+  }
+  async listForSource(sourceId: string): Promise<readonly AiInteraction[]> {
+    return [...this.byId.values()]
+      .filter((i) => i.sourceId === sourceId)
+      .sort((a, b) => (a.at === b.at ? a.id.localeCompare(b.id) : a.at.localeCompare(b.at)));
+  }
+  async setVerdict(id: string, verdict: AiInteraction['humanVerdict']): Promise<void> {
+    const held = this.byId.get(id);
+    if (held !== undefined) this.byId.set(id, { ...held, humanVerdict: verdict });
+  }
+}
+
 export function createMemoryRepositories(): Repositories {
   return {
     projects: new MemoryProjectRepository(),
@@ -310,6 +342,7 @@ export function createMemoryRepositories(): Repositories {
     sourceUnits: new MemorySourceUnitRepository(),
     evidence: new MemoryEvidenceRepository(),
     pageImages: new MemoryPageImageRepository(),
+    aiInteractions: new MemoryAiInteractionRepository(),
   };
 }
 

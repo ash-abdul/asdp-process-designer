@@ -1,0 +1,29 @@
+{
+  "id": "v4a-profile",
+  "name": "V4a PROFILE_SOURCE baseline corpus",
+  "tier": "synthetic",
+  "classification": "PUBLIC",
+  "languages": ["en", "ar"],
+  "heldOut": false,
+  "documents": [
+    {
+      "documentId": "brd-en",
+      "sourceKind": "brd",
+      "language": "en",
+      "provenance": "AUTHORED for this repository. Invented content, no real organisation, no real process."
+    },
+    {
+      "documentId": "sop-ar",
+      "sourceKind": "sop",
+      "language": "ar",
+      "provenance": "AUTHORED for this repository. Invented content, no real organisation, no real process."
+    },
+    {
+      "documentId": "policy-mixed",
+      "sourceKind": "policy",
+      "language": "ar",
+      "provenance": "AUTHORED for this repository. Mixed Arabic/English, invented content."
+    }
+  ],
+  "notes": "SYNTHETIC. Weighted 0.25 by TIER_WEIGHT and never usable for a routing decision (ADR-0031 rule 4). `sourceKind` is the label PROFILE_SOURCE agreement is scored against. Nothing here was captured from a real document or a real model."
+}

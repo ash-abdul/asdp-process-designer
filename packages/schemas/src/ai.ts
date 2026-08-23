@@ -8,7 +8,7 @@
  */
 
 import { z } from 'zod';
-import { Classification, EntityId } from './primitives.ts';
+import { Bcp47, Classification, EntityId } from './primitives.ts';
 
 // ---------------------------------------------------------------------------
 // Tasks
@@ -246,5 +246,104 @@ export const AiInteraction = z.object({
   mode: z.enum(['live', 'replay']).default('replay'),
   /** The source this interaction read, when it read one. */
   sourceId: EntityId.optional(),
+
+  // --- added in V4a -------------------------------------------------------
+  /**
+   * Capabilities the selected provider actually offered for this task.
+   *
+   * Recorded rather than derived from the provider id, because a descriptor
+   * changes when a provider is reconfigured and an interaction is immutable
+   * history. "Which capabilities did this answer rest on?" must be answerable
+   * from the record alone (ADR-0022).
+   */
+  capabilitiesUsed: z.array(Capability).default([]),
+  /**
+   * The egress decision this call was permitted under.
+   *
+   * `refused` interactions are not recorded here — a refusal produces no
+   * interaction — so this is `permitted` in practice. It is stored anyway
+   * because a disclosure report that has to *infer* that egress was evaluated
+   * is not an audit ([ADR-0021](../../../docs/adr/ADR-0021-data-classification-egress-policy.md)).
+   */
+  egressDecision: z.enum(['permitted', 'refused']).default('permitted'),
+  /** Why, when a decision needs explaining — a ceiling, a deployment class. */
+  egressReason: z.string().optional(),
+  /**
+   * Whether the provider saw the whole source or a chunk of it (**E4**).
+   *
+   * `full` is not a safe default to assume, which is why it is stored: a chunked
+   * extraction that reads as full is exactly the silent degradation E4 forbids.
+   */
+  contextMode: z.enum(['full', 'chunked']).default('full'),
+  /** Chunk count when `contextMode` is `chunked`. */
+  chunkCount: z.number().int().positive().optional(),
+  /**
+   * Which part of the source this call saw, as code-point ranges (**E4** rule 3).
+   *
+   * Retained so a proposal derived from chunk 3 of 7 can be traced to the text
+   * that produced it rather than to the whole document.
+   */
+  chunkRanges: z
+    .array(z.object({ chunkId: z.string(), charStart: z.number().int().nonnegative(), charEnd: z.number().int().nonnegative() }))
+    .default([]),
+  /**
+   * The request correlation id, so one interaction joins the HTTP call, the audit
+   * events and the logs that surround it.
+   */
+  correlationId: z.string().optional(),
+  /** The deterministic chunking strategy version, when one was applied (**E4** rule 1). */
+  chunkStrategyVersion: z.string().optional(),
 });
 export type AiInteraction = z.infer<typeof AiInteraction>;
+
+// ---------------------------------------------------------------------------
+// PROFILE_SOURCE output contract (V4a)
+// ---------------------------------------------------------------------------
+
+/**
+ * What a `PROFILE_SOURCE` pass may report.
+ *
+ * **Commentary about a document, never a claim about requirements.** The schema
+ * is deliberately narrow, because the schema is the boundary: a field for
+ * "obligations found" or "process steps" would invite exactly the substantive
+ * claim V4a excludes, and a model will fill any field it is given.
+ *
+ * Nothing here becomes evidence, populates a RAF slot, or supports a
+ * requirement. A profile answers "what kind of document is this, and what does it
+ * appear to contain" — which is the cheapest, lowest-consequence question in the
+ * task vocabulary, and therefore the right one to prove the chain with.
+ */
+export const SourceProfile = z.object({
+  /**
+   * The business role the document appears to play.
+   *
+   * A HINT, never a commitment: the source's `kind` is set by the human who
+   * uploaded it, and this never overwrites it.
+   */
+  documentKind: z.enum(['brd', 'sop', 'policy', 'form', 'diagram', 'correspondence', 'other', 'unclear']),
+  /** BCP-47 tags the model observed, in order of prominence. */
+  languages: z.array(Bcp47).default([]),
+  /** Structural features observed. Presence only — never their content. */
+  observed: z
+    .object({
+      hasNumberedSections: z.boolean().default(false),
+      hasTables: z.boolean().default(false),
+      hasDecisionLogic: z.boolean().default(false),
+      hasFormFields: z.boolean().default(false),
+      hasProcessNarrative: z.boolean().default(false),
+    })
+    .default({
+      hasNumberedSections: false,
+      hasTables: false,
+      hasDecisionLogic: false,
+      hasFormFields: false,
+      hasProcessNarrative: false,
+    }),
+  /** Section headings as they appear, verbatim. Navigation, not analysis. */
+  sectionHeadings: z.array(z.string()).max(200).default([]),
+  /** One or two sentences on what the document is. No requirement claims. */
+  summary: z.string().max(1000),
+  /** What the model could not read or was unsure about. Never silent. */
+  limitations: z.array(z.string()).default([]),
+});
+export type SourceProfile = z.infer<typeof SourceProfile>;

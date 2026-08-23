@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v4a-profile",
+    "taskType": "PROFILE_SOURCE",
+    "promptVersion": "profile-source@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "4a2f150d665ec518af64319d230d22aa80c8d300f8b7a5d1f18eae46f5172f26"
+  },
+  "keyHash": "9edeaa318543d68bafa37fadf35e599ee2738dfe9c69e51fe450e973b62e3832",
+  "response": {
+    "outputs": [
+      "{\"documentKind\":\"sop\",\"languages\":[\"ar\"],\"observed\":{\"hasNumberedSections\":true,\"hasTables\":false,\"hasDecisionLogic\":true,\"hasFormFields\":false,\"hasProcessNarrative\":true},\"sectionHeadings\":[\"إجراء تشغيلي — تجديد الرخصة التجارية\",\"١. الغرض\",\"٢. النطاق\",\"٣. الخطوات\",\"٤. المدة\"],\"summary\":\"Authored stub profile: sop in ar with 5 section heading(s). Not a model reading.\",\"limitations\":[\"produced by the authored stub provider, not by a model; it describes document shape only\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 456,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T13:51:36.926Z",
+  "classification": "PUBLIC"
+}

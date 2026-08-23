@@ -219,3 +219,37 @@ export function assertTransportPermitted(
     throw new EgressViolationError(classification, provider.providerId, provider.deploymentClass);
   }
 }
+
+/**
+ * **E1** — the development egress ceiling.
+ *
+ * A second, *stricter* gate than `assertTransportPermitted`, applied only where a
+ * live provider is actually invoked during development.
+ *
+ * The approved production policy refuses `RESTRICTED` and above to an external
+ * provider ([ADR-0021](../../../docs/adr/ADR-0021-data-classification-egress-policy.md)).
+ * **E1** lowers the development ceiling to `INTERNAL`: synthetic, sanitised, and
+ * `PUBLIC`/`INTERNAL` material may leave, and `CONFIDENTIAL` may not — not
+ * because it is unsafe under the policy, but because sending real confidential
+ * material to an external provider *merely to develop against it* is not a
+ * defensible reason. A private-endpoint decision stays a deployment matter
+ * (**OD-1**).
+ *
+ * Deliberately separate from the production gate rather than folded into it: the
+ * production policy must not quietly become a development convenience, and a
+ * development ceiling must not quietly become the production rule.
+ *
+ * An on-premise or VPC provider is unaffected — nothing leaves the enterprise.
+ */
+export function assertDevelopmentCeiling(
+  content: readonly ContentPart[],
+  provider: ProviderDescriptor,
+  ceiling: Classification = 'INTERNAL',
+): void {
+  if (provider.deploymentClass !== 'external_hosted') return;
+
+  const classification = classifyContent(content);
+  if (atOrAbove(classification, ceiling) && classification !== ceiling) {
+    throw new EgressViolationError(classification, provider.providerId, provider.deploymentClass);
+  }
+}

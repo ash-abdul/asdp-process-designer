@@ -17,6 +17,7 @@ import type {
   HealthReport,
   IdGenerator,
   Repositories,
+  SourceProfiler,
   UnitOfWork,
 } from '../ports.ts';
 import type { Database } from '../persistence/db.ts';
@@ -36,6 +37,8 @@ import { ProjectsController } from './projects.controller.ts';
 import { SourcesController } from './sources.controller.ts';
 import { SourceViewerController } from './source-viewer.controller.ts';
 import { EvidenceController } from './evidence.controller.ts';
+import { AnalysisController } from './analysis.controller.ts';
+import { unavailableSourceProfiler } from '../ai/broker-profiler.ts';
 import { ActorGuard } from './actor.guard.ts';
 import { CorrelationInterceptor } from './correlation.interceptor.ts';
 import {
@@ -48,6 +51,7 @@ import {
   EXTRACTORS,
   PAGE_RASTERISER,
   VISION_EXTRACTOR,
+  SOURCE_PROFILER,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
@@ -67,6 +71,13 @@ export interface AppDependencies {
   readonly pageRasteriser?: PageRasteriser;
   /** Overrides the vision extractor — used by tests with recorded fixtures. */
   readonly visionExtractor?: VisionExtractor;
+  /**
+   * Overrides the `PROFILE_SOURCE` profiler (V4a).
+   *
+   * The default REFUSES: the application ships unable to reach a provider, and
+   * wiring one is a deliberate configuration act rather than a fallback.
+   */
+  readonly sourceProfiler?: SourceProfiler;
 }
 
 /**
@@ -124,6 +135,8 @@ export class AppModule {
         // Order matters: the viewer's routes are more specific than
         // SourcesController's `:sourceId`, so they are registered first.
         SourceViewerController,
+        // More specific than SourcesController's `:sourceId`, so registered first.
+        AnalysisController,
         SourcesController,
         EvidenceController,
       ],
@@ -135,6 +148,7 @@ export class AppModule {
         { provide: EXTRACTORS, useValue: deps.extractors ?? defaultExtractors() },
         { provide: PAGE_RASTERISER, useValue: deps.pageRasteriser ?? unavailableRasteriser() },
         { provide: VISION_EXTRACTOR, useValue: deps.visionExtractor ?? unavailableVisionExtractor() },
+        { provide: SOURCE_PROFILER, useValue: deps.sourceProfiler ?? unavailableSourceProfiler() },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },
         { provide: ID_GENERATOR, useValue: deps.ids },

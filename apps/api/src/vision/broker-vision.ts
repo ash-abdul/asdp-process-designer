@@ -19,6 +19,7 @@
 import { invoke, type BrokerDeps } from '@asdp/ai';
 import { VisionResult, type Classification, type ProjectSettings } from '@asdp/schemas';
 import type { VisionExtractor, VisionInput, VisionOutcome } from '@asdp/ingestion';
+import { decodeStructured } from '../ai/broker-profiler.ts';
 
 export const VISION_EXTRACTOR_VERSION = 'vision@1';
 
@@ -114,7 +115,26 @@ export function createBrokerVisionExtractor(
       // The broker returns a PROPOSAL, never domain state (ADR-0004). Parsing it
       // against the schema here is what stops a malformed model response becoming
       // a malformed unit: a region without a rectangle is not evidence.
-      const parsed = VisionResult.safeParse(outcome.proposal.payload);
+      //
+      // `proposal.payload` is the response's OUTPUTS LIST, not an object — the
+      // transport does not interpret the payload — so it is decoded first. V3
+      // validated the list against an object schema and could therefore only ever
+      // have refused; nothing caught it because nothing called this module until
+      // V4a wired it (D6 item 4).
+      const decoded = decodeStructured(outcome.proposal.payload);
+      if (!decoded.ok) {
+        return {
+          kind: 'refused',
+          reason: `the vision response was not usable structured output: ${decoded.reason}`,
+          degradations: ['prompt_repair_loop'],
+          options: [
+            'retry the extraction',
+            'describe the image content manually as free-text evidence',
+          ],
+        };
+      }
+
+      const parsed = VisionResult.safeParse(decoded.value);
       if (!parsed.success) {
         return {
           kind: 'refused',

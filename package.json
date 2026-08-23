@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ASDP Process Designer — requirements-driven Camunda 8 process application generator",
+  "description": "ASDP Process Designer \u2014 requirements-driven Camunda 8 process application generator",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -20,6 +20,8 @@
     "check:arch:selftest": "node tools/check-architecture.mjs --self-test",
     "check:docs": "node tools/check-docs.mjs",
     "verify": "npm run build && npm run check:arch && npm run check:arch:selftest && npm run check:docs && npm test",
+    "ai:capture": "node apps/api/dist/ai/live-capture.js",
+    "eval:baseline": "node apps/api/dist/ai/baseline.js",
     "start": "node apps/api/dist/main.js",
     "start:worker": "node apps/api/dist/worker.js",
     "build:assets": "node tools/copy-assets.mjs"

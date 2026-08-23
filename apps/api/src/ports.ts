@@ -8,15 +8,18 @@
  */
 
 import type {
+  AiInteraction,
   Approval,
   AuditEvent,
   Baseline,
+  Classification,
   EvidenceItem,
   Gate,
   GateCode,
   PageImage,
   Project,
   Source,
+  SourceProfile,
   SourceStatus,
   SourceUnit,
 } from '@asdp/schemas';
@@ -130,6 +133,22 @@ export interface PageImageRepository {
 }
 
 /**
+ * AI interaction records — APPEND-ONLY (invariant I8, ADR-0032).
+ *
+ * There is no update and no delete. An interaction records what was sent outside
+ * the enterprise and what came back; editing it would turn the AI-disclosure
+ * report into a story. `setVerdict` is the single mutation the design allows,
+ * because a human's verdict on a proposal genuinely arrives later.
+ */
+export interface AiInteractionRepository {
+  insert(interaction: AiInteraction): Promise<void>;
+  get(id: string): Promise<AiInteraction | undefined>;
+  listForProject(projectId: string): Promise<readonly AiInteraction[]>;
+  listForSource(sourceId: string): Promise<readonly AiInteraction[]>;
+  setVerdict(id: string, verdict: AiInteraction['humanVerdict']): Promise<void>;
+}
+
+/**
  * Insert-only (invariants D1 and D8). There is deliberately no update and no
  * delete: an EvidenceItem is immutable and is only ever re-extracted.
  */
@@ -174,6 +193,7 @@ export interface Repositories {
   readonly sourceUnits: SourceUnitRepository;
   readonly evidence: EvidenceRepository;
   readonly pageImages: PageImageRepository;
+  readonly aiInteractions: AiInteractionRepository;
 }
 
 /** Blob storage lives in its own module; re-exported so the port set is one import. */
@@ -187,4 +207,59 @@ export interface HealthReport {
 
 export interface DependencyProbe {
   check(): Promise<HealthReport>;
+}
+
+// ---------------------------------------------------------------------------
+// AI analysis ports (V4a)
+// ---------------------------------------------------------------------------
+
+/**
+ * The `SourceProfiler` port — `PROFILE_SOURCE`.
+ *
+ * A port rather than a direct broker call from the command layer, for the same
+ * reason `VisionExtractor` is one: the command decides *whether* to ask and what
+ * to do with the answer, while routing, the egress gate and the degradation
+ * ladder are the application's business. It also means the command is testable
+ * against a double with no provider anywhere near it.
+ */
+export interface ProfileSourceRequest {
+  readonly projectId: string;
+  readonly sourceId: string;
+  /** Canonical text, already assembled by the caller. */
+  readonly text: string;
+  readonly classification: Classification;
+  readonly languageHints: readonly string[];
+  /** Joins the interaction to the HTTP request and the audit events. */
+  readonly correlationId?: string;
+}
+
+/**
+ * The outcome of a profiling attempt.
+ *
+ * A refusal is a first-class outcome, exactly as it is for vision: the egress
+ * gate may forbid the call, no eligible provider may exist, or a provider may
+ * fail. Each is correct behaviour that the caller must handle, not an exception.
+ *
+ * The interaction record travels with the outcome and is persisted **by the
+ * caller**, inside the caller's unit of work — so the interaction and the audit
+ * event commit together or not at all.
+ */
+export type ProfileSourceOutcome =
+  | {
+      readonly kind: 'profiled';
+      readonly profile: SourceProfile;
+      readonly interaction: AiInteraction;
+    }
+  | {
+      readonly kind: 'refused';
+      readonly reason: string;
+      readonly degradations: readonly string[];
+      readonly options: readonly string[];
+      /** Present when a provider was reached and the response was unusable. */
+      readonly interaction?: AiInteraction;
+    };
+
+export interface SourceProfiler {
+  readonly id: string;
+  profile(request: ProfileSourceRequest): Promise<ProfileSourceOutcome>;
 }

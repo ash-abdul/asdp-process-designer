@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v4a-profile",
+    "taskType": "PROFILE_SOURCE",
+    "promptVersion": "profile-source@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "1f3b31e5df4f10b5b4aa0921da31005ed5d79d3903d98a8cb9d70c839b048d8c"
+  },
+  "keyHash": "c3dc43bcc41fa06139744feac1a44ba7070cde71ac427b269a328015d3022c49",
+  "response": {
+    "outputs": [
+      "{\"documentKind\":\"policy\",\"languages\":[\"ar\",\"en\"],\"observed\":{\"hasNumberedSections\":true,\"hasTables\":true,\"hasDecisionLogic\":false,\"hasFormFields\":false,\"hasProcessNarrative\":false},\"sectionHeadings\":[\"سياسة الرسوم والمهل — Fees and Deadlines Policy\",\"١. المبدأ العام / General principle\",\"٢. المهل / Deadlines\",\"٣. الغرامات / Surcharges\"],\"summary\":\"Authored stub profile: policy in ar/en with 4 section heading(s). Not a model reading.\",\"limitations\":[\"produced by the authored stub provider, not by a model; it describes document shape only\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 475,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T13:51:36.926Z",
+  "classification": "PUBLIC"
+}

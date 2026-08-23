@@ -1,6 +1,7 @@
 # V4 — AI Analysis Passes · APPROVED BOUNDARY (V4a) and PROPOSED SEQUEL (V4b)
 
-> **Status:** **V4a APPROVED 2026-08-23** and cleared to begin. **V4b approved in shape, not in
+> **Status:** **V4a APPROVED 2026-08-23 and IMPLEMENTED** — delivered state in
+> [phase-2-status.md](phase-2-status.md) §6, awaiting review. **V4b approved in shape, not in
 > detail** — it does not begin until V4a is reviewed and accepted, and one recorded conflict (§6)
 > must be resolved first.
 > **Version:** 1.0 · **Updated:** 2026-08-23
@@ -27,7 +28,7 @@ The split separates the part that is mostly plumbing from the part where epistem
 
 | Slice | Character | State |
 |---|---|---|
-| **V4a — AI Broker and Live-Path Foundation** | Wiring, persistence, one low-stakes pass, the governed live path, the first fixtures, the evaluation baseline | **APPROVED** |
+| **V4a — AI Broker and Live-Path Foundation** | Wiring, persistence, one low-stakes pass, the governed live path, the first fixtures, the evaluation baseline | **APPROVED and IMPLEMENTED** — [phase-2-status.md](phase-2-status.md) §6 |
 | **V4b — AI Evidence Extraction** | `EXTRACT_EVIDENCE`, post-hoc citation verification, provenance enforcement, confidence propagation | **Approved in shape only.** Needs V4a accepted, and §6 resolved |
 
 V4a deliberately **makes no substantive requirements claim**. Its acceptance proves the *chain*, not

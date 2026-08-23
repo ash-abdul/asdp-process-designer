@@ -143,6 +143,29 @@ const LIVE_AI_IN_TEST_PATTERNS = [
 ];
 
 /**
+ * A7 / D5 / V4a: the live provider path is confined to one entrypoint.
+ *
+ * `apps/api/src/ai/live-capture.ts` is the only module permitted to construct a
+ * live transport, and **nothing may import it**. It is executed directly
+ * (`npm run ai:capture`), so an import is either a mistake or the beginning of a
+ * live call inside normal code — and both must fail the build rather than be
+ * caught in review.
+ *
+ * This is what makes "normal verification never calls a provider" a property of
+ * the build rather than a habit: `npm run verify` cannot reach a live transport,
+ * because no module it loads is allowed to reference the one file that has one.
+ */
+const LIVE_PATH_MODULE = 'apps/api/src/ai/live-capture.ts';
+
+/** Modules permitted to name the live transport factory at all. */
+const LIVE_TRANSPORT_ALLOWED = [
+  LIVE_PATH_MODULE,
+  // The definition itself, and its exporting barrel.
+  'packages/ai/src/adapters/claude-transport.ts',
+  'packages/ai/src/index.ts',
+];
+
+/**
  * Factories that perform real network I/O unless a fetch double is injected.
  *
  * Each entry names the option that makes the call deterministic. A test that
@@ -473,6 +496,37 @@ export function evaluateRules(files) {
           }
         }
       }
+    }
+
+    // --- A7 / V4a: the live path is confined ---------------------------
+    //
+    // Two halves of one rule. Nothing may IMPORT the live entrypoint, and nothing
+    // outside the allowed set may CONSTRUCT a live transport. Together they mean a
+    // live call is unreachable from anything `npm run verify` loads.
+    for (const spec of imports) {
+      if (/(?:^|\/)live-capture(?:\.ts|\.js)?$/.test(spec)) {
+        violations.push({
+          rule: 'live-path-confinement',
+          file: f.path,
+          detail:
+            'imports the live-capture entrypoint, which is the only module permitted to reach a ' +
+            'provider. It is executed directly (`npm run ai:capture`) and must stay unreachable ' +
+            'from application and test code (A7)',
+        });
+      }
+    }
+    if (
+      !LIVE_TRANSPORT_ALLOWED.includes(normalisedPathOf(f)) &&
+      !/\.test\.ts$/.test(normalisedPathOf(f)) &&
+      /\bcreateClaudeTransport\s*\(/.test(f.text)
+    ) {
+      violations.push({
+        rule: 'live-path-confinement',
+        file: f.path,
+        detail:
+          'constructs a live transport outside the confined live path. Only ' +
+          `${LIVE_PATH_MODULE} may do so, so that normal verification cannot reach a provider (A7)`,
+      });
     }
 
     // --- ADR-0037 (PROPOSED): no PDF engine is adopted yet --------------
@@ -835,6 +889,31 @@ const SELF_TEST_CASES = [
     rule: 'no-live-ai-in-tests',
     file: { path: 'apps/api/src/endpoint.test.ts', pkg: '@asdp/api', cls: 'application',
             text: `const url = 'https://api.anthropic.com/v1/messages';\n` },
+  },
+  {
+    name: 'importing the live-capture entrypoint is rejected (A7 / V4a)',
+    rule: 'live-path-confinement',
+    file: { path: 'apps/api/src/http/sneaky.controller.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { x } from '../ai/live-capture.ts';\n` },
+  },
+  {
+    name: 'a TEST importing the live-capture entrypoint is rejected too (A7 / V4a)',
+    rule: 'live-path-confinement',
+    file: { path: 'apps/api/src/capture.test.ts', pkg: '@asdp/api', cls: 'application',
+            text: `import { x } from './ai/live-capture.ts';\n` },
+  },
+  {
+    name: 'constructing a live transport outside the live path is rejected (A7 / V4a)',
+    rule: 'live-path-confinement',
+    file: { path: 'apps/api/src/commands/eager.ts', pkg: '@asdp/api', cls: 'application',
+            text: `const t = createClaudeTransport({ apiKey: k });\n` },
+  },
+  {
+    name: 'the live path itself MAY construct a live transport (A7 / V4a)',
+    rule: 'live-path-confinement',
+    expectNone: true,
+    file: { path: 'apps/api/src/ai/live-capture.ts', pkg: '@asdp/api', cls: 'application',
+            text: `const t = createClaudeTransport({ apiKey: k });\n` },
   },
   {
     name: 'importing a PDF engine is rejected while ADR-0037 is unapproved',

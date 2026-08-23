@@ -85,6 +85,12 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   { name: 'setSourceAuthorityRank', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
   { name: 'recordEvidence', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
   { name: 'validateIntake', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer'], stage: null, mutatesArtifact: false },
+  // V4a. Profiling SPENDS MONEY and may send content to a provider, so it is not
+  // a Viewer action even though its output is only commentary. Reading the
+  // interaction log is wider: the AI-disclosure question — "what was sent
+  // outside, and why?" — is exactly what a compliance reviewer is there to ask.
+  { name: 'profileSource', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  { name: 'listAiInteractions', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
 ];
 
 export function commandDescriptor(name: string): CommandDescriptor {

@@ -15,6 +15,7 @@
  */
 
 import type {
+  AiInteraction,
   Classification,
   EvidenceItem,
   PageImage,
@@ -27,6 +28,7 @@ import type {
 } from '@asdp/schemas';
 import {
   NotFoundError,
+  type AiInteractionRepository,
   type EvidenceRepository,
   type PageImageRepository,
   type SourceRepository,
@@ -409,6 +411,114 @@ class SqlEvidenceRepository implements EvidenceRepository {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// AI interactions — APPEND-ONLY (invariant I8)
+// ---------------------------------------------------------------------------
+
+function mapAiInteraction(r: Record<string, unknown>): AiInteraction {
+  const sourceId = optionalString(r.source_id);
+  const correlationId = optionalString(r.correlation_id);
+  const proposalId = optionalString(r.proposal_id);
+  const egressReason = optionalString(r.egress_reason);
+  const chunkStrategyVersion = optionalString(r.chunk_strategy_version);
+  const chunkCount = r.chunk_count === null || r.chunk_count === undefined ? undefined : Number(r.chunk_count);
+  const routing = r.routing_json as AiInteraction['routing'];
+  return {
+    id: String(r.id),
+    projectId: String(r.project_id),
+    at: toIso(r.at),
+    taskType: String(r.task_type) as AiInteraction['taskType'],
+    taskVersion: String(r.task_version),
+    promptVersion: String(r.prompt_version),
+    providerId: String(r.provider_id),
+    modelId: String(r.model_id),
+    deploymentClass: String(r.deployment_class) as AiInteraction['deploymentClass'],
+    capabilityTier: String(r.capability_tier) as AiInteraction['capabilityTier'],
+    capabilitiesUsed: (r.capabilities_used as AiInteraction['capabilitiesUsed']) ?? [],
+    routing,
+    usage: {
+      inputUnits: Number(r.input_units),
+      cachedInputUnits: Number(r.cached_input_units),
+      outputUnits: Number(r.output_units),
+      costEstimate: Number(r.cost_estimate),
+      latencyMs: Number(r.latency_ms),
+    },
+    egressDecision: String(r.egress_decision) as AiInteraction['egressDecision'],
+    ...(egressReason === undefined ? {} : { egressReason }),
+    contextMode: String(r.context_mode) as AiInteraction['contextMode'],
+    ...(chunkCount === undefined ? {} : { chunkCount }),
+    chunkRanges: (r.chunk_ranges_json as AiInteraction['chunkRanges']) ?? [],
+    ...(chunkStrategyVersion === undefined ? {} : { chunkStrategyVersion }),
+    mode: String(r.mode) as AiInteraction['mode'],
+    ...(sourceId === undefined ? {} : { sourceId }),
+    ...(correlationId === undefined ? {} : { correlationId }),
+    ...(proposalId === undefined ? {} : { proposalId }),
+    humanVerdict: String(r.human_verdict) as AiInteraction['humanVerdict'],
+  };
+}
+
+/**
+ * Append-only. No update, no delete — `setVerdict` is the one mutation, because a
+ * human verdict on a proposal genuinely arrives after the call.
+ */
+class SqlAiInteractionRepository implements AiInteractionRepository {
+  constructor(private readonly db: Db) {}
+
+  async insert(interaction: AiInteraction): Promise<void> {
+    await this.db.query(
+      `insert into ai_interaction (id, project_id, at, task_type, task_version, prompt_version,
+                                   provider_id, model_id, deployment_class, capability_tier,
+                                   capabilities_used, routing_json, content_classification,
+                                   egress_decision, egress_reason, context_mode, chunk_count,
+                                   chunk_ranges_json, chunk_strategy_version, mode, source_id,
+                                   correlation_id, input_units, cached_input_units, output_units,
+                                   cost_estimate, latency_ms, proposal_id, human_verdict)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18::jsonb,$19,
+               $20,$21,$22,$23,$24,$25,$26,$27,$28,$29)`,
+      [
+        interaction.id, interaction.projectId, interaction.at, interaction.taskType,
+        interaction.taskVersion, interaction.promptVersion, interaction.providerId,
+        interaction.modelId, interaction.deploymentClass, interaction.capabilityTier,
+        interaction.capabilitiesUsed, JSON.stringify(interaction.routing),
+        interaction.routing.contentClassification, interaction.egressDecision,
+        interaction.egressReason ?? null, interaction.contextMode, interaction.chunkCount ?? null,
+        JSON.stringify(interaction.chunkRanges), interaction.chunkStrategyVersion ?? null,
+        interaction.mode, interaction.sourceId ?? null, interaction.correlationId ?? null,
+        interaction.usage.inputUnits, interaction.usage.cachedInputUnits,
+        interaction.usage.outputUnits, interaction.usage.costEstimate, interaction.usage.latencyMs,
+        interaction.proposalId ?? null, interaction.humanVerdict,
+      ],
+    );
+  }
+
+  async get(id: string): Promise<AiInteraction | undefined> {
+    const r = await this.db.query('select * from ai_interaction where id = $1', [id]);
+    const row = r.rows[0];
+    return row === undefined ? undefined : mapAiInteraction(row);
+  }
+
+  async listForProject(projectId: string): Promise<readonly AiInteraction[]> {
+    const r = await this.db.query(
+      'select * from ai_interaction where project_id = $1 order by at asc, id asc',
+      [projectId],
+    );
+    return r.rows.map(mapAiInteraction);
+  }
+
+  async listForSource(sourceId: string): Promise<readonly AiInteraction[]> {
+    const r = await this.db.query(
+      'select * from ai_interaction where source_id = $1 order by at asc, id asc',
+      [sourceId],
+    );
+    return r.rows.map(mapAiInteraction);
+  }
+
+  async setVerdict(id: string, verdict: AiInteraction['humanVerdict']): Promise<void> {
+    await this.db.query('update ai_interaction set human_verdict = $2 where id = $1', [id, verdict]);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
@@ -418,11 +528,13 @@ export function createSqlIntakeRepositories(db: Db): {
   readonly sourceUnits: SourceUnitRepository;
   readonly evidence: EvidenceRepository;
   readonly pageImages: PageImageRepository;
+  readonly aiInteractions: AiInteractionRepository;
 } {
   return {
     sources: new SqlSourceRepository(db),
     sourceUnits: new SqlSourceUnitRepository(db),
     evidence: new SqlEvidenceRepository(db),
     pageImages: new SqlPageImageRepository(db),
+    aiInteractions: new SqlAiInteractionRepository(db),
   };
 }

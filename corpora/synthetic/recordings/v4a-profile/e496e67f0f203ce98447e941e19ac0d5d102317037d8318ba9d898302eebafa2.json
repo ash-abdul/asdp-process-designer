@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v4a-profile",
+    "taskType": "PROFILE_SOURCE",
+    "promptVersion": "profile-source@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "96216033c1f660312ec42a75ad366eed7121fb8abafe443e48bb611504146c95"
+  },
+  "keyHash": "e496e67f0f203ce98447e941e19ac0d5d102317037d8318ba9d898302eebafa2",
+  "response": {
+    "outputs": [
+      "{\"documentKind\":\"brd\",\"languages\":[\"en\"],\"observed\":{\"hasNumberedSections\":true,\"hasTables\":true,\"hasDecisionLogic\":true,\"hasFormFields\":true,\"hasProcessNarrative\":false},\"sectionHeadings\":[\"Trade Licence Renewal — Business Requirements\",\"1. Purpose\",\"2. Scope\",\"3. Eligibility\",\"4. Required documents\",\"5. Fees\",\"6. Decision\"],\"summary\":\"Authored stub profile: brd in en with 7 section heading(s). Not a model reading.\",\"limitations\":[\"produced by the authored stub provider, not by a model; it describes document shape only\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 1004,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T13:51:36.924Z",
+  "classification": "PUBLIC"
+}
