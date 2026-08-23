@@ -47,6 +47,29 @@ participates in; where severity differs by gate it is shown as `G3:W → G4:E`.
 *`L1-SCH-002..004` should be unreachable given a correct compiler; a violation is reported as an
 internal error.*
 
+### `L1-REQ` — requirement proposals ★ new in V5 (decision **J6**)
+
+| ID | Sev | Gates | Check |
+|---|---|---|---|
+| `L1-REQ-001` | E | G1 | Requirement cites ≥1 `EvidenceItem` (**D2**) |
+| `L1-REQ-002` | E | G1 | Every cited evidence anchor still resolves ([ADR-0008](../adr/ADR-0008-resolvable-anchors.md)) |
+| `L1-REQ-003` | E | G1 | Requirement classification ≥ the maximum over its cited evidence (**D10**) |
+| `L1-REQ-004` | E | G1 | Requirement sits in the slot the v1.1 disjointness rules assign it |
+| `L1-REQ-005` | I | G1 | Requirement rests only on `image_region` evidence — target-verified, never content-verified ([ADR-0038](../adr/ADR-0038-target-versus-content-verification.md)) |
+
+**Why L1 and not a new layer.** L0 is *ingestion integrity* and a requirement is not an ingestion
+artefact; L1 is *"Schema & structural"* at all gates, which is what these are — structural invariants
+over an entity. An eighth layer would be a larger change than five rules justify.
+
+**Why the family is only five.** Requirement *quality* signals — vague quantifier, actor unknown,
+untestable, unverifiable — are **`RequirementFlag`s, not rules** (**J6**). §3 of
+[requirement-analysis-frame.md](../20-domain/requirement-analysis-frame.md) derives the `ambiguities`
+slot from flags, and G1's criterion is *"0 blocking **flags**"*, so blocking-ness belongs to the flag.
+
+*`L1-REQ-001`, `003`, `004` and `005` should be **unreachable**: the V5 proposal gate refuses those
+writes, so a violation is an internal error rather than a user error. `L1-REQ-002` is genuinely
+reachable — an anchor can drift after a proposal is written.*
+
 ## L2 — Semantic model
 
 | ID | Sev | Gates | Check |
@@ -179,13 +202,18 @@ validation report, uncitable, untrackable, untranslatable. Every rule below name
 
 | Severity | Count |
 |---|---|
-| ERROR | 68 |
+| ERROR | 72 |
 | WARNING | 33 |
-| INFO | 6 |
+| INFO | 7 |
 | Gate-scoped (`L4-SPEC-010`, `L4-TRACE-004`) | 2 |
-| **Total** | **109** |
+| **Total** | **114** |
 
-By layer: L0 = 10 · L1 = 8 · L2 = 24 · L3 = 14 · **L4 = 21** (10 SPEC + 11 TRACE) · L5 = 25 · L6 = 7.
+By layer: L0 = 10 · **L1 = 13** (8 SCH + **5 REQ**) · L2 = 24 · L3 = 14 · **L4 = 21** (10 SPEC + 11
+TRACE) · L5 = 25 · L6 = 7.
+
+**Implemented in code today: 15** — the ten `L0-ING` rules (V1) and the five `L1-REQ` rules (V5).
+The rest are catalogued and not yet implemented, because each arrives with the slice that creates the
+content it judges.
 
 ## Notes on catalogue growth
 

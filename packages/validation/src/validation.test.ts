@@ -174,8 +174,18 @@ describe('L0 rule definitions match the catalogue', () => {
     }
   });
 
-  test('allRules exposes the pack', () => {
-    assert.equal(allRules().length, 10);
+  test('allRules exposes every implemented pack, not only L0', () => {
+    // REWRITTEN IN V5, and the reason matters: this asserted 10 because L0 was
+    // the only pack this build implemented. It was correct then and wrong now.
+    // V5 adds the five L1-REQ structural rules (decision J6), so the catalogue is
+    // 15 across two layers.
+    const rules = allRules();
+    assert.equal(rules.length, 15);
+    assert.equal(rules.filter((r) => r.layer === 'L0').length, 10);
+    assert.equal(rules.filter((r) => r.layer === 'L1').length, 5);
+    // Ids are never reused or renumbered, so a duplicate here is a defect that
+    // would make historical findings and waivers ambiguous.
+    assert.equal(new Set(rules.map((r) => r.id)).size, rules.length);
   });
 });
 

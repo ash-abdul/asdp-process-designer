@@ -792,14 +792,19 @@ describe('L0 ingestion validation', () => {
     }
   });
 
-  test('the rule catalogue is reportable, with all ten L0 rules', async () => {
+  test('the rule catalogue is reportable — ten L0 rules and five L1-REQ', async () => {
+    // REWRITTEN IN V5. It asserted ten rules, all L0, which was correct against a
+    // build implementing only the ingestion pack. The endpoint reports THE
+    // CATALOGUE THIS BUILD IMPLEMENTS, so V5's five L1-REQ rules (decision J6)
+    // belong in it; asserting L0-only would now hide five implemented rules.
     const s = await startServer();
     try {
       const projectId = await createProjectVia(s);
       const r = await call(s, 'GET', `/projects/${projectId}/intake/rules`, undefined, asViewer);
       assert.equal(r.status, 200);
-      assert.equal(r.json.total, 10);
-      assert.ok(r.json.rules.every((rule: any) => rule.layer === 'L0'));
+      assert.equal(r.json.total, 15);
+      assert.equal(r.json.rules.filter((rule: any) => rule.layer === 'L0').length, 10);
+      assert.equal(r.json.rules.filter((rule: any) => rule.layer === 'L1').length, 5);
     } finally {
       await s.close();
     }

@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v5-frame",
+    "taskType": "POPULATE_FRAME",
+    "promptVersion": "populate-frame@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "fb6054aae968221fc9a8b8a9974dbd29b0b84339d229ec80526513cc5766cc22"
+  },
+  "keyHash": "e6059a3f481a0378752323a2c7e11bb07afc35df1e0cf78ad1bb4c3d028a0110",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"slot\":\"inputs\",\"text\":\"The applicant must submit the renewal request within ninety days of expiry.\",\"category\":\"data\",\"evidenceItemIds\":[\"licence-renewal-en-ev-2\"],\"modelSelfRating\":0.5},{\"slot\":\"inputs\",\"text\":\"The applicant must supply a valid identity document.\",\"category\":\"data\",\"evidenceItemIds\":[\"licence-renewal-en-ev-3\"],\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it matches marker words to slots and restates the evidence verbatim, so it demonstrates nothing about interpretation\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 676,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T18:46:58.009Z",
+  "classification": "PUBLIC"
+}

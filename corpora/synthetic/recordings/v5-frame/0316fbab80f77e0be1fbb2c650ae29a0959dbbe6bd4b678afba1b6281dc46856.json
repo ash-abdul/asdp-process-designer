@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v5-frame",
+    "taskType": "POPULATE_FRAME",
+    "promptVersion": "populate-frame@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "1834cb2a66341bc423056b895926720c10c60b605568b99b16f144722fe15975"
+  },
+  "keyHash": "0316fbab80f77e0be1fbb2c650ae29a0959dbbe6bd4b678afba1b6281dc46856",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"slot\":\"processSteps\",\"text\":\"An establishment must hold an active registration to renew its licence.\",\"category\":\"functional\",\"evidenceItemIds\":[\"licence-renewal-en-ev-1\"],\"modelSelfRating\":0.5},{\"slot\":\"actors\",\"text\":\"The applicant must submit the renewal request within ninety days of expiry.\",\"category\":\"role\",\"evidenceItemIds\":[\"licence-renewal-en-ev-2\"],\"modelSelfRating\":0.5},{\"slot\":\"actors\",\"text\":\"The applicant must supply a valid identity document.\",\"category\":\"role\",\"evidenceItemIds\":[\"licence-renewal-en-ev-3\"],\"modelSelfRating\":0.5},{\"slot\":\"actors\",\"text\":\"The reviewing officer must complete the review within three working days.\",\"category\":\"role\",\"evidenceItemIds\":[\"licence-renewal-en-ev-5\"],\"modelSelfRating\":0.5},{\"slot\":\"actors\",\"text\":\"An unresolved review must be escalated to the department manager after five working days.\",\"category\":\"role\",\"evidenceItemIds\":[\"licence-renewal-en-ev-6\"],\"modelSelfRating\":0.5},{\"slot\":\"actors\",\"text\":\"The applicant must be notified in writing of the outcome.\",\"category\":\"role\",\"evidenceItemIds\":[\"licence-renewal-en-ev-7\"],\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it matches marker words to slots and restates the evidence verbatim, so it demonstrates nothing about interpretation\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 676,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T18:46:58.005Z",
+  "classification": "PUBLIC"
+}

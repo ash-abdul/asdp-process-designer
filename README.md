@@ -2,11 +2,12 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0–V3, V4a and V4b-core accepted** · V4b-eval deferred · V2-PDF blocked on spike S2
+> **Phase 2 V0–V3, V4a and V4b-core accepted · V5 implemented, awaiting review** · V4b-eval deferred · V2-PDF blocked on spike S2
 > Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
 > composition layer, durable PGlite persistence, and text, Word-document, image and structural-model
-> intake with resolvable provenance, and AI evidence extraction whose citations are located and
-> verified by us rather than asserted by a model. **621 tests pass, none skipped.**
+> intake with resolvable provenance, AI evidence extraction whose citations are located and verified
+> by us rather than asserted by a model, and structured requirement **proposals** that are always
+> draft and always cite verified evidence. **662 tests pass, none skipped.**
 > No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-23
 > **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)

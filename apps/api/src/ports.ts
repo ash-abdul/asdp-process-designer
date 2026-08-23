@@ -14,10 +14,16 @@ import type {
   Baseline,
   Classification,
   EvidenceItem,
+  FramePopulation,
   Gate,
   GateCode,
   PageImage,
   Project,
+  Requirement,
+  RequirementEvidenceLink,
+  RequirementFlag,
+  RequirementRejection,
+  RequirementSet,
   Source,
   EvidenceExtraction,
   SourceProfile,
@@ -195,6 +201,45 @@ export interface Repositories {
   readonly evidence: EvidenceRepository;
   readonly pageImages: PageImageRepository;
   readonly aiInteractions: AiInteractionRepository;
+  readonly requirements: RequirementRepository;
+}
+
+/**
+ * Requirement proposals — INSERT-ONLY (**J4**, ADR-0016, ADR-0032).
+ *
+ * There is no update method and no delete method, and that is the port's main
+ * assertion: a corrected proposal is a NEW proposal, exactly as a corrected piece
+ * of evidence is new evidence one level down. In particular there is **no
+ * `setStatus`**, because the only statuses worth setting are the ones **J4**
+ * forbids V5 to write.
+ *
+ * `insertProposal` takes the requirement, its evidence links and its flags
+ * together, because a requirement without its links violates invariant D2 the
+ * instant it exists and a partially written proposal is worse than none.
+ */
+export interface RequirementRepository {
+  createSet(set: RequirementSet): Promise<void>;
+  getSet(id: string): Promise<RequirementSet | undefined>;
+  listSets(projectId: string): Promise<readonly RequirementSet[]>;
+  /** The next `REQ-####` for a project, from the high-water mark (invariant D15). */
+  nextRequirementNumber(projectId: string): Promise<number>;
+
+  insertProposal(
+    requirement: Requirement,
+    evidence: readonly RequirementEvidenceLink[],
+    flags: readonly RequirementFlag[],
+  ): Promise<void>;
+
+  get(id: string): Promise<Requirement | undefined>;
+  listForSet(requirementSetId: string): Promise<readonly Requirement[]>;
+  listForProject(projectId: string): Promise<readonly Requirement[]>;
+  evidenceFor(requirementId: string): Promise<readonly RequirementEvidenceLink[]>;
+  evidenceForSet(requirementSetId: string): Promise<readonly RequirementEvidenceLink[]>;
+  flagsForSet(requirementSetId: string): Promise<readonly RequirementFlag[]>;
+
+  /** **J9:** rejected proposals are retained in full, never summarised away. */
+  insertRejection(rejection: RequirementRejection): Promise<void>;
+  rejectionsForSet(requirementSetId: string): Promise<readonly RequirementRejection[]>;
 }
 
 /** Blob storage lives in its own module; re-exported so the port set is one import. */
@@ -318,4 +363,52 @@ export type ExtractEvidenceOutcome =
 export interface EvidenceExtractor {
   readonly id: string;
   extract(request: ExtractEvidenceRequest): Promise<ExtractEvidenceOutcome>;
+}
+
+/**
+ * The `FramePopulator` port — `POPULATE_FRAME` (V5).
+ *
+ * One call per pass, so the caller owns the partition (**J7**) and the port stays
+ * a single request/response. The populator returns **proposals**, never
+ * requirements: checking the citations, applying the gate, computing confidence
+ * and deciding what is written are the command's job, because they are the part
+ * that must not depend on a provider behaving well.
+ */
+export interface PopulateFrameRequest {
+  readonly projectId: string;
+  readonly passId: string;
+  readonly passTitle: string;
+  /** The slot catalogue for this pass, rendered from `@asdp/raf`. */
+  readonly slotBrief: string;
+  /** The evidence this pass may cite. Ids and verbatim text only. */
+  readonly evidence: readonly { readonly evidenceItemId: string; readonly verbatimText: string }[];
+  /** Batch identity, for the interaction record (E4). */
+  readonly batch: {
+    readonly batchId: string;
+    readonly index: number;
+    readonly total: number;
+    readonly strategyVersion: string;
+  };
+  readonly classification: Classification;
+  readonly languageHints: readonly string[];
+  readonly correlationId?: string;
+}
+
+export type PopulateFrameOutcome =
+  | {
+      readonly kind: 'populated';
+      readonly population: FramePopulation;
+      readonly interaction: AiInteraction;
+    }
+  | {
+      readonly kind: 'refused';
+      readonly reason: string;
+      readonly degradations: readonly string[];
+      readonly options: readonly string[];
+      readonly interaction?: AiInteraction;
+    };
+
+export interface FramePopulator {
+  readonly id: string;
+  populate(request: PopulateFrameRequest): Promise<PopulateFrameOutcome>;
 }

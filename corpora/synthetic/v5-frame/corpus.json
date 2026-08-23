@@ -1,0 +1,20 @@
+{
+  "id": "v5-frame",
+  "name": "V5 POPULATE_FRAME gold corpus",
+  "tier": "synthetic",
+  "classification": "PUBLIC",
+  "languages": [
+    "en"
+  ],
+  "heldOut": false,
+  "goldSetRef": "gold.json",
+  "documents": [
+    {
+      "documentId": "licence-renewal-en",
+      "sourceKind": "brd",
+      "language": "en",
+      "provenance": "AUTHORED BY HAND for this repository. Invented content; no real organisation or process. Written so that its clauses fall into several different RAF slot groups, which is what makes the six-pass partition measurable per pass rather than in aggregate. Expected propositions in gold.json were chosen and reviewed by a human, not generated."
+    }
+  ],
+  "notes": "SYNTHETIC (F1, unchanged in V5). Expected propositions are explicitly labelled in gold.json, each with the RAF slot a human assigned it and the verbatim evidence a human says supports it. Ground truth is human-authored; no AI output was used as ground truth. Weighted 0.25 by TIER_WEIGHT and never usable for a routing decision (ADR-0031 rule 4). NO REAL-WORLD MODEL QUALITY CLAIM MAY BE MADE FROM THIS TIER — and in V5 that warning is stronger than it was in V4b, because the thing V5 cannot verify (whether a proposition faithfully represents its evidence) is not measured here at all."
+}

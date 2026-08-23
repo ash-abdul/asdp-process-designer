@@ -94,6 +94,15 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   // path will cite. It is an analyst act, not a contributor's.
   { name: 'extractEvidence', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
   { name: 'listAiInteractions', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
+  // V5. Populating the frame spends money, causes egress, and writes the
+  // proposals the whole requirements path will rest on. Same roles as extraction,
+  // for the same reason: it is an analyst act, not a contributor's.
+  { name: 'populateFrame', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  // Reading proposals and coverage is wide, deliberately. "What do we think the
+  // requirements are, and what is missing?" is the question the frame exists to
+  // answer, and an answer only its author may read is not an answer.
+  { name: 'listRequirements', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
+  { name: 'frameCoverage', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
 ];
 
 export function commandDescriptor(name: string): CommandDescriptor {

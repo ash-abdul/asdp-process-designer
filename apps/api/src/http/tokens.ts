@@ -27,3 +27,6 @@ export const SOURCE_PROFILER = Symbol('ASDP_SOURCE_PROFILER');
 
 /** The V4b-core `EvidenceExtractor` (`EXTRACT_EVIDENCE`). Refuses when unwired. */
 export const EVIDENCE_EXTRACTOR = Symbol('ASDP_EVIDENCE_EXTRACTOR');
+
+/** The V5 `FramePopulator` (`POPULATE_FRAME`). Refuses when no provider is wired. */
+export const FRAME_POPULATOR = Symbol('ASDP_FRAME_POPULATOR');

@@ -45,6 +45,14 @@ export interface Config {
   readonly extractionChunkChars: number;
   /** Overlap applied ONLY when splitting a single over-budget unit (**F4**). */
   readonly extractionOverlapChars: number;
+  /**
+   * How many `EvidenceItem`s one `POPULATE_FRAME` pass may be shown (**J7**).
+   *
+   * Counted in items rather than characters because the unit of context here is a
+   * citable evidence item, and a batch that split one in half would offer the
+   * model a quote it could cite but not read.
+   */
+  readonly frameEvidencePerBatch: number;
   readonly camundaTargetProfileId: string;
   readonly rulePackVersion: string;
   readonly rafVersion: string;
@@ -108,6 +116,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       400,
       'ASDP_EXTRACTION_OVERLAP_CHARS',
     ),
+    frameEvidencePerBatch: num(env.ASDP_FRAME_EVIDENCE_PER_BATCH, 40, 'ASDP_FRAME_EVIDENCE_PER_BATCH'),
     camundaTargetProfileId: env.ASDP_CAMUNDA_TARGET_PROFILE ?? 'camunda-8x-baseline',
     rulePackVersion: env.ASDP_RULE_PACK_VERSION ?? 'rp-1.2',
     rafVersion: env.ASDP_RAF_VERSION ?? 'raf-1.1',
@@ -128,6 +137,12 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
   if (config.extractionOverlapChars < 0) {
     throw new ConfigError(
       `ASDP_EXTRACTION_OVERLAP_CHARS must not be negative, got ${config.extractionOverlapChars}`,
+    );
+  }
+  if (config.frameEvidencePerBatch <= 0) {
+    throw new ConfigError(
+      `ASDP_FRAME_EVIDENCE_PER_BATCH must be positive, got ${config.frameEvidencePerBatch}; a ` +
+        'zero batch would show every pass nothing and report that the evidence supports nothing',
     );
   }
   if (config.maxSourceBytes <= 0) {

@@ -6,8 +6,9 @@
  * validation run reproducible, and a finding id stable across runs
  * (validation-architecture.md §4).
  *
- * V1 implements the L0 ingestion pack. L1–L6 arrive with the slices that create
- * the content they judge.
+ * V1 implements the L0 ingestion pack. V5 adds `L1-REQ-*`, the structural pack for
+ * requirement proposals (**J6**). The rest of L1–L6 arrive with the slices that
+ * create the content they judge.
  */
 
 import { blocksGate, type Finding, type GateCode, type RuleDefinition } from '@asdp/schemas';
@@ -20,11 +21,19 @@ export {
   evaluateL0Ingestion,
 } from './l0-ingestion.ts';
 
+export {
+  type RequirementUnderTest,
+  type RequirementsState,
+  L1_REQUIREMENT_RULES,
+  evaluateL1Requirements,
+} from './l1-requirements.ts';
+
 import { L0_INGESTION_RULES } from './l0-ingestion.ts';
+import { L1_REQUIREMENT_RULES } from './l1-requirements.ts';
 
 /** Every rule the pack currently contains, for the rule-catalogue endpoint. */
 export function allRules(): readonly RuleDefinition[] {
-  return L0_INGESTION_RULES;
+  return [...L0_INGESTION_RULES, ...L1_REQUIREMENT_RULES];
 }
 
 export interface FindingSummary {

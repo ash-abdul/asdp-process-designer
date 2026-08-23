@@ -402,3 +402,60 @@ export const EvidenceExtraction = z.object({
   limitations: z.array(z.string()).default([]),
 });
 export type EvidenceExtraction = z.infer<typeof EvidenceExtraction>;
+
+// ---------------------------------------------------------------------------
+// POPULATE_FRAME output contract (V5)
+// ---------------------------------------------------------------------------
+
+/**
+ * One proposed requirement, as the model returns it.
+ *
+ * **Four fields, and the absences are the design** (**J8**). There is no field for
+ * an anchor, a quote, an offset, an epistemic level, a derivation, a confidence, a
+ * conflict, a question, a priority or an acceptance criterion — because a model
+ * fills whatever fields it is given, and every one of those is owned by code.
+ *
+ * `evidenceItemIds` is what makes this a proposal rather than an assertion: the
+ * model must say what it is reading from, using only ids it was shown, and a
+ * proposal citing nothing is rejected as the L3 inference it is (**J1**).
+ */
+export const RequirementProposal = z.object({
+  /** One of the slots this pass offered. Legality is re-checked by code (**J8**). */
+  slot: z.string().min(1),
+  /** The proposition, in the language of its evidence. */
+  text: z.string().min(1),
+  category: z.enum([
+    'functional',
+    'business_rule',
+    'data',
+    'integration',
+    'nfr',
+    'security',
+    'constraint',
+    'assumption',
+    'dependency',
+    'sla',
+    'notification',
+    'role',
+  ]),
+  /** Ids from THIS batch. At least one, or the proposal is refused. */
+  evidenceItemIds: z.array(z.string()).default([]),
+  /** Model self-rating. Weighted low and never the band by itself (ADR-0011). */
+  modelSelfRating: z.number().min(0).max(1).optional(),
+});
+export type RequirementProposal = z.infer<typeof RequirementProposal>;
+
+/**
+ * The `POPULATE_FRAME` result for one pass over one evidence batch.
+ *
+ * `limitations` is where "I cannot tell from this evidence" goes (**J1**). It is
+ * recorded on the pass result and the audit event and becomes no domain state,
+ * because it is a statement about the reading rather than about the business — and
+ * because a model that must choose between guessing and staying silent should have
+ * somewhere to be silent.
+ */
+export const FramePopulation = z.object({
+  items: z.array(RequirementProposal).default([]),
+  limitations: z.array(z.string()).default([]),
+});
+export type FramePopulation = z.infer<typeof FramePopulation>;

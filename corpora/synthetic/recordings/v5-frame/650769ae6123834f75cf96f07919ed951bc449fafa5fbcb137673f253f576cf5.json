@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v5-frame",
+    "taskType": "EXTRACT_EVIDENCE",
+    "promptVersion": "extract-evidence@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "5c7114818a79635658eeb205758880aa2b0a41c9a1b60ad7388b9a610acc60f2"
+  },
+  "keyHash": "650769ae6123834f75cf96f07919ed951bc449fafa5fbcb137673f253f576cf5",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"quote\":\"An establishment must hold an active registration to renew its licence.\",\"locator\":{\"unitId\":\"su-3\"},\"modelSelfRating\":0.5},{\"quote\":\"The applicant must submit the renewal request within ninety days of expiry.\",\"locator\":{\"unitId\":\"su-3\"},\"modelSelfRating\":0.5},{\"quote\":\"The applicant must supply a valid identity document.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"A tenancy contract is required when the registered address has changed.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"The reviewing officer must complete the review within three working days.\",\"locator\":{\"unitId\":\"su-7\"},\"modelSelfRating\":0.5},{\"quote\":\"An unresolved review must be escalated to the department manager after five working days.\",\"locator\":{\"unitId\":\"su-9\"},\"modelSelfRating\":0.5},{\"quote\":\"The applicant must be notified in writing of the outcome.\",\"locator\":{\"unitId\":\"su-9\"},\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it selects sentences by marker word\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 652,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T18:46:57.998Z",
+  "classification": "PUBLIC"
+}

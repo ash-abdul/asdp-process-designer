@@ -23,6 +23,7 @@ import {
   type AiRequest,
   type AiResponse,
   type EvidenceExtraction,
+  type FramePopulation,
   type ProviderDescriptor,
 } from '@asdp/schemas';
 
@@ -137,6 +138,79 @@ export function extractFromShape(text: string, unitIds: readonly string[]): Evid
   };
 }
 
+/**
+ * Marker word to RAF slot, for the frame-population stub.
+ *
+ * A lookup table, and it is meant to look like one. The stub is not deciding what
+ * a sentence *means*; it is matching a marker and naming the slot the marker
+ * conventionally belongs to. Order matters — the first match wins — so the more
+ * specific markers come first.
+ *
+ * Deliberately crude, for the reason the rest of this file is crude: a stub that
+ * appeared to classify well would invite someone to read its output as a
+ * measurement of classification.
+ */
+const SLOT_MARKERS: readonly { readonly pattern: RegExp; readonly slot: string; readonly category: string }[] = [
+  { pattern: /escalat|تصعيد/i, slot: 'escalations', category: 'functional' },
+  { pattern: /within \s*\d+\s*(?:working )?(?:day|hour|week)|خلال/i, slot: 'slasAndTimers', category: 'sla' },
+  { pattern: /notif|إشعار/i, slot: 'notifications', category: 'notification' },
+  { pattern: /reject|refus|approved|withdrawn|مرفوض|معتمد/i, slot: 'outcomes', category: 'functional' },
+  { pattern: /must (?:submit|supply|provide|attach)|required document|يقدم/i, slot: 'inputs', category: 'data' },
+  { pattern: /issue[ds]?\b|produce[ds]?\b|certificate|report/i, slot: 'outputs', category: 'data' },
+  { pattern: /\bif\b|\bunless\b|\bwhen\b|eligib|إذا/i, slot: 'businessRules', category: 'business_rule' },
+  { pattern: /officer|reviewer|applicant|manager|inspector|الموظف|المراجع/i, slot: 'actors', category: 'role' },
+  { pattern: /\b(?:must|shall)\b|يجب/i, slot: 'processSteps', category: 'functional' },
+];
+
+/**
+ * Propose requirements from evidence SHAPE, deterministically.
+ *
+ * Reads the `[evidence-id] text` lines the prompt supplied, matches each against
+ * the marker table, and proposes the item **only if the matched slot is one this
+ * pass offered** — which is what makes six passes produce six different answers
+ * from one table rather than the same answer six times.
+ *
+ * The proposed text is the evidence text, **verbatim**. A stub that paraphrased
+ * would be inventing the very thing V5 cannot verify, and a fluent stub would make
+ * the evaluation look like a measurement of fluency.
+ */
+export function populateFrameFromShape(
+  batchText: string,
+  offeredSlots: readonly string[],
+): FramePopulation {
+  const items: FramePopulation['items'] = [];
+
+  for (const line of batchText.split(/\n+/)) {
+    const parsed = /^\[([^\]]+)\]\s*(.+)$/.exec(line.trim());
+    if (parsed === null) continue;
+    const evidenceItemId = (parsed[1] as string).trim();
+    const text = (parsed[2] as string).trim();
+
+    const marker = SLOT_MARKERS.find(
+      (m) => m.pattern.test(text) && offeredSlots.includes(m.slot),
+    );
+    if (marker === undefined) continue;
+
+    items.push({
+      slot: marker.slot,
+      text,
+      category: marker.category as FramePopulation['items'][number]['category'],
+      evidenceItemIds: [evidenceItemId],
+      // Fixed and middling, so it nudges confidence by zero. A self-rating that
+      // varied would look like a judgement the stub is not making.
+      modelSelfRating: 0.5,
+    });
+  }
+
+  return {
+    items,
+    limitations: [
+      'produced by the authored stub provider, not by a model; it matches marker words to slots ' +
+        'and restates the evidence verbatim, so it demonstrates nothing about interpretation',
+    ],
+  };
+}
+
 /** A provider that answers deterministically, offline, from document shape. */
 export function createAuthoredStubProvider(): AiProvider {
   const descriptor = stubDescriptor();
@@ -153,10 +227,19 @@ export function createAuthoredStubProvider(): AiProvider {
       const unitIds =
         offered === null ? [] : (offered[1] as string).split(',').map((s) => s.trim()).filter(Boolean);
 
+      // The slots this pass offered, read back out of the instruction — the same
+      // trick the unit ids use, and for the same reason: the stub answers the
+      // prompt a model would answer, so changing the prompt misses the recording
+      // rather than silently replaying an answer to a different question.
+      const offeredSlots = [...request.systemInstruction.matchAll(/^- ([a-zA-Z]+)(?: \(required\))?:/gm)]
+        .map((m) => m[1] as string);
+
       const payload =
         request.taskType === 'EXTRACT_EVIDENCE'
           ? extractFromShape(text, unitIds)
-          : profileFromShape(text);
+          : request.taskType === 'POPULATE_FRAME'
+            ? populateFrameFromShape(text, offeredSlots)
+            : profileFromShape(text);
 
       return {
         outputs: [JSON.stringify(payload)],

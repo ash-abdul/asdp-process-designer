@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v5-frame",
+    "taskType": "POPULATE_FRAME",
+    "promptVersion": "populate-frame@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "1304d29c1fa910f6f6ef52546220f76f24ed220d400da22eea4417751af96677"
+  },
+  "keyHash": "e4972fd826bb0ae1db1ae739624161c7a2647c603291404f3b3359a8178c5e30",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"slot\":\"escalations\",\"text\":\"An unresolved review must be escalated to the department manager after five working days.\",\"category\":\"functional\",\"evidenceItemIds\":[\"licence-renewal-en-ev-6\"],\"modelSelfRating\":0.5},{\"slot\":\"notifications\",\"text\":\"The applicant must be notified in writing of the outcome.\",\"category\":\"notification\",\"evidenceItemIds\":[\"licence-renewal-en-ev-7\"],\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it matches marker words to slots and restates the evidence verbatim, so it demonstrates nothing about interpretation\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 676,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T18:46:58.010Z",
+  "classification": "PUBLIC"
+}

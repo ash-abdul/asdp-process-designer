@@ -17,6 +17,7 @@ import type {
   EvidenceExtractor,
   HealthReport,
   IdGenerator,
+  FramePopulator,
   Repositories,
   SourceProfiler,
   UnitOfWork,
@@ -39,8 +40,10 @@ import { SourcesController } from './sources.controller.ts';
 import { SourceViewerController } from './source-viewer.controller.ts';
 import { EvidenceController } from './evidence.controller.ts';
 import { AnalysisController } from './analysis.controller.ts';
+import { RequirementsController } from './requirements.controller.ts';
 import { unavailableSourceProfiler } from '../ai/broker-profiler.ts';
 import { unavailableEvidenceExtractor } from '../ai/broker-extractor.ts';
+import { unavailableFramePopulator } from '../ai/broker-frame-populator.ts';
 import { ActorGuard } from './actor.guard.ts';
 import { CorrelationInterceptor } from './correlation.interceptor.ts';
 import {
@@ -55,6 +58,7 @@ import {
   VISION_EXTRACTOR,
   SOURCE_PROFILER,
   EVIDENCE_EXTRACTOR,
+  FRAME_POPULATOR,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
@@ -88,6 +92,8 @@ export interface AppDependencies {
    * application ships unable to reach a provider.
    */
   readonly evidenceExtractor?: EvidenceExtractor;
+  /** The V5 `POPULATE_FRAME` port. Refuses by default, like every other AI port. */
+  readonly framePopulator?: FramePopulator;
 }
 
 /**
@@ -147,6 +153,7 @@ export class AppModule {
         SourceViewerController,
         // More specific than SourcesController's `:sourceId`, so registered first.
         AnalysisController,
+        RequirementsController,
         SourcesController,
         EvidenceController,
       ],
@@ -162,6 +169,10 @@ export class AppModule {
         {
           provide: EVIDENCE_EXTRACTOR,
           useValue: deps.evidenceExtractor ?? unavailableEvidenceExtractor(),
+        },
+        {
+          provide: FRAME_POPULATOR,
+          useValue: deps.framePopulator ?? unavailableFramePopulator(),
         },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },

@@ -16,6 +16,11 @@ import type {
   GateCode,
   PageImage,
   Project,
+  Requirement,
+  RequirementEvidenceLink,
+  RequirementFlag,
+  RequirementRejection,
+  RequirementSet,
   Source,
   SourceStatus,
   SourceUnit,
@@ -27,6 +32,7 @@ import {
   type ApprovalRepository,
   type AuditRepository,
   type BaselineRepository,
+  type RequirementRepository,
   type Clock,
   type DependencyProbe,
   type EvidenceRepository,
@@ -331,6 +337,91 @@ class MemoryAiInteractionRepository implements AiInteractionRepository {
   }
 }
 
+/**
+ * Requirement proposals — INSERT-ONLY, exactly as in SQL (**J4**).
+ *
+ * No update method and no delete method, so the in-memory adapter cannot do
+ * something the database would refuse. An adapter that were more permissive than
+ * its SQL counterpart would let a test prove a behaviour production cannot have.
+ */
+class MemoryRequirementRepository implements RequirementRepository {
+  private readonly sets = new Map<string, RequirementSet>();
+  private readonly requirements = new Map<string, Requirement>();
+  private readonly links: RequirementEvidenceLink[] = [];
+  private readonly flags: RequirementFlag[] = [];
+  private readonly rejections: RequirementRejection[] = [];
+
+  async createSet(set: RequirementSet): Promise<void> {
+    if (this.sets.has(set.id)) throw new Error(`requirement set ${set.id} already exists`);
+    this.sets.set(set.id, set);
+  }
+  async getSet(id: string): Promise<RequirementSet | undefined> {
+    return this.sets.get(id);
+  }
+  async listSets(projectId: string): Promise<readonly RequirementSet[]> {
+    return [...this.sets.values()]
+      .filter((s) => s.projectId === projectId)
+      .sort((a, b) => b.version - a.version);
+  }
+  async nextRequirementNumber(projectId: string): Promise<number> {
+    // The project-wide high-water mark, not a per-set count: identifiers are
+    // never reused, even after rejection (invariant D15).
+    const high = [...this.requirements.values()]
+      .filter((r) => r.projectId === projectId)
+      .reduce((max, r) => Math.max(max, Number(r.id.slice(4))), 0);
+    return high + 1;
+  }
+
+  async insertProposal(
+    requirement: Requirement,
+    evidence: readonly RequirementEvidenceLink[],
+    flags: readonly RequirementFlag[],
+  ): Promise<void> {
+    if (evidence.length === 0) {
+      throw new Error(
+        `requirement ${requirement.id} cites no evidence; invariant D2 forbids persisting it`,
+      );
+    }
+    if (this.requirements.has(requirement.id)) {
+      throw new Error(`requirement ${requirement.id} already exists; ids are never reused (D15)`);
+    }
+    this.requirements.set(requirement.id, requirement);
+    this.links.push(...evidence);
+    this.flags.push(...flags);
+  }
+
+  async get(id: string): Promise<Requirement | undefined> {
+    return this.requirements.get(id);
+  }
+  async listForSet(requirementSetId: string): Promise<readonly Requirement[]> {
+    return [...this.requirements.values()]
+      .filter((r) => r.requirementSetId === requirementSetId)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }
+  async listForProject(projectId: string): Promise<readonly Requirement[]> {
+    return [...this.requirements.values()]
+      .filter((r) => r.projectId === projectId)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }
+  async evidenceFor(requirementId: string): Promise<readonly RequirementEvidenceLink[]> {
+    return this.links.filter((l) => l.requirementId === requirementId);
+  }
+  async evidenceForSet(requirementSetId: string): Promise<readonly RequirementEvidenceLink[]> {
+    const ids = new Set((await this.listForSet(requirementSetId)).map((r) => r.id));
+    return this.links.filter((l) => ids.has(l.requirementId));
+  }
+  async flagsForSet(requirementSetId: string): Promise<readonly RequirementFlag[]> {
+    const ids = new Set((await this.listForSet(requirementSetId)).map((r) => r.id));
+    return this.flags.filter((f) => ids.has(f.requirementId));
+  }
+  async insertRejection(rejection: RequirementRejection): Promise<void> {
+    this.rejections.push(rejection);
+  }
+  async rejectionsForSet(requirementSetId: string): Promise<readonly RequirementRejection[]> {
+    return this.rejections.filter((r) => r.requirementSetId === requirementSetId);
+  }
+}
+
 export function createMemoryRepositories(): Repositories {
   return {
     projects: new MemoryProjectRepository(),
@@ -343,6 +434,7 @@ export function createMemoryRepositories(): Repositories {
     evidence: new MemoryEvidenceRepository(),
     pageImages: new MemoryPageImageRepository(),
     aiInteractions: new MemoryAiInteractionRepository(),
+    requirements: new MemoryRequirementRepository(),
   };
 }
 

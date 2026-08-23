@@ -1,0 +1,83 @@
+{
+  "corpusId": "v5-frame",
+  "authoredBy": "human",
+  "reviewedBy": "human",
+  "provenance": "Hand-authored labels (F1). No AI-generated expected output. Every expected proposition names the RAF slot a human assigned it and the verbatim evidence a human says supports it, so a right statement in the wrong slot fails slot accuracy rather than passing quietly.",
+  "note": "The expected TEXT here is the evidence sentence verbatim, because the authored stub restates rather than paraphrases. That is a property of the stub, not of the task: a real model would reword, and the text-match metrics would then measure wording rather than meaning. This is exactly why the report carries `notMeasured.semanticFaithfulness` and why no real-world claim follows from this tier.",
+  "documents": [
+    {
+      "documentId": "licence-renewal-en",
+      "expected": [
+        {
+          "id": "p1",
+          "slot": "processSteps",
+          "text": "An establishment must hold an active registration to renew its licence.",
+          "supportedByQuote": "An establishment must hold an active registration to renew its licence.",
+          "note": "An obligation on the establishment. A human places it in processSteps rather than businessRules because it states something that must be done, not a condition that decides an outcome."
+        },
+        {
+          "id": "p2",
+          "slot": "slasAndTimers",
+          "text": "The applicant must submit the renewal request within ninety days of expiry.",
+          "supportedByQuote": "The applicant must submit the renewal request within ninety days of expiry.",
+          "note": "A bounded deadline. slasAndTimers, not processSteps: the timing is the requirement."
+        },
+        {
+          "id": "p3",
+          "slot": "inputs",
+          "text": "The applicant must supply a valid identity document.",
+          "supportedByQuote": "The applicant must supply a valid identity document.",
+          "note": "Something the process consumes."
+        },
+        {
+          "id": "p4",
+          "slot": "businessRules",
+          "text": "A tenancy contract is required when the registered address has changed.",
+          "supportedByQuote": "A tenancy contract is required when the registered address has changed.",
+          "note": "A conditional: the 'when' decides whether the document is needed."
+        },
+        {
+          "id": "p5",
+          "slot": "slasAndTimers",
+          "text": "The reviewing officer must complete the review within three working days.",
+          "supportedByQuote": "The reviewing officer must complete the review within three working days."
+        },
+        {
+          "id": "p6",
+          "slot": "outcomes",
+          "text": "A renewal is rejected when the establishment has an unpaid penalty.",
+          "supportedByQuote": "A renewal is rejected when the establishment has an unpaid penalty.",
+          "note": "A business end state. outcomes rather than outputs — the disjointness pair the six-pass partition keeps inside one call."
+        },
+        {
+          "id": "p7",
+          "slot": "escalations",
+          "text": "An unresolved review must be escalated to the department manager after five working days.",
+          "supportedByQuote": "An unresolved review must be escalated to the department manager after five working days.",
+          "note": "A time limit that TRANSFERS RESPONSIBILITY, so escalations and not exceptions — the v1.1 disjointness rule, stated in the frame and applied by code."
+        },
+        {
+          "id": "p8",
+          "slot": "notifications",
+          "text": "The applicant must be notified in writing of the outcome.",
+          "supportedByQuote": "The applicant must be notified in writing of the outcome.",
+          "note": "Also carries a passive obligation with no named actor, so a human expects an `actor_unknown` flag on it — a grounded requirement that is flagged, not rejected (J1)."
+        }
+      ],
+      "traps": [
+        {
+          "id": "t1",
+          "text": "The system should be user-friendly and respond promptly.",
+          "mustNotBecomeRequirement": "no_evidence_cited",
+          "note": "A plausible NFR the document never states. It must be REJECTED rather than flagged: nothing in the evidence supports it, so it is an L3 inference and J1 refuses inference in V5. NOT EXERCISED by the authored stub, which can only propose from lines it was given — a stub that invented would be rigged. Covered by unit test instead, and reported as not-exercised rather than as a pass."
+        },
+        {
+          "id": "t2",
+          "text": "A renewal is rejected when the establishment has an unpaid penalty.",
+          "mustNotBecomeRequirement": "slot_not_in_pass",
+          "note": "The same true proposition, offered to a pass that does not own `outcomes`. It must be rejected there — not silently reassigned — because a slot decided without its disjointness partner in view is a slot decided blind. Also not exercised by the stub, which only proposes into slots the pass offered."
+        }
+      ]
+    }
+  ]
+}

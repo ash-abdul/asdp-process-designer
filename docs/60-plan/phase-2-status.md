@@ -18,9 +18,9 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Current slice** | **V5 — structured requirement proposals from verified evidence.** Boundary **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10 |
 | **Previously** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
 | **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean** at the V5 boundary-approval commit. V4b-core is committed at `34ca68e`, accepted at `3d5dfb6` |
-| **Work in progress** | **V5 implementation**, against the approved boundary. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Implement V5.** Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
+| **Working tree** | **Clean.** V5 is implemented and committed; it **awaits review** — §8 |
+| **Work in progress** | **None.** V5 is complete and awaiting review. Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **Review V5** (§8) — it is implemented, not accepted, and **must not be marked accepted without review**. Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -32,6 +32,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
+| **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | *(this commit)* | **Complete, awaiting review** — §8 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -39,15 +40,16 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **621 pass · 0 fail · 0 skipped · 0 todo** · 124 suites |
-| `check:arch` | passed — 124 source files |
+| Tests | **662 pass · 0 fail · 0 skipped · 0 todo** · 133 suites |
+| `check:arch` | passed — 135 source files |
 | `check:arch:selftest` | passed — **36 cases** |
-| `check:docs` | passed — 88 files, 728 links |
+| `check:docs` | passed — 89 files, 801 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
-| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` · `007_evidence_confidence` |
+| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` · `007_evidence_confidence` · **`008_requirements`** |
 | `eval:baseline` | `PROFILE_SOURCE`, **synthetic** corpus: schema 100%, reproducibility 100%, label agreement 100%, **not usable for a routing decision** |
 | `eval:extract` | `EXTRACT_EVIDENCE`, **synthetic** gold set: precision **100%**, recall **100%**, F1 **100%**, unsupported-accepted **0%**, hallucination **0%**, ambiguity rejections **2**, traps 2 rejected / 1 **not exercised**. **Mechanics, not model quality** |
+| `eval:frame` | `POPULATE_FRAME`, **synthetic** gold set: precision **100%**, recall **88%**, F1 **93%**, **slot accuracy 45%**, ungrounded **0%**, traceability **100%**, non-draft **0**, traps 2 **not exercised**. **Semantic faithfulness NOT MEASURED** — §8.9 |
 
 ### Approved decisions
 
@@ -124,10 +126,10 @@ Process IR, no Specification Studio, no graphical designer.
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) — all accepted |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) — all accepted. **V5** (§8) implemented, awaiting review |
 | Next slice | **None approved.** A **V5 boundary** — verified evidence into structured requirement *proposals* — is recorded at [v5-proposal.md](v5-proposal.md) and awaiting review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **621 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 620 V4b-core) |
-| Verification | build · `check:arch` (124 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
+| Tests | **662 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · **662 V5**) |
+| Verification | build · `check:arch` (135 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
 | Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction. **V3 decisions D1–D6 approved**, D6 deferring three in-scope items to V4 (§5.10) |
@@ -957,7 +959,159 @@ slice under review, not a change of boundary — and the recall cost is recorded
 
 ---
 
-## 8. Accepted HTTP status posture
+## 8. V5 capabilities delivered — structured requirement proposals
+
+**Complete, awaiting review.** Boundary: [v5-proposal.md](v5-proposal.md) and
+[phase-2-plan.md](phase-2-plan.md) §3.10. Decisions **J1–J9**. **No new dependency** — runtime
+dependencies stay at **seven**.
+
+V5 is the first slice whose AI output is **not verbatim**. V4b could verify its own output
+completely — a quote is in the source or it is not. V5 cannot, and §8.9 says so before any number in
+this section is read.
+
+### 8.1 `POPULATE_FRAME`, end to end
+
+- Runs through the broker wired in V4a: classification, egress gate, capability negotiation, routing,
+  degradation planning, schema-enforced invocation, **one call per pass**.
+- The model receives **evidence ids and verbatim text** — no anchors, no offsets, no source names, no
+  classifications. It has no use for them, and each is something it could otherwise repeat back as
+  though it had verified it.
+- The model returns a proposition, a slot, a category and **the evidence ids it rests on**. It
+  returns nothing else, because `FramePopulation` has no other field.
+- Persisted proposals are `status: 'draft'`, `generatedBy: 'ai'` with their interaction named,
+  `epistemicLevel: 'L2'`, and carry computed confidence with its function version.
+
+### 8.2 Six disjointness-closed passes — **J7**
+
+The partition is decided by a **fact about the frame**, not by taste: `DISJOINTNESS_RULES` pairs
+`outcomes` with `outputs`, and those live in *different* RAF groups. A group-shaped partition would
+ask one call for `outcomes` and another for `outputs`, and a model that cannot see both at once will
+legitimately offer the same item to each.
+
+| Pass | Slots | Closes |
+|---|---|---|
+| **P1** Context & framing | 8 | — |
+| **P2** Participants & behaviour | 6 | `actors ↔ responsibilities`, `processSteps ↔ alternativePaths` |
+| **P3** Outcomes & data | 4 | **`outcomes ↔ outputs`** — the cross-group pair |
+| **P4** Rules & decisions | 2 | — |
+| **P5** Time, failure & external | 5 | `exceptions ↔ escalations` |
+| **P6** Quality & control | 2 | — |
+
+**27 slots, each in exactly one pass; all four pairs inside a single call.** `RafGroup` is
+**unchanged** — a pass is prompting configuration with no persisted structure, which is what makes
+regrouping later a configuration change rather than a migration. A test asserts the partition against
+the frame, because a partition that silently drifted would drop a slot from every pass, and an empty
+slot reads as *"the documents do not say"* — the most misleading thing this system can report.
+
+### 8.3 The proposal gate — **J5**
+
+Four conditions, all of them, in one shared module used by **both** the command and the evaluation:
+
+1. structured output **validates**
+2. every cited evidence id **resolves** — in the batch, anchor-verified, and the anchor **re-resolved
+   now** through the same resolver every reader uses
+3. the slot is **legal** — one of the 27, offered by this pass, and surviving the disjointness rules
+4. **derivation rules pass** — ≥1 evidence item (**D2**), classification ≥ the maximum over that
+   evidence (**D10**), never `inferred` (**J1**)
+
+Closed rejection reason set, nine codes, because a closed set can be counted and free text cannot.
+
+### 8.4 Nothing V5 writes can look approved — **J4**
+
+Enforced in SQL by migration **008**, not by the command:
+
+- `requirement_status_draft_only` — `status` **must** be `draft`
+- `requirement_level_valid` — `L1` or `L2` only; **L4 is unwritable**, and L4 is a human act
+- `requirement_derivation_valid` — `extracted` or `interpreted`; **`inferred` is unwritable** (J1)
+- `requirement_ai_interaction_present` — AI-generated proposals must name their interaction
+- confidence is **not null**, in range, banded, and carries its function version
+
+Tests reach **past the command** and assert the database refuses `approved`, `L4` and `inferred`,
+because a claim about SQL proved through the command proves nothing. There is no approve route, no
+status route, no edit route and no delete route, and a test asserts eight plausible paths 404.
+
+### 8.5 Everything ungrounded is refused, and refused loudly — **J1**, **J9**
+
+- A proposal citing **no evidence** is rejected as the L3 inference it is, whatever its wording.
+- A proposal citing an id it was **not shown** is rejected rather than trusted.
+- A cited anchor that **no longer resolves** rejects the proposal (ADR-0008).
+- Every rejection is **retained in full — the text, not a checksum** (**J9**), in
+  `requirement_rejection` and in the append-only audit event.
+
+**J9 is not a reversal of V4b's F2.** F2 keeps a checksum because a rejected *quote* is unanchored
+source content; this is model-authored text, and [ADR-0032](../adr/ADR-0032-retain-everything.md)
+names *"rejected proposals and rejected requirements"* explicitly. With limitation **62** outstanding —
+no prompt or response payload is retained anywhere — a checksum here would mean a rejected proposal is
+retained **nowhere**.
+
+### 8.6 Quality signals are flags, not catalogue rules — **J6**
+
+`vague_quantifier`, `actor_unknown`, `untestable`, plus the provenance-shaped `single_source` and
+`content_unverified_evidence`. Rule-raised (`raisedBy: 'rule'`), never model-raised: a model grading
+its own output grades it well.
+
+A grounded-but-vague proposal is **persisted with its flags**, not discarded — **J1** in its exact
+wording. The validation catalogue gains **`L1-REQ-001…005`**, five *structural* rules, and **no eighth
+validation layer**.
+
+### 8.7 Coverage, computed on read — **J3-a**, **J3-b**
+
+`computeFrameCoverage` from `@asdp/raf`, which had existed unused since Phase 0. **No `raf_coverage`
+table**: proposals are insert-only, so a stored snapshot goes stale on the next insert, and freezing
+one is a **baseline** act that belongs to V7. A test asserts the table does not exist.
+
+`FrameCoverage` has **no `conflicts` field**, so coverage cannot smuggle in reconciliation — which is
+the mechanical reason **J3-a** is assessment of the populated frame rather than a piece of V6.
+
+### 8.8 Deduplication is not conflict resolution — **J2**
+
+Identical normalised text **and** an identical evidence set collapse to one proposal. Identical text
+on **different** evidence stays two proposals, deliberately: deciding between them is reconciliation,
+and reconciliation is V6. `crossSourceAgreement` is **`silent`** on every proposal — not a claim that
+the sources agree, but a record that nothing has been compared.
+
+### 8.9 What V5 does NOT establish
+
+> **A proposition can cite real evidence, resolve every anchor, pass every deterministic check, and
+> still misrepresent what that evidence says — and it will read *better* than a correct one.** No
+> arrangement of mechanical checks detects that. Every number below is a **defect detector**, not a
+> quality score.
+
+`npm run eval:frame` runs the **real** path offline — real ingestion, real extraction gate, real batch
+planner, real broker over a **replay** provider, **real proposal gate**:
+
+| Metric | Result |
+|---|---|
+| Proposal precision · recall · F1 | **100% · 88% · 93%** (7 true positives, 0 false positives, 1 false negative) |
+| **Slot assignment accuracy** | **45%** (11 scored) — the stub matches marker words; a human labelled the slots |
+| Ungrounded-accepted rate | **0%** — impossible by construction, therefore measured |
+| Traceability completeness | **100%** · citations checked: 22 |
+| Unresolved-citation rate | **0%** |
+| Non-draft written | **0** |
+| Cross-slot duplicates | **4** — measured, not collapsed (limitation 66) |
+| Flags raised | `single_source`: 11 · `actor_unknown`: 4 |
+| Coverage | 6 required slots empty and named as G1 blockers · `conflictsDetected: null` |
+| Traps | **2 not exercised** — reported as absences, never as passes |
+| Corpus tier | **`synthetic`** · `usableForRoutingDecision`: **false** |
+| `semanticFaithfulness` | **NOT MEASURED**, and the report says so in a named field |
+
+**The 45% is the most honest number in this section.** The gold set is human-labelled and the stub
+matches marker words, so they disagree — which is exactly what a non-vacuous metric looks like. It
+measures the stub, not a model. **Recall is bounded by the extractor**, not by the frame: the one
+missed proposition rests on a sentence V4b's stub never extracted, because it contains no obligation
+marker.
+
+### 8.10 Enforcement added
+
+- Migration **008**: four insert-only tables with the constraints above, including the `draft`-only
+  and no-`inferred` rules in SQL.
+- The **partition self-check**, asserted by test against the frame itself.
+- The **`L1-REQ`** rule family, with positive and negative fixtures per rule.
+- The gate **shared** with the evaluation, so the numbers measure the rules rather than a copy.
+
+---
+
+## 9. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
 
@@ -1002,7 +1156,7 @@ behaviour as correct.
 
 ---
 
-## 9. Known limitations
+## 10. Known limitations
 
 | # | Limitation | Consequence |
 |---|---|---|
@@ -1094,9 +1248,22 @@ behaviour as correct.
 | 62 | **AI prompt and response payloads are not retained anywhere in the domain.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires retaining "all AI interactions, **including prompt and response payloads**, subject to classification-based access control". Migration `006_ai_interaction` retains **metadata only** — no prompt column, no response column, and a `proposal_id` that references nothing, because no proposal store exists | **A recorded contradiction with an approved ADR**, found while reviewing the V5 boundary on 2026-08-23, **pre-existing from V4a and left unfixed** because expanding an accepted slice to fix unrelated scope is how boundaries stop meaning anything. Recorded fixtures in `@asdp/eval` hold request/response for *replay*, but that is the evaluation corpus, not the domain, and a live call in production writes no payload at all. Today the effect is limited — every interaction is a replay of a fixture that still exists — and it becomes material the moment a live provider is used. **Hardening candidate H3** — §5.12, and the direct reason V5 decision **J9** retains rejected proposal text rather than a checksum |
 | 61 | **A repeated heading resolves to no scope at all** — §7.10 | Deliberate, and it costs recall: a quote repeated under two identically-titled sections is rejected as ambiguous even though a reader could tell the sections apart by their position. The alternative was accepting the first occurrence, which is the pick §4.4 forbids. `unitId` resolves it whenever the provider supplies one, and the prompt asks for `unitId` |
 
+### V5 limitations
+
+| # | Limitation | Consequence |
+|---|---|---|
+| 63 | **Semantic faithfulness is not measured, and cannot be measured here** | The central V5 risk. A proposition may cite real evidence, resolve every anchor, pass every check and still misrepresent what the evidence says. Measuring it needs human labels over representative material; the report carries a named `notMeasured.semanticFaithfulness` field rather than a number. **Human review before L4 is not optional, and V5 changes nothing about that** |
+| 64 | **Slot assignment accuracy is 45% against the human-labelled gold set** | It measures the **authored stub's marker table**, not a model. Reported rather than tuned away: a stub adjusted until it agreed with the gold set would turn the metric into a measurement of the tuning |
+| 65 | **Recall is bounded by the extractor, not by the frame** | The one missed gold proposition rests on a sentence V4b's stub never extracted, because it contains no obligation marker. V5 can only structure evidence that exists, so an extraction gap reads downstream as a requirements gap |
+| 66 | **The same proposition may be proposed into two different slots by two passes** | Four occurrences in the baseline. **Measured, not collapsed:** collapsing would mean choosing a slot on pass order, which is the arbitrary pick §4.4 taught this codebase to refuse. It does inflate per-slot item counts in coverage, and that is the cost of not guessing |
+| 67 | **`L1-REQ` message keys have no bilingual message catalogue** | The rule catalogue requires messages and fix hints in both languages. **No message catalogue file exists anywhere in the repository** — the `L0-ING` keys have the same gap, so this is pre-existing rather than introduced. Findings carry keys and parameters; rendering them is UI work no slice has done |
+| 68 | **`humanConfirmationRequired` is computed and consumed by nothing** | Deliberate. It records a decision made with the evidence in hand so V7's workspace reads one rather than reconstructing it. Nothing in V5 acts on it, because acting on it would be the workspace |
+| 69 | **Evidence batches are counted in items, not tokens** | A batch of 40 evidence items is assumed to fit. With a real provider and long items it might not, and the refusal would be a context error rather than a clean split. The batch size is configuration (`ASDP_FRAME_EVIDENCE_PER_BATCH`), so the fix is a setting until a real model makes the right number knowable |
+| 70 | **One proposal per pass per batch is recorded as one interaction** | Six passes over one batch produce six interactions, which is correct and also means the disclosure log grows six times faster per population run than per extraction run. Nothing is hidden; it is simply more rows |
+
 ---
 
-## 10. Docker-deferred infrastructure
+## 11. Docker-deferred infrastructure
 
 Docker remains unavailable. Each item below is deferred **with a named trigger**, not dropped
 ([infra/README.md](../../infra/README.md)).
@@ -1118,7 +1285,7 @@ is **untested** until Docker exists.
 
 ---
 
-## 11. Not started, by instruction
+## 12. Not started, by instruction
 
 BPMN generation, DMN generation, form generation, Process IR compilation, layout, the
 requirements-analysis passes, the Specification Studio, and any graphical process designer.
@@ -1129,16 +1296,16 @@ excluded permanently, because it would reverse
 
 ---
 
-## 12. Next step
+## 13. Next step
 
-### V3, V4a and V4b-core are ACCEPTED. V5's boundary is APPROVED and in progress. V4b-eval, V2-PDF and H1/H2/H3 have not started.
+### V3, V4a and V4b-core are ACCEPTED. V5 is IMPLEMENTED and awaits review. V4b-eval, V2-PDF and H1/H2/H3 have not started.
 
 | | |
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
 | **V4b-core — AI evidence extraction** | **ACCEPTED / COMPLETE**, 2026-08-23 — §7, reviewed in §7.10. Discharges the approved V4b-core scope; needed no credential. **Accepted for mechanics and governance, explicitly not model quality** — §7.8 |
-| **V5 — evidence to structured requirement proposals** | **BOUNDARY APPROVED 2026-08-23**, implementation in progress — [v5-proposal.md](v5-proposal.md), decisions **J1–J9**, plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
+| **V5 — evidence to structured requirement proposals** | **IMPLEMENTED, AWAITING REVIEW** — §8. Boundary approved 2026-08-23 — [v5-proposal.md](v5-proposal.md), decisions **J1–J9**, plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
 | **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |

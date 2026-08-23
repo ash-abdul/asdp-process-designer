@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v5-frame",
+    "taskType": "POPULATE_FRAME",
+    "promptVersion": "populate-frame@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "ae39ca6ab8870778b4113217673ff5dd47e59608d7550b0499408d55a1197d2e"
+  },
+  "keyHash": "450cd505dc6b22f51b48922bfd6f0c134aaf1e680c2e13b295c09dc3bb46e33d",
+  "response": {
+    "outputs": [
+      "{\"items\":[],\"limitations\":[\"produced by the authored stub provider, not by a model; it matches marker words to slots and restates the evidence verbatim, so it demonstrates nothing about interpretation\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 676,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T18:46:58.011Z",
+  "classification": "PUBLIC"
+}
