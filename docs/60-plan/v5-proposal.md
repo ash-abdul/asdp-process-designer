@@ -1,9 +1,14 @@
-# V5 — Structured Requirement Proposals from Verified Evidence · PROPOSED BOUNDARY
+# V5 — Structured Requirement Proposals from Verified Evidence · ACCEPTED
 
-> **Status: PROPOSED — NOT APPROVED. Nothing is implemented.** This is a boundary proposal for
-> review under [CLAUDE.md](../../CLAUDE.md) §11. **V5 must not begin until its boundary is approved**,
-> and approval of the capability name is not approval of this scope.
-> **Version:** 0.2 · **Written:** 2026-08-23 · **Revised:** 2026-08-23 — J6 namespace settled,
+> **Status: ✅ APPROVED, IMPLEMENTED and ACCEPTED 2026-08-23** — decisions **J1–J9** all approved.
+> Delivered state: [phase-2-status.md](phase-2-status.md) **§8**; the acceptance review, and the one
+> coverage gap it found and closed, are in **§8.11**. The plan of record is
+> [phase-2-plan.md](phase-2-plan.md) **§3.10**.
+>
+> **This header said "PROPOSED — NOT APPROVED" until the acceptance commit**, because the approval
+> commit updated §20 and the decision table and missed the header — a documentation defect found in
+> the acceptance review and recorded rather than quietly corrected.
+> **Version:** 1.0 · **Written:** 2026-08-23 · **Revised:** 2026-08-23 — J6 namespace settled,
 > J7 regrouped to six passes, **J9 added** (rejected-proposal retention versus ADR-0032), J3 split
 > into J3-a/J3-b, and §6 given a route for propositions that exceed their evidence
 > **Related:** [phase-2-plan.md](phase-2-plan.md) §3.7, [phase-2-status.md](phase-2-status.md) §0,

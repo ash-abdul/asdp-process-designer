@@ -583,6 +583,76 @@ describe('the proposal gate — four conditions, all of them', () => {
     assert.equal(outcome.reason, 'anchor_unresolved');
   });
 
+  test('J1: an assumption THE EVIDENCE STATES is permitted in the assumptions slot', () => {
+    // Added during the V5 acceptance review, which found this approved J1 case
+    // working but untested. The distinction it protects is the whole of J1: an
+    // assumption a DOCUMENT states is evidence like any other, while one the
+    // MODEL supplies is an L3 inference. Nothing else in the gate separates them.
+    const stated = 'It is assumed that the register is available during working hours.';
+    const evidence = evidenceFor({ id: 'ev-assume', verbatimText: stated });
+    const withText: EligibleEvidence = {
+      ...evidence,
+      item: {
+        ...evidence.item,
+        verbatimText: stated,
+        anchor: {
+          ...evidence.item.anchor,
+          target: { kind: 'text_range', charStart: 0, charEnd: [...stated].length },
+          quote: stated,
+          quoteChecksum: spanChecksum(stated),
+        },
+      },
+      storedText: stated,
+    };
+
+    const pass = passForSlot('assumptions');
+    assert.ok(pass !== undefined);
+    const outcome = gateProposal({
+      proposal: {
+        slot: 'assumptions',
+        text: stated,
+        category: 'assumption',
+        evidenceItemIds: ['ev-assume'],
+      },
+      batch: new Map([['ev-assume', withText]]),
+      passSlots: [...(pass?.slots ?? [])],
+      passId: pass?.id ?? 'P1',
+      confidenceInputs: { providerCapabilityTier: 'unknown', degradations: [] },
+    });
+
+    assert.equal(outcome.kind, 'accepted');
+    if (outcome.kind !== 'accepted') return;
+    assert.equal(outcome.slot, 'assumptions');
+    assert.equal(outcome.epistemicLevel, 'L2');
+  });
+
+  test('J1: an assumption THE MODEL INVENTS is rejected, and its text is kept', () => {
+    // The other half, and the one that matters: a model filling a gap with a
+    // sensible default is exactly the L3 inference V5 refuses. It is rejected by
+    // the same rule that rejects any uncited proposal, which is why the reason
+    // code is `no_evidence_cited` rather than something assumption-specific.
+    const pass = passForSlot('assumptions');
+    const outcome = gateProposal({
+      proposal: {
+        slot: 'assumptions',
+        text: 'It is assumed the service is available 24/7.',
+        category: 'assumption',
+        evidenceItemIds: [],
+      },
+      batch: new Map(),
+      passSlots: [...(pass?.slots ?? [])],
+      passId: pass?.id ?? 'P1',
+      confidenceInputs: { providerCapabilityTier: 'unknown', degradations: [] },
+    });
+
+    assert.equal(outcome.kind, 'rejected');
+    if (outcome.kind !== 'rejected') return;
+    assert.equal(outcome.reason, 'no_evidence_cited');
+    assert.match(outcome.detail, /L3 inference/);
+    // J9: retained in full, so "the model wanted to assume this" stays answerable.
+    assert.equal(outcome.proposedText, 'It is assumed the service is available 24/7.');
+  });
+
   test('condition 3: a slot outside the frame is rejected — the model may not extend it', () => {
     const outcome = gate({ slot: 'inventedSlot' });
     assert.equal(outcome.kind, 'rejected');

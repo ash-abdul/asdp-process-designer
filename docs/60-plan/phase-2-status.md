@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V3, V4a and V4b-core ACCEPTED. V4b-eval deferred. V2-PDF blocked on spike S2.** · **Version:** 4.7 · **Updated:** 2026-08-23
+> **Status:** **V0–V3, V4a, V4b-core and V5 ACCEPTED. V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2.** · **Version:** 4.8 · **Updated:** 2026-08-23
 > **Checkpoint:** §0 · **Commit:** `34ca68e` — V4b-core implemented; **accepted** at `3d5dfb6` (V4a accepted at `d82d285`)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -15,12 +15,12 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V5 — structured requirement proposals from verified evidence.** Boundary **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10 |
+| **Current slice** | **None in progress.** **V5 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary and decisions **J1–J9**, §8.11. V0–V3, V4a, V4b-core and V5 accepted |
 | **Previously** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
 | **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean.** V5 is implemented and committed; it **awaits review** — §8 |
+| **Working tree** | **Clean.** V5 is committed at `4b148b4` and **accepted** at the acceptance commit recorded here |
 | **Work in progress** | **None.** V5 is complete and awaiting review. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Review V5** (§8) — it is implemented, not accepted, and **must not be marked accepted without review**. Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
+| **Next approved action** | **None. Nothing is approved to begin.** **V6 has not started and its boundary is not approved.** Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -32,7 +32,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
-| **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | *(this commit)* | **Complete, awaiting review** — §8 |
+| **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + the acceptance commit | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -40,7 +40,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **662 pass · 0 fail · 0 skipped · 0 todo** · 133 suites |
+| Tests | **664 pass · 0 fail · 0 skipped · 0 todo** · 133 suites |
 | `check:arch` | passed — 135 source files |
 | `check:arch:selftest` | passed — **36 cases** |
 | `check:docs` | passed — 89 files, 801 links |
@@ -126,9 +126,9 @@ Process IR, no Specification Studio, no graphical designer.
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) — all accepted. **V5** (§8) implemented, awaiting review |
-| Next slice | **None approved.** A **V5 boundary** — verified evidence into structured requirement *proposals* — is recorded at [v5-proposal.md](v5-proposal.md) and awaiting review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **662 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · **662 V5**) |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) — all accepted |
+| Next slice | **None approved.** **V6** — conflicts, precedence and coverage — remains provisional and needs its boundary approved before it begins. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Tests | **664 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · **664 V5**) |
 | Verification | build · `check:arch` (135 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
@@ -147,6 +147,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** at `bea4041` |
 | V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
 | V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
+| V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at the acceptance commit |
 
 ---
 
@@ -1109,6 +1110,33 @@ marker.
 - The **`L1-REQ`** rule family, with positive and negative fixtures per rule.
 - The gate **shared** with the evaluation, so the numbers measure the rules rather than a copy.
 
+### 8.11 Accepted after independent review
+
+V5 was reviewed against [v5-proposal.md](v5-proposal.md), [phase-2-plan.md](phase-2-plan.md) §3.10 and
+decisions **J1–J9**, item by item, on 2026-08-23 and **accepted**.
+
+**Every decision held as implemented.** The partition matches the approved six passes and was checked
+against the frame itself; `packages/raf` is **untouched** since the boundary commit, so `RafGroup` was
+demonstrably not redefined; `crossSourceAgreement` is `'silent'` at all three call sites and there is
+no code path that could set `'agree'`; `gateProposal` is defined once and imported by **both** the
+command and the evaluation harness; the model-owned schema carries exactly five fields — `slot`,
+`text`, `category`, `evidenceItemIds`, `modelSelfRating` — and nothing else; and V4b's
+`extraction-gate.ts` and `packages/provenance` are **byte-identical** to the boundary commit, so **F2
+is unchanged** and a rejected source quote is still retained as a checksum only.
+
+**One gap was found, and it was a gap in coverage rather than in behaviour.** Two approved **J1**
+cases — an assumption *the evidence states* being permitted in the `assumptions` slot, and an
+assumption *the model invents* being rejected — behaved correctly under direct execution but **no test
+protected either**. The authored stub has no marker that maps to `assumptions`, so neither path could
+be reached by the corpus, and the distinction they protect is the whole of J1: an assumption a
+document states is evidence like any other, while one the model supplies is an L3 inference. Two
+tests were added in the acceptance commit. Tests: **664 pass · 0 fail · 0 skipped**.
+
+**What this acceptance claims, and what it does not.** It claims that what should be refused is
+refused, that nothing written can look approved, and that every proposal traces to evidence whose
+anchor resolved at write time. **It claims nothing about whether a proposition faithfully represents
+the evidence it cites** — §8.9, and limitation 63.
+
 ---
 
 ## 9. Accepted HTTP status posture
@@ -1298,14 +1326,14 @@ excluded permanently, because it would reverse
 
 ## 13. Next step
 
-### V3, V4a and V4b-core are ACCEPTED. V5 is IMPLEMENTED and awaits review. V4b-eval, V2-PDF and H1/H2/H3 have not started.
+### V3, V4a, V4b-core and V5 are ACCEPTED. V6, V4b-eval, V2-PDF and H1/H2/H3 have not started.
 
 | | |
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
 | **V4b-core — AI evidence extraction** | **ACCEPTED / COMPLETE**, 2026-08-23 — §7, reviewed in §7.10. Discharges the approved V4b-core scope; needed no credential. **Accepted for mechanics and governance, explicitly not model quality** — §7.8 |
-| **V5 — evidence to structured requirement proposals** | **IMPLEMENTED, AWAITING REVIEW** — §8. Boundary approved 2026-08-23 — [v5-proposal.md](v5-proposal.md), decisions **J1–J9**, plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
+| **V5 — evidence to structured requirement proposals** | **ACCEPTED / COMPLETE**, 2026-08-23 — §8, reviewed in §8.11. Decisions **J1–J9**, plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **Accepted for mechanics and governance, explicitly not semantic correctness** — §8.9. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
 | **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
@@ -1314,5 +1342,7 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-**V5's boundary is approved; V4b-eval and V2-PDF are not. No live provider call is permitted while
-limitation 62 / H3 stands.**
+| **V6 — conflicts, precedence and coverage** | **Provisional, not approved.** Boundary must be approved before it begins |
+
+**V4b-eval, V2-PDF and V6 are not approved. No live provider call is permitted while limitation 62 /
+H3 stands.**
