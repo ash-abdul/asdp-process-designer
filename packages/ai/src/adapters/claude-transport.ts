@@ -15,9 +15,12 @@
  * `AiRequest` / `AiResponse`. Replacing Claude with another provider means writing
  * a sibling of this file and changing configuration — nothing else.
  *
- * **A7 / D5:** this performs a real network call. It must never be reachable from
- * normal tests or CI, which is enforced mechanically by the checker rule
- * `no-live-ai-in-tests` rather than by convention.
+ * **A7 / D5:** with a real `fetch` this performs a real network call, and that must
+ * never happen in normal tests or CI. The checker rule `no-live-ai-in-tests`
+ * enforces it mechanically: a test may construct this transport **only** with an
+ * injected `fetchImpl` double, and may not inject the real global `fetch`, read a
+ * provider API key, or name a real provider endpoint. Asserting the vendor
+ * request shape offline is the point of `fetchImpl` — see `claude-transport.test.ts`.
  */
 
 import type { AiRequest, AiResponse, ContentPart } from '@asdp/schemas';

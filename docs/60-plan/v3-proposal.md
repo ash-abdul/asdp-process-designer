@@ -1,10 +1,14 @@
 # V3 — Multimodal and Structural Source Intake · PROPOSAL
 
-> **Status:** **APPROVED 2026-08-23 and IMPLEMENTED.** Retained as the design record; the delivered
-> state is in [phase-2-status.md](phase-2-status.md) §5, and D1 became
-> [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
-> **Version:** 1.0 · **Updated:** 2026-08-23
-> **Supersedes:** the one-line V3 entry in [phase-2-plan.md](phase-2-plan.md) §3.5
+> **Status:** **APPROVED, IMPLEMENTED and ACCEPTED 2026-08-23.** Retained as the design record; the delivered
+> state is in [phase-2-status.md](phase-2-status.md) §5, the pre-acceptance corrections in §5.9, and
+> D1 became [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
+> **Items 4, 9 and 10 of §1 are deferred to V4 by decision D6** —
+> [phase-2-status.md](phase-2-status.md) §5.10.
+> **Version:** 1.2 · **Updated:** 2026-08-23
+> **Supersedes:** the one-line V3 entry that stood in [phase-2-plan.md](phase-2-plan.md) before the
+> approved boundary was written into its §3.6. That entry's heading, §3.5, is retained there as a
+> marker rather than renumbered
 > **Related:** **A3**, **A7**, **A8**, [ADR-0007](../adr/ADR-0007-epistemic-ladder.md),
 > [ADR-0008](../adr/ADR-0008-resolvable-anchors.md),
 > [ADR-0011](../adr/ADR-0011-computed-confidence.md),
@@ -45,13 +49,13 @@ path consumes `RasterisedPage`, not "a PDF".
 | 1 | **Image source intake** — PNG, JPEG, WEBP, GIF, BMP admitted by magic bytes; dimensions read; stored immutably through BlobStore | The guard already recognises all five and refuses them by name; V3 turns refusal into admission |
 | 2 | **`PageImage` schema and table** | Also the landing place for V2-PDF's rasterised pages. `sourceId`, `pageNo`, `blobRef`, `width`, `height`, `sha256` |
 | 3 | **`VisionExtractor` port**, sitting beside `TextExtractor`, consuming an image and returning **cited** regions | An extractor produces *proposals*, never committed state |
-| 4 | **Live Claude adapter transport** (**A8**), behind the existing `AiProvider` port, egress gate, routing and degradation ladder | The adapter, the port, the gate and the ladder all already exist; V3 wires one transport |
+| 4 | **Live Claude adapter transport** (**A8**), behind the existing `AiProvider` port, egress gate, routing and degradation ladder | The adapter, the port, the gate and the ladder all already exist; V3 wires one transport. **Delivered as the transport plus the broker seam; the wiring itself is deferred to V4 by D6** |
 | 5 | **`image_region` provenance anchors** with a **new target-verification path** (§3) | The material decision — see **D1** |
 | 6 | **Per-source-type confidence ceilings**, enforced as a pure function | See §4 |
 | 7 | **Structural BPMN / DMN / Form import, strictly as evidence** | See §5. Deterministic XML parsing, **no AI** |
 | 8 | **`L0-ING-007` wired to real vision data**; `L0-ING-003` extended to non-text anchors | The rules exist; V3 gives them real data |
-| 9 | **Record/replay fixtures for every AI call**, so verification stays offline (**A7**) | See §6 |
-| 10 | **AI-interaction audit**: every vision call recorded with provider, model, capabilities used, degradations, cost, and the classification that was permitted to leave | Feeds the AI-disclosure report later |
+| 9 | **Record/replay fixtures for every AI call**, so verification stays offline (**A7**) | See §6. **Delivered as scripted stand-ins; captured recordings are deferred to V4 by D6**, because nothing can be captured before a live call is made |
+| 10 | **AI-interaction audit**: every vision call recorded with provider, model, capabilities used, degradations, cost, and the classification that was permitted to leave | Feeds the AI-disclosure report later. **Delivered as the `AiInteraction` record (with `mode` and `sourceId`) plus anchor-kind and attribution on the audit event; persistence of the full per-call record is deferred to V4 by D6** |
 
 ### Explicitly OUT of scope for V3
 

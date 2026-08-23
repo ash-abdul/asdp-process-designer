@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0, V1, V2 accepted. V3 complete, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.1 · **Updated:** 2026-08-23
-> **Checkpoint:** §0 · **Commit:** `dc2e683` · **Working tree:** clean
+> **Status:** **V0, V1, V2, V3 ACCEPTED. V2-PDF blocked on spike S2.** · **Version:** 4.3 · **Updated:** 2026-08-23
+> **Checkpoint:** §0 · **Commit:** `dc2e683` (V3) + the acceptance-correction commit (§5.9)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -15,11 +15,11 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V3 — multimodal and structural intake.** Implementation **complete**, **awaiting review** |
+| **Current slice** | **None in progress.** **V3 — multimodal and structural intake — is ACCEPTED / COMPLETE** (accepted 2026-08-23, after the three corrections in §5.9) |
 | **Commit** | **`dc2e683`** — *Phase 2 V3: image intake, vision evidence, ADR-0038 verification, structural import* |
-| **Working tree** | **Clean.** Nothing uncommitted |
-| **Work in progress** | **None.** No partial implementation, no scratch state in the repository. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None — awaiting a decision.** V3 needs review; V4 and V2-PDF both need approval before any work begins |
+| **Working tree** | **Clean.** The §5.9 corrections are committed |
+| **Work in progress** | **None.** No partial implementation, no scratch state. Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **None — awaiting a decision.** V4's boundary and V2-PDF both need approval before any work begins. The **H1/H2** hardening candidates (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -28,21 +28,21 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V0** — Foundation: compiled toolchain, NestJS composition, PGlite persistence, BlobStore | `8f2a665` | **Accepted** |
 | **V1** — Text intake, resolvable provenance, source viewer, `L0-ING` rules | `922761a` | **Accepted** |
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
-| **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` | **Complete, awaiting review** |
+| **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + §5.9 | **Accepted** — 2026-08-23 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
-### Verification at this commit
+### Verification at acceptance
 
 | | |
 |---|---|
-| Tests | **554 pass · 0 fail · 0 skipped · 0 todo** · 108 suites |
-| `check:arch` | passed — 108 source files |
-| `check:arch:selftest` | passed — 28 cases |
-| `check:docs` | passed — 86 files, 635 links |
+| Tests | **572 pass · 0 fail · 0 skipped · 0 todo** · 113 suites |
+| `check:arch` | passed — 109 source files |
+| `check:arch:selftest` | passed — **32 cases** |
+| `check:docs` | passed — 86 files, 659 links |
 | `npm run verify` | **green end to end** |
 | Durability | Verified by execution: sources, text, units, images and evidence survive a full service restart, and anchors minted before it still resolve after it |
-| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` |
+| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` |
 
 ### Approved decisions
 
@@ -59,9 +59,10 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **A7** | **No live AI calls in normal CI**; replay fixtures; live evaluation separately invoked |
 | **A8** | Claude API as the **initial live provider** for development, through the abstraction, under five conditions |
 
-**V3 decisions D1–D5**, all approved — [phase-2-plan.md](phase-2-plan.md) §3.6. D1 became
+**V3 decisions D1–D6**, all approved — [phase-2-plan.md](phase-2-plan.md) §3.6. D1 became
 [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md); D2 plain `fetch`; D3 reuse the XML
-tokeniser; D4 ceilings as functions; D5 a checker rule for live AI in tests.
+tokeniser; D4 ceilings as functions; D5 a checker rule barring real provider calls in tests;
+**D6 defers V3 in-scope items 4, 9 and 10 to V4** — §5.10.
 
 ### ADRs
 
@@ -79,6 +80,7 @@ tokeniser; D4 ceilings as functions; D5 a checker rule for live AI in tests.
 |---|---|
 | **V2-PDF** — PDF adapter, rasterisation, `pdf_region` rectangle lists, `L0-ING-008` wired | (1) a representative Arabic PDF corpus per [s2-corpus-request.md](s2-corpus-request.md) · (2) **spike S2 completed** against it, producing the exact-precision yield rate · (3) **ADR-0037 approved**. Enforced mechanically by the checker rule `pdf-engine-not-approved`; `@embedpdf/pdfium` is **not installed** |
 | **Vision quality measurement** | No live provider has ever been called and no recorded corpus exists. Shape, refusals, egress and provenance are proven; **accuracy is not** |
+| **Broker-consumer wiring, recorded fixtures, interaction persistence** | **Not blocked — deferred to V4 by decision D6** (§5.10). These are V3 in-scope items 4, 9 and 10, and they need V4's first requirements-analysis consumer of the broker to be testable against anything real |
 | **Ceiling enforcement** | No requirements exist yet to enforce ceilings on. `ceilingFor` is computable and tested; V5 enforces it |
 | **Element-wise confirmation records** | V5. V3 made each region individually addressable, which is its prerequisite |
 | Collation behaviour, PostgreSQL container, MinIO, OIDC, durable job queue, container build | **Docker unavailable** — §8, each with a named trigger |
@@ -94,13 +96,13 @@ DMN or form generation, no Process IR, no Specification Studio, no graphical des
 
 | | |
 |---|---|
-| Slices completed | **V0 — Foundation** · **V1 — Text intake** · **V2 — DOCX intake** · **V3 — multimodal and structural intake** |
-| Next slice | **V4 — AI analysis passes.** **Provisional**, not approved. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **554 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2) |
-| Verification | build · `check:arch` (108 files) · checker self-test (28 cases) · `check:docs` — all clean |
+| Slices completed | **V0 — Foundation** · **V1 — Text intake** · **V2 — DOCX intake** · **V3 — multimodal and structural intake** (§5, corrected per §5.9) — **all four accepted** |
+| Next slice | **V4 — AI analysis passes.** **Provisional**, not approved — and it now also carries the three items deferred by **D6** (§5.10). **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Tests | **572 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 554 V3 as implemented) |
+| Verification | build · `check:arch` (109 files) · checker self-test (32 cases) · `check:docs` — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
-| Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction |
+| Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction. **V3 decisions D1–D6 approved**, D6 deferring three in-scope items to V4 (§5.10) |
 | Dependencies added | **NONE in V1, V2 or V3.** Runtime dependencies stand at seven, unchanged since V0 |
 | Slices V4–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.7 |
 
@@ -112,7 +114,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
 | V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
-| V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **awaiting review** |
+| V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** (with the §5.9 correction commit) |
 
 ---
 
@@ -387,6 +389,206 @@ Verified end to end, through `jsonb` and back:
 - When ADR-0037 is approved this becomes a *confinement* rule naming the PDF adapter directory,
   rather than a prohibition.
 
+## 5. V3 capabilities delivered — multimodal and structural intake
+
+**ACCEPTED 2026-08-23.** **Image intake read by vision, and structural model files read by a parser,
+both landing as evidence with resolvable targets.** Delivered at `dc2e683`, plus the acceptance
+corrections described in §5.9. **No new dependency:** `fetch` is built into Node 22 (**D2**), the XML tokeniser
+already existed (**D3**), and image dimensions are read from file headers.
+
+The V3 boundary is [phase-2-plan.md](phase-2-plan.md) §3.6; the design record is
+[v3-proposal.md](v3-proposal.md); the governing provenance decision is
+[ADR-0038](../adr/ADR-0038-target-versus-content-verification.md). Three in-scope items are
+**deliberately deferred to V4** — §5.10, decision **D6**.
+
+### 5.1 Image intake
+
+- **PNG, JPEG, WEBP, GIF and BMP admitted by magic bytes**, never by filename. The guard checked
+  these formats before V3 in order to *refuse* them by name; V3 turns the refusal into admission.
+- **Dimensions are read from file headers with no dependency** — PNG `IHDR`, the GIF logical screen
+  descriptor, the BMP DIB header, all three WEBP sub-formats, and a walk of the JPEG segment chain
+  to the start-of-frame marker.
+- Dimensions are **not metadata**: ADR-0038 target verification checks that a cited rectangle lies
+  within the image bounds, so without real width and height that check is unenforceable. A zero
+  dimension or an unreadable header is therefore **refused** (`unreadable_image`), never defaulted.
+- A RIFF file that is not WEBP still falls through to the existing RIFF refusal.
+
+### 5.2 `PageImage` — storage and identity
+
+- Migration **`004_page_image`**: one row per stored image, `unique (source_id, page_no)`,
+  **insert-only**, checksum constrained to lowercase hex, and **dimensions constrained positive**,
+  because a zero would make every bounds check vacuously true.
+- Bytes are stored through the **content-addressed BlobStore**; the row records `blobRef`, `sha256`,
+  `width`, `height`, `mediaType` and `byteSize`.
+- Also the landing place for V2-PDF's rasterised pages, so the vision path does not care whether an
+  upload or a rasteriser produced the image.
+
+### 5.3 Vision extraction
+
+- **`VisionExtractor` is a separate port from `TextExtractor`**, deliberately: reading pixels calls a
+  model, is subject to the egress policy, and yields an interpretation. Keeping them apart is what
+  stops "extract the text" quietly meaning "ask an AI".
+- The **preserved rule is asserted, not assumed**: text, Markdown, DOCX and BPMN are all ingested in
+  a test whose vision extractor **throws if it is ever called**.
+- The prompt asks for **regions and verbatim text and forbids interpretation** — no summarising, no
+  translation, no inferring intent, no describing process behaviour. A prompt inviting "describe the
+  process" would produce exactly the content [ADR-0005](../adr/ADR-0005-ir-first-compilation.md)
+  excludes.
+- **A refusal is a first-class outcome**, not an exception: it carries named degradations and
+  concrete options (data-governance.md §3.1). The default binding **refuses**, because an empty
+  region list is indistinguishable from "the image contained no text", and those are different facts.
+- A refused read leaves the source **`parsed` with no units**, not `parse_failed` — the bytes are
+  held and readable; the reading was declined.
+- **Out-of-bounds or blank regions are dropped and reported, never clamped.** A clamped rectangle is
+  a different claim from the one the model made.
+
+### 5.4 Provenance — ADR-0038, target versus content
+
+The material decision of the slice, and the part that most needed to be right.
+
+- Verification is **two independent axes**. A deterministic textual source answers both, and only
+  then is an anchor `resolved`. **An image answers only the target axis**, because the only text
+  available is what the model reported.
+- The rejected design is recorded because it is the tempting one: storing the vision transcript as
+  canonical text and resolving image anchors against it would verify **AI output against AI output**,
+  so the checksum would always match — a green light that means nothing while looking identical to
+  the real guarantee.
+- Resolution now has **four states**. `content_unverified` means *target verified, interpreted
+  content not*. `resolved` is **never** reused for the visual case, and the union is exhaustive, so a
+  consumer cannot ignore the fourth state without a compile error.
+- `image_region` anchors are **`page` precision, never `exact`**.
+- **Two vacuous checks were found by tests and fixed.** Image verification had compared the stored
+  checksum against itself; the fix records the checksum **on the anchor at mint time**, so two
+  independent records exist. Model-file verification had done the same and was **removed rather than
+  repaired**, because element ids are recomputed from the stored bytes on every resolution.
+- `isCitable` treats `content_unverified` as **citable**: the target is sound, and the epistemic
+  ceiling — not the anchor — is what limits what such evidence may support.
+- Highlights carry `imageId` and `imageRect` for a visual citation and come back
+  `content_unverified`, so a viewer can render a vision citation differently from a verified one.
+
+### 5.5 Epistemic ceilings — **D4**
+
+- `ceilingFor` and `permittedByCeiling` are **pure, total functions** of evidence kind and extraction
+  method — never stored columns, because a stored ceiling can drift from what it describes and can
+  be edited.
+- Screenshot → **L2**. Diagram image → **L2 plus element-wise human confirmation** (risk R5). Text,
+  DOCX and structural-model imports → **L1 attainable**. An unrecognised kind read by vision is
+  capped conservatively rather than falling through to L1.
+- The **reasoning was corrected** during the mandated consistency check, though the ceilings were
+  not: `epistemic-model.md` §1 defines L1 as created by *"AI extraction or deterministic parser"*, so
+  the cap cannot rest on "an AI read it". What disqualifies visual evidence is the **anchor** — L1
+  requires a resolvable anchor, and for an image only the target resolves. And the cap was already
+  approved in Phase 0: `provenance-and-anchoring.md` §5 permits `page` precision only for L2/L3
+  content, never for L1 evidence.
+- **No new epistemic meaning enters the system.** The ladder stays four levels, and no L2 → L1
+  promotion exists or is created. `permittedByCeiling` always permits L4, because L4 is a human act:
+  a person may approve a requirement resting on an interpretation.
+
+### 5.6 Structural BPMN / DMN / Form import — **D3**, evidence only
+
+- Recognised **from content, not extension**: a `.bpmn` file that is really a note is read as text; a
+  `.xml` file carrying the BPMN namespace is read as BPMN.
+- Parsed with the **existing deterministic XML tokeniser**; Camunda forms use `JSON.parse`. **No AI
+  is involved**, because a structured model already exists and using a model here would be strictly
+  worse — slower, non-reproducible, unverifiable.
+- **Diagram geometry is not evidence**: `BPMNShape` and `BPMNEdge` are excluded. Layout is never
+  evidence of a requirement.
+- **An unnamed element produces no unit and the omission is reported.** A synthesised label would put
+  text into a quote that appears nowhere in the source, and its checksum would then verify against
+  something no one wrote.
+- Element anchors resolve to `resolved` at `exact` precision, and the five absolutes are recorded
+  where the reading happens: never an `ArtifactVersion`, never editable, never the starting point for
+  generation, ids never reused, never a bypass of the requirements path. **No edit route exists** —
+  `PUT`/`PATCH`/`DELETE` return 404.
+
+### 5.7 Live transport — **D2** — and the A7/D5 boundary
+
+- **Plain `fetch` behind the existing adapter boundary.** The Anthropic SDK is not introduced:
+  `fetch` is built into Node 22, and the `AiProvider` port already normalises everything an SDK would
+  abstract, so vendor types would be a second, vendor-shaped model of the same concepts —
+  precisely what [ADR-0020](../adr/ADR-0020-ai-provider-abstraction.md) exists to prevent.
+- **One file is the entire vendor surface.** Replacing the provider means writing a sibling of it and
+  changing configuration.
+- The API version is **pinned**; a truncated response is reported as the **named degradation**
+  `chunked_context` rather than accepted as a shorter document; an image part carries a **reference**,
+  so the transport **refuses** rather than sending a request with the image silently omitted.
+- **No live call has ever been made, and normal CI makes none.** The checker rule
+  `no-live-ai-in-tests` enforces it mechanically rather than by convention.
+
+### 5.8 AI attribution of vision-read evidence
+
+- Evidence attribution is derived from the **anchor kind**, so it cannot drift per slice or be chosen
+  by a caller. An `image_region` citation is `extractedBy: 'ai'`, names the interaction that produced
+  it, and is `citationMode: 'native'` (`provenance-and-anchoring.md` §4.3 — the provider returned the
+  region itself). Text, DOCX and model-file citations stay `parser` / `none`.
+- The interaction id is carried **on the `SourceUnit`**, because the unit is what evidence cites and
+  from V2-PDF onward one source carries a call per page.
+- Migration **`005_ai_attribution`** enforces both halves in SQL: a vision unit must name its
+  interaction, and image-anchored evidence cannot be labelled `parser`. Combined with migration 002's
+  `evidence_ai_interaction_present`, an AI-extracted row cannot exist without naming its interaction,
+  so the **AI-disclosure report is computable rather than estimated**
+  ([ADR-0004](../adr/ADR-0004-ai-proposes-code-commits.md)).
+- The `evidence.recorded` audit event records the anchor kind, `extractedBy`, `citationMode` and the
+  interaction id, so "which requirements rest on a model's reading" is answerable from the audit
+  trail and not only from the row.
+
+### 5.9 Acceptance corrections
+
+Three corrections were required by the V3 implementation review and applied before acceptance. All
+three are committed; acceptance followed them.
+
+| # | Correction |
+|---|---|
+| 1 | **This section, §5, was missing entirely.** `dc2e683` renumbered §5–§9 to make room for it and never wrote it, while [phase-2-plan.md](phase-2-plan.md) §3.6 and [v3-proposal.md](v3-proposal.md) both pointed a reader here. The durable record had a hole exactly where a fresh session would look |
+| 2 | **`no-live-ai-in-tests` was refined.** It had banned the transport *factory* outright, which also banned the offline shape test the transport's injectable `fetchImpl` exists for — leaving the entire vendor surface untested, which is the opposite of what **A7** wants. It now bans **network egress**: a test may construct the transport **only** with an injected fetch double, may not inject the real global `fetch`, may not read a provider API key, and may not name a real provider endpoint. Six self-test cases cover it, including one proving the rule does **not** fire on a legitimate injected double, and the transport now has **12 offline tests** |
+| 3 | **`extractedBy` for vision-read evidence was a defect, and is fixed** — §5.8. Every `EvidenceItem` had been written as `extractedBy: 'parser'` with no interaction id, including citations over vision-read regions. It made the AI-disclosure report uncomputable and erased the audit trail behind the L1/L2 distinction at the one point it matters |
+
+### 5.10 Deliberately deferred to V4 — decision **D6**
+
+**Approved 2026-08-23 at the V3 acceptance review.** Three items from the V3 in-scope list are
+**broker-consumer and evaluation-fixture work**, and they land with V4's first requirements-analysis
+consumer of the broker rather than in an intake slice. This is recorded, not implied.
+
+| V3 item | State at acceptance | Why V4 |
+|---|---|---|
+| **4 — live transport wired through broker, egress gate, routing, degradation ladder** | The transport exists and is tested offline; `createBrokerVisionExtractor` exists and joins vision to the broker, but **is referenced by nothing** — the composition root wires the refusing extractor. It is the V4 seam | Wiring a broker consumer without a consumer to feed means testing the wiring against itself. V4 brings the first real consumer |
+| **9 — record/replay fixtures for every AI call** | End-to-end tests use **scripted stand-ins**, not recordings through `@asdp/eval` | A recording is made by capturing a real call ([ADR-0031](../adr/ADR-0031-corpus-as-data.md)). No live call has been made and no corpus exists, so there is nothing to capture yet |
+| **10 — AI-interaction audit with provider, model, capabilities, degradations, cost, classification** | `AiInteraction` carries `mode` and `sourceId`; the broker emits the record; **there is no `ai_interaction` table** and the intake audit event carries only the interaction id and limitations | Persisting an interaction record is only meaningful once interactions are actually produced through the broker — the same dependency as item 4 |
+
+**What V3 is accepted as delivering** is therefore: image intake · the `VisionExtractor` and
+provider-transport **foundation** · `image_region` provenance · target-verified /
+`content_unverified` semantics · confidence ceilings · structural BPMN/DMN/Form import as evidence ·
+egress controls at the transport boundary · deterministic replay-based verification · audit records.
+**V3 does not deliver the first business requirements-analysis consumer of the AI broker.** That
+begins in V4.
+
+### 5.11 Enforcement added
+
+- Checker rule **`no-live-ai-in-tests`** (**A7** / **D5**), refined as described in §5.9. Self-test
+  grew to **32 cases**.
+- Migration **004** constrains image dimensions positive; migration **005** constrains AI attribution
+  in both directions. Both are enforced in SQL, so the guarantees survive a direct connection.
+- `ResolutionStatus` is an exhaustive union, so the fourth state cannot be ignored silently.
+- `contentVerifiability(anchorKind)` derives which axis applies from the kind — never stored, never
+  per-adapter.
+
+### 5.12 Hardening candidates — **H1** and **H2**, proposed, not approved
+
+**V3 acceptance was explicitly not held on these** (decision of 2026-08-23). Both are recorded
+limitations — §7 items **43** and **44** — and both are small, mechanical closures rather than new
+capability. They are candidates for a **small hardening slice**, and like any slice that slice needs
+its boundary approved before it begins.
+
+| # | Candidate | What it closes | Shape of the change |
+|---|---|---|---|
+| **H1** | **Strengthen element-name comparison where appropriate** | Limitation **43**. Element-anchor resolution checks that the cited element id is present in the reparsed file; it does not compare the recorded quote to the element's current name. [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) §5 grounds content verification for structural imports in that name being checkable, so today the implementation is weaker than the ADR states | Carry element **names** alongside ids in `StoredModel`, and compare the anchor's quote to the current name during resolution. *"Where appropriate"* matters: an expression-bearing element and a renamed-but-identical element are different cases, and a renamed element is arguably `drifted` rather than `broken`. That judgement is what the slice has to settle — it is not a one-line change |
+| **H2** | **Make `imageSha256` required where appropriate** | Limitation **44**. The field is optional, so an image anchor minted without it falls back to comparing the stored row against itself — the vacuous check §5.4 exists to prevent. No current code path mints such an anchor, so this is latent rather than live | Require it on newly minted `image_region` anchors, or refuse an image anchor that lacks it at verification time. *"Where appropriate"* matters here too: the field must stay optional in the **schema** so anchors already stored remain readable, so the guarantee belongs at the mint and verify boundaries rather than in the type |
+
+**Limitation 45** (no API exposes page images) is **not** part of this: it is viewer work, not a
+provenance weakness, and the rectangles are already verified numerically.
+
+---
+
 ## 6. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
@@ -481,8 +683,8 @@ behaviour as correct.
 
 | # | Limitation | Consequence |
 |---|---|---|
-| 31 | **No live provider has ever been called.** The transport exists and is unit-tested against an injected `fetch`; every end-to-end test replays a scripted stand-in | **A7** requires this of CI. It also means real vision **quality is unmeasured** — shape, refusals and egress are proven, accuracy is not |
-| 32 | **No recorded corpus of real vision responses exists yet** | Replay fixtures are scripted, not captured. The first live run against a corpus is what makes that corpus testable offline (ADR-0031) |
+| 31 | **No live provider has ever been called.** The vendor transport is covered by **12 offline tests** against an injected `fetch` double — request shape, header and temperature mapping, image resolution, four refusal paths, usage and degradation mapping — and every end-to-end test drives a scripted stand-in | **A7** requires this of CI. Shape, refusals and egress are proven; real vision **quality is unmeasured**, because measuring it requires a live call. *(This limitation previously claimed the transport was tested when it had no test at all — see §5.9 correction 2.)* |
+| 32 | **No recorded corpus of real vision responses exists yet** | Replay fixtures are **scripted, not captured**. The first live run against a corpus is what makes that corpus testable offline (ADR-0031). Deferred to V4 by **D6** (§5.10), because there is nothing to capture until a call is made |
 | 33 | **Region coordinates are trusted as reported**, then bounds-checked | A model can report a plausible rectangle over the wrong glyphs. Bounds checking catches impossible rectangles, not wrong ones — which is why the L2 ceiling and element-wise confirmation exist |
 | 34 | **No visual verification of rendered highlights.** Rectangles are checked numerically, not by rendering | A rectangle can tile a range perfectly and still sit over the wrong pixels. Deferred with V2-PDF's M12, which needs a rasteriser |
 | 35 | **One image per source** (`pageNo: 1`). Multi-page images are not modelled | The table supports many; V2-PDF's rasteriser is what will produce them |
@@ -491,6 +693,11 @@ behaviour as correct.
 | 38 | **BPMN import reads names and expressions only** — not lanes' membership, not message flows' endpoints, not full attribute sets | Sufficient for evidence. A fuller model would blur the evidence-only boundary |
 | 39 | **`sheet_cell` and `transcript` anchor kinds remain unexercised** | Spreadsheets are a separate proposed capability; interview transcripts arrive with the clarification queue |
 | 40 | **An image source stores an empty canonical text** | Deliberate (ADR-0038): the vision transcript is not canonical truth. It means the source viewer has no text to show for an image — only regions |
+| 41 | **The broker vision path is not wired into the application.** `createBrokerVisionExtractor` joins vision to the broker, the egress gate, capability negotiation and the interaction record, but **nothing references it**: the composition root wires the refusing extractor, and end-to-end tests inject a scripted stand-in | **Deferred to V4 by D6** (§5.10), not an oversight. It means the egress gate is proven on the Phase 1 harness rather than on V3's own vision path. As composed today the application cannot perform a vision read at all — it refuses, by name, with options |
+| 42 | **There is no `ai_interaction` table.** The broker produces the record and the caller is expected to persist it; the intake audit event carries the interaction id, the anchor kind and the attribution, but not the provider, model, capabilities or cost | **Deferred to V4 by D6** (§5.10). Attribution and disclosure are computable today (§5.8); the full per-call record lands with the first broker consumer |
+| 43 | **Element-anchor verification checks identity, not the recorded name.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) §5 grounds content verification for structural imports in the element's name being checkable against the stored bytes; the resolver checks that the **element id is present** in the reparsed file and does not compare the quote to the element's current name | An in-place edit that changes a label while keeping ids would resolve `resolved` with a stale quote. Not vacuous — ids are recomputed from the stored bytes every time, so a tampered or truncated file makes cited elements vanish — but **weaker than the ADR states**. Sources are insert-only, so the path requires direct database tampering. An independent expectation is available and unused (`source.textSha256` versus a rehash of the stored text). **Hardening candidate H1** — §5.12 |
+| 44 | **`image_region.imageSha256` is optional.** Every anchor V3 mints sets it, but when it is absent verification falls back to the caller-supplied expectation, which in production is read from the same `page_image` row being verified — the vacuous comparison §5.4 fixed | Latent rather than live: no code path mints an image anchor without it. Making the field required, or refusing an image anchor that lacks it, would close the hole mechanically. **Hardening candidate H2** — §5.12 |
+| 45 | **No API exposes page images** — no metadata route and no bytes route | A highlight returns `imageId` and `imageRect`, so a client is told *where* the citation is but cannot fetch the image to paint it on. Visual highlighting is therefore not renderable end to end yet. The rectangles are verified numerically, which is what provenance requires; rendering them is viewer work |
 
 ---
 
@@ -529,13 +736,14 @@ excluded permanently, because it would reverse
 
 ## 10. Next step
 
-### V3 is complete and awaiting review. V4 and V2-PDF have not started.
+### V3 is ACCEPTED. V4, V2-PDF and the H1/H2 hardening candidates have not started.
 
 | | |
 |---|---|
-| **V3 — multimodal and structural intake** | **Complete**, awaiting review. Zero new dependencies |
+| **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies. Three in-scope items **deferred to V4 by D6** (§5.10) |
+| **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
-| **V4 — AI analysis passes** | **Provisional**, not approved |
+| **V4 — AI analysis passes** | **Provisional**, not approved. It now also carries the **D6** deferrals: broker-consumer wiring, recorded fixtures, interaction persistence |
 
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.

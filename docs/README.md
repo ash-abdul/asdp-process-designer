@@ -1,6 +1,6 @@
 # ASDP Process Designer — Documentation Index
 
-> **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V2 accepted, V3 awaiting review** · **Version:** 1.6 · **Updated:** 2026-08-23
+> **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V3 accepted** · **Version:** 1.8 · **Updated:** 2026-08-23
 > **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0
 
 All documents are versioned specifications, not notes. Where a document and an ADR appear to
@@ -97,8 +97,8 @@ for the module you are building.
 | [phase-0-tasks.md](60-plan/phase-0-tasks.md) | Phase 0 breakdown and the six spikes |
 | [phase-1-status.md](60-plan/phase-1-status.md) | Phase 1 implementation status, defects found, deferrals |
 | [phase-2-plan.md](60-plan/phase-2-plan.md) | Phase 2 objective, slices V0–V7, approved V2 boundary, acceptance criteria |
-| [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — V0–V3 complete; V2-PDF blocked |
-| [v3-proposal.md](60-plan/v3-proposal.md) | V3 design record — multimodal and structural intake. **Approved and implemented** |
+| [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — V0–V3 accepted; V2-PDF blocked |
+| [v3-proposal.md](60-plan/v3-proposal.md) | V3 design record — multimodal and structural intake. **Approved, implemented and accepted** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 

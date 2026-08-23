@@ -612,6 +612,10 @@ async function ingestImageSource(
       language: unit.language,
       direction: unit.direction,
       anchor: unit.anchor,
+      // The interaction that READ this region, carried onto the unit so evidence
+      // cited from it can be attributed to a model rather than to a parser
+      // (ADR-0004, ADR-0007). Migration 005 enforces its presence in SQL.
+      aiInteractionId: outcome.interactionId,
     }));
     if (converted.dropped > 0) {
       // Dropped, not clamped: a clamped rectangle is a different claim from the
@@ -786,10 +790,17 @@ export interface RecordEvidenceInput {
 /**
  * Record an EvidenceItem.
  *
- * V1 evidence is always parser-extracted: `extractedBy: 'parser'` and
- * `citationMode: 'none'`, because there is no AI in this slice. AI-extracted
- * evidence with native or post-hoc citation arrives in V4, and the fields exist
- * now so that path adds a value rather than a column.
+ * **Attribution follows the cited content, not the slice.** Text, DOCX and
+ * structural-model units are read by a deterministic parser, so evidence over
+ * them is `extractedBy: 'parser'` with `citationMode: 'none'`. An `image_region`
+ * unit was read by a vision model, so evidence over it is `extractedBy: 'ai'`,
+ * names the interaction that produced it, and is `citationMode: 'native'` —
+ * provenance-and-anchoring.md §4.3, because the region rectangle is a
+ * page-precision citation the provider returned itself.
+ *
+ * Recording `parser` for vision-read content was the V3 defect this repairs. It
+ * made the AI-disclosure report uncomputable (ADR-0004) and erased the audit
+ * trail behind the L1/L2 distinction (ADR-0007) at the one point it matters.
  *
  * The anchor is minted and then VERIFIED before persistence. `anchorVerified` is
  * therefore always true on a stored item — which is exactly what invariant D1
@@ -822,6 +833,8 @@ export async function recordEvidence(
 
   let anchor: ProvenanceAnchor;
   let unitId: string | undefined;
+  /** The interaction that produced the cited content, when a model produced it. */
+  let unitInteractionId: string | undefined;
 
   if (input.sourceUnitId !== undefined) {
     const unit = await ctx.repos.sourceUnits.get(input.sourceUnitId);
@@ -832,6 +845,7 @@ export async function recordEvidence(
       );
     }
     unitId = unit.id;
+    unitInteractionId = unit.aiInteractionId;
 
     if (input.charStart === undefined && input.charEnd === undefined) {
       // Inherit the unit's anchor unchanged (provenance-and-anchoring.md §4.1).
@@ -876,6 +890,32 @@ export async function recordEvidence(
     'PROHIBITED',
   );
 
+  // --- attribution ------------------------------------------------------
+  //
+  // Derived from the ANCHOR KIND, not from the slice and not from the caller: an
+  // `image_region` quote is a vision model's reading, and no argument a caller
+  // supplies can make it parser-extracted. Refusing when the interaction is
+  // missing is deliberate — an unattributable AI extraction would satisfy the
+  // schema while making the disclosure report a guess, and migration 005 would
+  // reject the row anyway.
+  const visionRead = anchor.target.kind === 'image_region';
+  if (visionRead && unitInteractionId === undefined) {
+    throw new ValidationError(
+      `unit ${unitId ?? '(none)'} is anchored to an image region but names no AI interaction, ` +
+        'so the evidence could not be attributed; vision-read evidence must record the ' +
+        'interaction that produced it (ADR-0004)',
+    );
+  }
+  const attribution = visionRead
+    ? {
+        extractedBy: 'ai' as const,
+        // The provider returned the region itself, which is a native
+        // page-precision citation (provenance-and-anchoring.md §4.3).
+        citationMode: 'native' as const,
+        aiInteractionId: unitInteractionId as string,
+      }
+    : { extractedBy: 'parser' as const, citationMode: 'none' as const };
+
   const item: EvidenceItem = {
     id: ctx.ids.next('ev'),
     projectId: input.projectId,
@@ -885,8 +925,7 @@ export async function recordEvidence(
     verbatimText: anchor.quote,
     language: anchor.language,
     ...(input.rafSlotHint === undefined ? {} : { rafSlotHint: input.rafSlotHint }),
-    extractedBy: 'parser',
-    citationMode: 'none',
+    ...attribution,
     anchorVerified: true,
     classification,
     createdBy: actor.subject,
@@ -908,6 +947,13 @@ export async function recordEvidence(
         classification: item.classification,
         quoteChecksum: item.anchor.quoteChecksum,
         rafSlotHint: item.rafSlotHint,
+        // Recorded on the event, not only on the row: the AI-disclosure report is
+        // computed from what happened, and an audit trail that omits WHO read the
+        // content cannot answer "which requirements rest on a model's reading".
+        anchorKind: item.anchor.target.kind,
+        extractedBy: item.extractedBy,
+        citationMode: item.citationMode,
+        aiInteractionId: item.aiInteractionId,
       },
     });
     return item;

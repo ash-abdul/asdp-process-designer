@@ -271,6 +271,17 @@ export const SourceUnit = z.object({
   /** Heading depth for `heading`, list depth for `listItem`. */
   depth: z.number().int().nonnegative().optional(),
   anchor: ProvenanceAnchor,
+  /**
+   * The AI interaction that produced this unit's content, when one did.
+   *
+   * Present for vision-read units and absent for parser-read ones, so evidence
+   * cited from a unit can be attributed to the interaction that produced it
+   * rather than defaulting to `parser` — which was the V3 defect this field
+   * fixes. Attribution has to live on the UNIT, because the unit is the thing
+   * evidence cites and (from V2-PDF onward) one source can carry several pages,
+   * each read by its own call.
+   */
+  aiInteractionId: EntityId.optional(),
 });
 export type SourceUnit = z.infer<typeof SourceUnit>;
 

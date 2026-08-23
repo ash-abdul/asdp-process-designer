@@ -115,23 +115,73 @@ const PDF_ENGINES = [
 ];
 
 /**
- * A7 / D5: no live AI transport in normal tests or CI.
+ * A7 / D5: no REAL provider call in normal tests or CI.
  *
  * A7 approved that normal verification uses deterministic recorded/replay
  * fixtures and makes no live model call. That was a convention; this makes it
  * mechanical, like every other load-bearing rule here.
  *
- * A test file may not construct a live transport, and may not read an API key
- * from the environment. Live evaluation stays a separately invoked capability
- * outside pass/fail — so a provider outage or a model revision can never turn
- * the build red.
+ * ## What this rule targets, and what it must not
+ *
+ * The thing to forbid is **network egress to a provider**, not the vendor
+ * transport module. The first version of this rule banned the transport factory
+ * outright, which also banned the offline shape test the transport is designed
+ * for — its `fetchImpl` exists precisely so the request shape can be asserted
+ * without a network call. The result was that the entire vendor surface went
+ * untested, which is the opposite of what A7 wants: A7 wants CI to be
+ * reproducible, not to be blind.
+ *
+ * So a test may construct a network-capable transport **only with an injected
+ * fetch double**, and may never read a provider API key or name a real provider
+ * endpoint. Live evaluation stays a separately invoked capability outside
+ * pass/fail — a provider outage or a model revision can never turn the build red.
  */
 const LIVE_AI_IN_TEST_PATTERNS = [
-  { re: /\bcreateClaudeTransport\s*\(/, why: 'constructs a LIVE Claude transport' },
-  { re: /\bANTHROPIC_API_KEY\b/, why: 'reads a provider API key' },
-  { re: /\bASDP_AI_API_KEY\b/, why: 'reads a provider API key' },
-  { re: /api\.anthropic\.com/, why: 'names a provider endpoint' },
+  { re: /\bANTHROPIC_API_KEY\b/, why: 'reads a provider API key from the environment' },
+  { re: /\bASDP_AI_API_KEY\b/, why: 'reads a provider API key from the environment' },
+  { re: /api\.anthropic\.com/, why: 'names a real provider endpoint' },
 ];
+
+/**
+ * Factories that perform real network I/O unless a fetch double is injected.
+ *
+ * Each entry names the option that makes the call deterministic. A test that
+ * calls one of these must set that option to something other than the real
+ * `fetch`.
+ */
+const NETWORK_TRANSPORT_FACTORIES = [{ fn: 'createClaudeTransport', inject: 'fetchImpl' }];
+
+/** Injecting the real global fetch is not a double — it is a live call spelled differently. */
+const REAL_FETCH_INJECTION = /\b(?:fetchImpl)\s*:\s*(?:globalThis\s*\.\s*)?fetch\b(?!\s*Impl)/;
+
+/**
+ * The argument text of each call to `fn`, by brace/paren matching.
+ *
+ * A regex alone cannot tell `createClaudeTransport({ fetchImpl: fake })` from
+ * `createClaudeTransport({ apiKey })` followed later in the file by an unrelated
+ * mention of `fetchImpl`, and the difference is the whole rule. Matching the
+ * call's own parentheses keeps the check honest about which call was inspected.
+ */
+export function callArguments(text, fn) {
+  const calls = [];
+  const opener = new RegExp(`\\b${fn}\\s*\\(`, 'g');
+  let match;
+  while ((match = opener.exec(text)) !== null) {
+    let depth = 0;
+    let i = match.index + match[0].length - 1;
+    const start = i + 1;
+    for (; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '(') depth++;
+      else if (ch === ')') {
+        depth--;
+        if (depth === 0) break;
+      }
+    }
+    calls.push(text.slice(start, i));
+  }
+  return calls;
+}
 
 /** BPMN/DMN serialisation libraries. Permitted only in compiler-* and ingestion (ADR-0005). */
 const MODEL_SERIALISATION_LIBS = [
@@ -383,7 +433,7 @@ export function evaluateRules(files) {
       }
     }
 
-    // --- A7 / D5: no live AI transport in tests -------------------------
+    // --- A7 / D5: no REAL provider call in tests ------------------------
     if (/\.test\.ts$/.test(normalisedPathOf(f))) {
       for (const { re, why } of LIVE_AI_IN_TEST_PATTERNS) {
         if (re.test(f.text)) {
@@ -394,6 +444,33 @@ export function evaluateRules(files) {
               `${why}: normal tests and CI must make no live model call (A7). Use a recorded ` +
               'fixture through @asdp/eval, or move this to the separately invoked live evaluation',
           });
+        }
+      }
+
+      // A network-capable transport is permitted ONLY with an injected double.
+      // Asserting the vendor request shape offline is exactly what A7 wants;
+      // reaching a provider is what it forbids.
+      for (const { fn, inject } of NETWORK_TRANSPORT_FACTORIES) {
+        for (const args of callArguments(f.text, fn)) {
+          const injects = new RegExp(`\\b${inject}\\b`).test(args);
+          if (!injects) {
+            violations.push({
+              rule: 'no-live-ai-in-tests',
+              file: f.path,
+              detail:
+                `constructs ${fn} without an injected \`${inject}\`, so the call would reach a ` +
+                'real provider: normal tests and CI must make no live model call (A7). Pass a ' +
+                `\`${inject}\` double to assert the request shape deterministically`,
+            });
+          } else if (REAL_FETCH_INJECTION.test(args)) {
+            violations.push({
+              rule: 'no-live-ai-in-tests',
+              file: f.path,
+              detail:
+                `injects the real global fetch as \`${inject}\` in ${fn}, which is a live call ` +
+                'spelled differently (A7). Pass a stub that returns a recorded response',
+            });
+          }
         }
       }
     }
@@ -721,16 +798,43 @@ const SELF_TEST_CASES = [
             text: Array.from({ length: 240 }, (_, i) => `// line ${i}`).join('\n') },
   },
   {
-    name: 'a test constructing a live AI transport is rejected (A7 / D5)',
+    name: 'a test constructing a transport with NO injected fetch is rejected (A7 / D5)',
     rule: 'no-live-ai-in-tests',
     file: { path: 'packages/ai/src/live.test.ts', pkg: '@asdp/ai', cls: 'adapter',
             text: `const t = createClaudeTransport({ apiKey: 'x' });\n` },
+  },
+  {
+    name: 'a test injecting the REAL global fetch is rejected (A7 / D5)',
+    rule: 'no-live-ai-in-tests',
+    file: { path: 'packages/ai/src/sneaky.test.ts', pkg: '@asdp/ai', cls: 'adapter',
+            text: `const t = createClaudeTransport({ apiKey: 'x', fetchImpl: globalThis.fetch });\n` },
+  },
+  {
+    name: 'a test constructing a transport WITH an injected double is PERMITTED (A7 / D5)',
+    rule: 'no-live-ai-in-tests',
+    expectNone: true,
+    file: { path: 'packages/ai/src/shape.test.ts', pkg: '@asdp/ai', cls: 'adapter',
+            text: `const fake = async () => new Response('{}');\n` +
+                  `const t = createClaudeTransport({ apiKey: 'k', fetchImpl: fake });\n` },
+  },
+  {
+    name: 'the fetchImpl of ANOTHER call does not excuse a bare one (A7 / D5)',
+    rule: 'no-live-ai-in-tests',
+    file: { path: 'packages/ai/src/mixed.test.ts', pkg: '@asdp/ai', cls: 'adapter',
+            text: `const a = createClaudeTransport({ apiKey: 'k', fetchImpl: fake });\n` +
+                  `const b = createClaudeTransport({ apiKey: 'k' });\n` },
   },
   {
     name: 'a test reading a provider API key is rejected (A7 / D5)',
     rule: 'no-live-ai-in-tests',
     file: { path: 'apps/api/src/x.test.ts', pkg: '@asdp/api', cls: 'application',
             text: `const key = process.env.ANTHROPIC_API_KEY;\n` },
+  },
+  {
+    name: 'a test naming a real provider endpoint is rejected (A7 / D5)',
+    rule: 'no-live-ai-in-tests',
+    file: { path: 'apps/api/src/endpoint.test.ts', pkg: '@asdp/api', cls: 'application',
+            text: `const url = 'https://api.anthropic.com/v1/messages';\n` },
   },
   {
     name: 'importing a PDF engine is rejected while ADR-0037 is unapproved',

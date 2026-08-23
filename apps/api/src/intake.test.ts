@@ -595,8 +595,10 @@ describe('evidence', () => {
       assert.equal(r.status, 201, JSON.stringify(r.json));
       assert.equal(r.json.anchorVerified, true, 'invariant D1');
       assert.equal(r.json.verbatimText, unit.text);
-      assert.equal(r.json.extractedBy, 'parser', 'V1 evidence is parser-extracted');
-      assert.equal(r.json.citationMode, 'none', 'there is no AI in this slice');
+      // Attribution follows the anchor kind: a deterministic parser read this
+      // text layer. The vision case is asserted separately.
+      assert.equal(r.json.extractedBy, 'parser', 'a parser read the text layer');
+      assert.equal(r.json.citationMode, 'none', 'no provider located this quote');
       assert.equal(r.json.classification, 'INTERNAL', 'inherited from the source');
       assert.equal(r.json.anchor.quoteChecksum, unit.anchor.quoteChecksum);
     } finally {
@@ -1469,7 +1471,8 @@ const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
  * A vision extractor driven by a fixed script — the replay stand-in.
  *
  * **A7:** no live call. This is what CI exercises, and the checker rule
- * `no-live-ai-in-tests` prevents a real transport appearing here.
+ * `no-live-ai-in-tests` prevents a real provider call appearing here — a
+ * network-capable transport may only be constructed with an injected double.
  */
 function scriptedVision(
   regions: readonly { rect: { x: number; y: number; w: number; h: number }; text: string; language?: string; direction?: 'ltr' | 'rtl' | 'neutral' }[],
@@ -1720,6 +1723,185 @@ describe('image intake and vision', () => {
       assert.equal(v.json.summary.errors, 0, 'and it does not block G1');
     } finally {
       await s.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AI attribution for vision-read evidence — the V3 defect, and its repair
+//
+// V3 made vision-read regions citable but still wrote `extractedBy: 'parser'`
+// for every EvidenceItem, because that had been true up to V2. Content read by a
+// model was therefore recorded as parser-extracted, with no interaction named —
+// which makes the AI-disclosure report uncomputable (ADR-0004) and removes the
+// audit trail behind the L1/L2 distinction (ADR-0007).
+//
+// Attribution is derived from the ANCHOR KIND, so it cannot drift per slice or be
+// chosen by a caller, and migration 005 enforces it in SQL as well.
+// ---------------------------------------------------------------------------
+
+describe('AI attribution of vision-read evidence', () => {
+  test('the unit records the interaction that READ it', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 10, y: 10, w: 100, h: 20 }, text: 'Submit application' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(800, 600)),
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      // Attribution lives on the unit because the unit is what evidence cites,
+      // and from V2-PDF onward one source carries a call per page.
+      assert.equal(units.json.units[0].aiInteractionId, 'ai-replay-1');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('evidence over a vision region is extractedBy=ai and NAMES its interaction', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 10, y: 10, w: 100, h: 20 }, text: 'Submit application' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(800, 600)),
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      const created = await call(
+        s, 'POST', `/projects/${projectId}/evidence`,
+        { sourceId: result.source.id, sourceUnitId: units.json.units[0].id }, asAnalyst,
+      );
+
+      assert.equal(created.status, 201, JSON.stringify(created.json));
+      assert.equal(created.json.extractedBy, 'ai', 'pixels were read by a model, not a parser');
+      assert.equal(created.json.aiInteractionId, 'ai-replay-1');
+      // provenance-and-anchoring.md §4.3: the provider returned the region
+      // itself, so the citation is native rather than located by us post hoc.
+      assert.equal(created.json.citationMode, 'native');
+
+      // Read back through PGlite: attribution is persisted, not just returned.
+      const fetched = await call(
+        s, 'GET', `/projects/${projectId}/evidence/${created.json.id}`, undefined, asAnalyst,
+      );
+      assert.equal(fetched.json.extractedBy, 'ai');
+      assert.equal(fetched.json.aiInteractionId, 'ai-replay-1');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('the AI-disclosure trail is AUDITED, not only stored on the row', async () => {
+    const s = await startServerWith(
+      scriptedVision([{ rect: { x: 0, y: 0, w: 50, h: 10 }, text: 'Approve' }]),
+    );
+    try {
+      const projectId = await createProjectVia(s);
+      const result = await ingest(s, projectId, {
+        filename: 'screen.png', contentBase64: asBase64(pngOf(400, 300)),
+      });
+      const units = await call(
+        s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+      );
+      await call(
+        s, 'POST', `/projects/${projectId}/evidence`,
+        { sourceId: result.source.id, sourceUnitId: units.json.units[0].id }, asAnalyst,
+      );
+
+      const audit = await call(s, 'GET', `/projects/${projectId}/audit`, undefined, asAdmin);
+      const event = audit.json.find((e: any) => e.action === 'evidence.recorded');
+      assert.ok(event !== undefined);
+      assert.equal(event.after.extractedBy, 'ai');
+      assert.equal(event.after.aiInteractionId, 'ai-replay-1');
+      assert.equal(event.after.anchorKind, 'image_region');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('parser-read evidence stays parser-attributed, with NO interaction id', async () => {
+    const s = await startServerWith(forbiddenVision);
+    try {
+      const projectId = await createProjectVia(s);
+      for (const [filename, body] of [
+        ['notes.txt', { text: 'The applicant must supply a passport.' }],
+        ['legacy.bpmn', { text: BPMN_XML }],
+      ] as const) {
+        const result = await ingest(s, projectId, { filename, ...body });
+        const units = await call(
+          s, 'GET', `/projects/${projectId}/sources/${result.source.id}/units`, undefined, asAnalyst,
+        );
+        const created = await call(
+          s, 'POST', `/projects/${projectId}/evidence`,
+          { sourceId: result.source.id, sourceUnitId: units.json.units[0].id }, asAnalyst,
+        );
+        assert.equal(created.status, 201, `${filename}: ${JSON.stringify(created.json)}`);
+        // A deterministic parser read a text layer or a structured model file, so
+        // claiming 'ai' would be the mirror-image defect.
+        assert.equal(created.json.extractedBy, 'parser', filename);
+        assert.equal(created.json.citationMode, 'none', filename);
+        assert.equal(created.json.aiInteractionId, undefined, filename);
+      }
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('SQL refuses image-anchored evidence labelled parser (migration 005)', async () => {
+    const database = await createPgliteDatabase();
+    try {
+      await migrate(database);
+      // Bypassing the command layer entirely: content read from pixels is
+      // AI-extracted by definition, so the contradiction is refused in SQL and
+      // not merely avoided in code.
+      await assert.rejects(
+        database.query(
+          `insert into evidence_item (id, project_id, source_id, anchor_json, verbatim_text,
+                                      language, extracted_by, citation_mode, anchor_verified,
+                                      classification, created_by, created_at)
+           values ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,now())`,
+          [
+            'ev-mislabelled', 'prj-x', 'src-x',
+            JSON.stringify({
+              quote: 'q', quoteChecksum: 'c', target: { kind: 'image_region', imageId: 'img-1' },
+            }),
+            'q', 'en', 'parser', 'none', true, 'INTERNAL', 'u-test',
+          ],
+        ),
+        /constraint|violates/i,
+      );
+    } finally {
+      await database.close();
+    }
+  });
+
+  test('SQL refuses a vision unit that names no interaction (migration 005)', async () => {
+    const database = await createPgliteDatabase();
+    try {
+      await migrate(database);
+      await assert.rejects(
+        database.query(
+          `insert into source_unit (id, source_id, project_id, ordinal, type, text,
+                                    language, direction, anchor_json, ai_interaction_id)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)`,
+          [
+            'su-unattributed', 'src-x', 'prj-x', 0, 'image', 'Label', 'en', 'ltr',
+            JSON.stringify({
+              quote: 'Label', quoteChecksum: 'c',
+              target: { kind: 'image_region', imageId: 'img-1' },
+            }),
+            null,
+          ],
+        ),
+        /constraint|violates/i,
+      );
+    } finally {
+      await database.close();
     }
   });
 });

@@ -173,12 +173,29 @@ can rasterise without a PDF engine and nothing consumes a page image until V3.
 the slice that would parse it. That became untrue with the split, so V2 corrected it to **V2-PDF**
 and a test asserts it. A stale refusal message is a small thing that tells a user something false.
 
-### 3.6 V3 — approved boundary ✅ **COMPLETE, awaiting review**
+### 3.5 Retired — the one-line V3 entry
+
+A single line describing V3 stood here before the boundary was proposed and approved. It was
+replaced by **§3.6**, which is where the approved V3 boundary now lives. The heading is kept as a
+marker rather than renumbered, because §3.6 is referenced by
+[phase-2-status.md](phase-2-status.md) §0 and by [v3-proposal.md](v3-proposal.md), and a silent
+renumber would turn two live references into wrong ones.
+
+### 3.6 V3 — approved boundary ✅ **ACCEPTED 2026-08-23**
 
 **Approved 2026-08-23** as an **evidence-ingestion slice only**, and implemented at commit
-`dc2e683`. Delivered state: [phase-2-status.md](phase-2-status.md) §5; checkpoint: §0. Full rationale and design in
+`dc2e683`. Delivered state: [phase-2-status.md](phase-2-status.md) §5; pre-acceptance corrections:
+§5.9; checkpoint: §0. Full rationale and design in
 [v3-proposal.md](v3-proposal.md); the governing decision on provenance is
 [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
+
+**Three in-scope items are deferred to V4 by decision D6** — see below. The accepted V3 boundary is
+therefore the intake, provenance, ceiling, import, egress, replay and audit work; **not** the first
+requirements-analysis consumer of the AI broker.
+
+**Acceptance was explicitly not held on limitations 43 and 44.** They are recorded as hardening
+candidates **H1** and **H2** in [phase-2-status.md](phase-2-status.md) §5.12 — proposed, not
+approved, and needing a boundary like any other slice.
 
 #### In scope
 
@@ -202,7 +219,7 @@ editing imported structural models.
 Not a performance preference: a deterministic reader is reproducible and its output is verifiable
 against the stored bytes, and neither is true of a model.
 
-#### Approved decisions D1–D5
+#### Approved decisions D1–D6
 
 | # | Decision | Outcome |
 |---|---|---|
@@ -210,7 +227,8 @@ against the stored bytes, and neither is true of a model.
 | **D2** | Live AI transport | **Approved: plain `fetch`** behind the existing adapter boundary. The Anthropic SDK is **not** introduced for convenience. Provider-specific transport stays isolated so it can be replaced |
 | **D3** | Structural import parsing | **Approved: reuse the existing deterministic XML tokeniser.** Imported content is evidence only, under the five absolutes in [v3-proposal.md](v3-proposal.md) §5 |
 | **D4** | Confidence ceilings | **Approved as deterministic functions** of evidence kind and extraction method, **not** stored columns. Semantics verified against the epistemic ladder — see below |
-| **D5** | Live AI in tests | **Approved.** A mechanical checker rule prevents live transport in normal tests and CI. Live evaluation stays explicitly invoked and outside pass/fail |
+| **D5** | Live AI in tests | **Approved.** A mechanical checker rule prevents live transport in normal tests and CI. Live evaluation stays explicitly invoked and outside pass/fail. **Enforcement clarified 2026-08-23:** the rule bars **network egress to a provider**, not the transport module — a test may construct the transport **only** with an injected fetch double, may not inject the real global `fetch`, may not read a provider API key and may not name a real provider endpoint. The decision is unchanged; the first implementation banned the factory outright, which also banned the offline shape test the transport exists to support and left the vendor surface untested. **A7** wants CI reproducible, not blind |
+| **D6** | Deferral of V3 in-scope items 4, 9 and 10 to V4 | **Approved 2026-08-23 at the V3 acceptance review.** The live-transport **wiring** through the broker, **recorded** replay fixtures, and **persistence** of the AI-interaction record are broker-consumer and evaluation-fixture work. Each needs V4's first requirements-analysis consumer to be exercisable against anything real: wiring a consumer with no consumer tests the wiring against itself, and a recording cannot be captured before a call is made ([ADR-0031](../adr/ADR-0031-corpus-as-data.md)). Delivered state and the exact seam: [phase-2-status.md](phase-2-status.md) §5.10 |
 
 #### Epistemic semantics — confirmed, and one correction
 
@@ -249,7 +267,7 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 | Slice | Capability |
 |---|---|
-| **V4** | AI analysis passes |
+| **V4** | AI analysis passes — **plus the three items deferred from V3 by D6**: broker-consumer wiring for the vision path, recorded replay fixtures through `@asdp/eval`, and persistence of the AI-interaction record |
 | **V5** | Structured requirement model and epistemic handling |
 | **V6** | Conflicts, precedence and coverage |
 | **V7** | Human requirements workspace and G1 approval |

@@ -2,10 +2,10 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0–V3 complete** · V2-PDF blocked on spike S2
+> **Phase 2 V0–V3 accepted** · V2-PDF blocked on spike S2
 > Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
 > composition layer, durable PGlite persistence, and text, Word-document, image and structural-model
-> intake with resolvable provenance. **554 tests pass, none skipped.**
+> intake with resolvable provenance. **572 tests pass, none skipped.**
 > No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-23
 > **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)
@@ -93,7 +93,8 @@ development BlobStore — is complete at commit `8f2a665`.
 **Phase 2 V1** — text intake and provenance end to end — is complete and accepted.
 **Phase 2 V2** — DOCX document intake — is complete and accepted.
 **Phase 2 V3** — image intake, vision evidence and structural BPMN/DMN/Form import — is complete and
-awaiting review. Neither added a new dependency.
+**accepted**; three in-scope items are deliberately deferred to V4
+([`phase-2-status.md`](docs/60-plan/phase-2-status.md) §5.10). Neither added a new dependency.
 **V2-PDF** is blocked on a representative Arabic PDF corpus, on spike S2, and on
 [`ADR-0037`](docs/adr/ADR-0037-binary-document-extraction.md) being approved.
 
@@ -101,10 +102,12 @@ The application runs, persists durable state across restarts, enforces authentic
 read-locks, and shuts down gracefully. It ingests UTF-8 free text, Markdown and **Word documents**
 behind a content-sniffing guard, anchors every extracted unit to the exact region it came from in
 Arabic and English, serves RTL-correct highlight ranges for a read-only source viewer, and
-implements the ten catalogued `L0-ING` ingestion rules. Image evidence is read by vision through the
-AI Provider Abstraction and is marked **`content_unverified`** — target verified, interpreted content
-not — so a vision citation is never mistaken for a verified one. **554 tests pass; none are skipped
-or suppressed.**
+implements the ten catalogued `L0-ING` ingestion rules. It admits **images** and **BPMN/DMN/Form
+files** as evidence: an image region carries a target-verified anchor marked
+**`content_unverified`** — target verified, interpreted content not — so a vision citation is never
+mistaken for a verified one, and evidence over it is attributed to the AI interaction that read it.
+**No live provider has ever been called:** the vision extractor refuses unless one is configured,
+and verification is entirely replay-based. **572 tests pass; none are skipped or suppressed.**
 
 **No generation capability exists.** BPMN, DMN and form generation, Process IR compilation, the
 Specification Studio, and any graphical designer are out of scope for Phase 2.

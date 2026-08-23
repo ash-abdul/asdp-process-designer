@@ -102,6 +102,7 @@ function mapSource(r: Record<string, unknown>): Source {
 
 function mapSourceUnit(r: Record<string, unknown>): SourceUnit {
   const depth = r.depth === null || r.depth === undefined ? undefined : Number(r.depth);
+  const interaction = optionalString(r.ai_interaction_id);
   return {
     id: String(r.id),
     sourceId: String(r.source_id),
@@ -113,6 +114,7 @@ function mapSourceUnit(r: Record<string, unknown>): SourceUnit {
     direction: String(r.direction) as SourceUnit['direction'],
     ...(depth === undefined ? {} : { depth }),
     anchor: r.anchor_json as ProvenanceAnchor,
+    ...(interaction === undefined ? {} : { aiInteractionId: interaction }),
   };
 }
 
@@ -259,11 +261,12 @@ class SqlSourceUnitRepository implements SourceUnitRepository {
     for (const unit of units) {
       await this.db.query(
         `insert into source_unit (id, source_id, project_id, ordinal, type, text,
-                                  language, direction, depth, anchor_json)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)`,
+                                  language, direction, depth, anchor_json, ai_interaction_id)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11)`,
         [
           unit.id, unit.sourceId, unit.projectId, unit.ordinal, unit.type, unit.text,
           unit.language, unit.direction, unit.depth ?? null, JSON.stringify(unit.anchor),
+          unit.aiInteractionId ?? null,
         ],
       );
     }
