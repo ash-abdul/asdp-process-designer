@@ -263,18 +263,25 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 
 
-> **PROVISIONAL for V5–V7.** The current *planned* capability sequence, not a record of approved
+> **PROVISIONAL for V6–V7.** The current *planned* capability sequence, not a record of approved
 > slice boundaries. Each requires **refinement and explicit approval before it begins**, and the
 > boundaries may be re-cut. No implementation commitment is made here.
 >
 > **V4 is no longer provisional:** its boundary was approved on 2026-08-23 and is recorded in §3.8.
+> **V5 is no longer provisional either:** its boundary was approved on 2026-08-23 with decisions
+> **J1–J9** and is recorded in §3.10.
 
 | Slice | Capability |
 |---|---|
 | **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core accepted / V4b-eval deferred** (§3.9) |
-| **V5** | Structured requirement model and epistemic handling |
-| **V6** | Conflicts, precedence and coverage |
-| **V7** | Human requirements workspace and G1 approval |
+| **V5** | Structured requirement model and epistemic handling — **boundary APPROVED 2026-08-23**, §3.10 |
+| **V6** | Conflicts, precedence and coverage — **and it keeps them**: **J2** confirmed conflict detection, `Conflict` records, `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES` and deterministic precedence in V6 |
+| **V7** | Human requirements workspace and G1 approval — **and it keeps them**: **J4** confirmed no approval route exists before V7 |
+
+**Two re-cuts of this sequence were approved with V5** and are recorded so the sequence is not read
+as untouched: **J3-a** moves *deterministic RAF coverage arithmetic* from V6 into V5 (assessment of
+the populated frame, explicitly not reconciliation), and **J6** adds the `L1-REQ-*` rule namespace to
+the validation catalogue. Conflicts themselves did **not** move.
 
 Detailed scope is deliberately **not** stated for V4–V7. The governing capability descriptions
 already exist and should be read from their own documents rather than paraphrased here:
@@ -374,6 +381,79 @@ measurable, never queued (**F2**).
 when a hint is merely present, which §4.4 forbids outright.
 
 **Dependencies added: none.** Runtime dependencies stay at seven.
+
+### 3.10 V5 — approved boundary ✅ **APPROVED 2026-08-23**
+
+**Approved 2026-08-23** with decisions **J1–J9**. Full boundary, rationale, data model, AI task
+design, evaluation design and risks: [v5-proposal.md](v5-proposal.md) v0.2.
+
+V5 is the first slice in which AI output stops being verbatim. V4b could verify its own output
+completely — a quote is in the source or it is not. **V5 cannot**, and every decision below follows
+from that.
+
+```
+EvidenceItem (L1, verbatim, anchored)
+  → POPULATE_FRAME (six disjointness-closed passes)
+    → Requirement PROPOSAL (L2, status draft, cites evidence, never approved)
+      → RAF slot population · RequirementFlags · deterministic coverage
+```
+
+| V5 in scope |
+|---|
+| `POPULATE_FRAME` in **six disjointness-closed passes** through the V4a broker, replay-capable |
+| `RequirementSet` · `Requirement` · `RequirementEvidenceLink` · `RequirementFlag` — migration `008_requirements` |
+| The **shared proposal gate**: four conditions, used identically by the command and the evaluation |
+| Deterministic evidence eligibility, slot legality and **disjointness** enforcement |
+| Full traceability, re-verified at write time: proposal → link → evidence → verified anchor → source |
+| Computed confidence, epistemic level and derivation — **never model-reported** |
+| Deterministic duplicate collapse (identical normalised text **and** identical evidence set) |
+| **RAF coverage computed on read** (**J3-a**, **J3-b**) |
+| `L1-REQ-*` — five structural rules; quality signals stay `RequirementFlag`s (**J6**) |
+| Rejection records retaining the **proposed text** and reason (**J9**, [ADR-0032](../adr/ADR-0032-retain-everything.md)) |
+| Human-controlled **synthetic** gold set and an offline evaluation harness |
+
+**Out of scope for V5:** L3 inferred requirements · conflict detection and `Conflict` records ·
+`CANONICALISE_ENTITIES` · `RECONCILE_SOURCES` · precedence · clarification-question generation ·
+`SYNTHESISE_QUESTIONS` · clarification queue · the human review workspace · G1 · requirement
+approval · baselines and signatures · Process IR · BPMN/DMN/Form generation · graphical editing ·
+V4b-eval · live provider evaluation · V2-PDF · spreadsheets · **H1**, **H2**, **H3**.
+
+#### Approved decisions J1–J9
+
+| # | Decision | Outcome |
+|---|---|---|
+| **J1** | Epistemic level | **Approved: grounded L2 only. No L3 inferred requirements.** A tightening beyond [epistemic-model.md](../20-domain/epistemic-model.md) §1, which permits L3 with a rationale — recorded as a choice, not as compliance. Each "beyond the evidence" case gets a **named destination** and none is silently discarded: no cited evidence → **reject**; model uncertainty → **pass limitation**; grounded but vague / actor-unknown / untestable / unverifiable → **persist with `RequirementFlag`s**; evidence states an assumption → **`assumptions` slot**; model invents its own assumption or best practice → **reject as L3** |
+| **J2** | Conflicts | **Approved: J2-a — conflicts stay V6 entirely.** V5 must **not** claim that propositions agree merely because no check ran; `crossSourceAgreement` stays **`silent`**. Deterministic collapse of identical normalised text **with** an identical evidence set is **deduplication, not conflict resolution**. [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md) would *permit* AI detection earlier; sequencing and the canonicalisation dependency argue against it |
+| **J3-a** | RAF coverage | **Approved for V5.** Populated and empty slots, evidence counts, confidence bands, required-for-executability status and the existing deterministic outputs. `FrameCoverage` has **no `conflicts` field**, so coverage cannot smuggle in reconciliation. **A re-cut of §3.7** |
+| **J3-b** | Coverage persistence | **Approved: compute on read.** **No `raf_coverage` table in V5.** A persisted snapshot belongs with a future baseline / G1 |
+| **J4** | Persistence state | **Approved: `draft` only, enforced in SQL.** No V5 route may produce `approved`, `in_review`, `needs_clarification`, **L4**, an approval baseline or an approval signature |
+| **J5** | Shared gate | **Approved.** One deterministic proposal gate, shared by the production command path and the evaluation path. The validation logic is not duplicated |
+| **J6** | Validation namespace | **Approved: `L1-REQ-*`, five structural rules, and no eighth validation layer.** Quality signals — vague quantifier, actor unknown, untestable — stay **`RequirementFlag`s**, because RAF §3 derives `ambiguities` from flags and G1's criterion is "0 blocking **flags**". **A catalogue addition** |
+| **J7** | AI decomposition | **Approved: six disjointness-closed passes** — P1 Context & framing · P2 Participants & behaviour · P3 Outcomes & data · P4 Rules & decisions · P5 Time, failure & external · P6 Quality & control. All 27 slots in exactly one pass; every disjointness pair inside one pass; **`RafGroup` is not redefined**; grouping is prompting configuration with no persisted representation; six calls per evidence batch is acceptable; retries, evaluation and interaction records are **per pass**; CI stays replay-only |
+| **J8** | AI versus deterministic ownership | **Approved.** AI proposes **semantic content and evidence references only**. Code owns RAF vocabulary, slot legality, identifiers, requirement numbering, evidence eligibility, schema validation, epistemic level, derivation, confidence, provenance linkage, classification propagation, disjointness, deduplication, persistence, coverage arithmetic, versioning, validation and audit. **The model must not invent RAF slots or authoritative state** |
+| **J9** | Rejected-proposal retention | **Approved: retain the rejected proposal text and reason** in the append-only record, as [ADR-0032](../adr/ADR-0032-retain-everything.md) requires for "rejected proposals and rejected requirements". **This does not change V4b F2** — a rejected *source quote* stays checksum-only, because that is unanchored source content and this is model-authored text |
+
+**ADRs required for V5: none.** J1, J4, J5, J7 and J8 implement ADR-0004, 0007, 0008, 0010, 0011 and
+0016 as written; J9 implements ADR-0032. Three things would need an ADR and all three are refused:
+letting a requirement exist with no evidence and no inference rationale, letting the model own slot
+assignment unchecked, and creating an approved requirement without a human signature.
+
+**Dependencies added: none.** Runtime dependencies stay at **seven**. V5 needs no credential, no
+corpus and no Docker.
+
+#### H3 is a live-call blocker, not a V5 blocker
+
+Limitation **62** — `ai_interaction` retains metadata only, while
+[ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads — is a **real
+architectural compliance gap**, pre-existing from V4a.
+
+| | |
+|---|---|
+| **Blocks** | The **first real live-provider call**, and therefore **V4b-eval** |
+| **Does not block** | V5, which is **replay-only** and makes no live call |
+| **Scope** | **H3 is not V5 work.** If resolving it becomes technically necessary to preserve an approved invariant, **stop and raise it** rather than expanding scope silently |
+
+**No live provider call is permitted while this gap remains unresolved.**
 
 ### Sequencing constraints that are structural, not planning choices
 

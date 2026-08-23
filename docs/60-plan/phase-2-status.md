@@ -15,11 +15,12 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
+| **Current slice** | **V5 — structured requirement proposals from verified evidence.** Boundary **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10 |
+| **Previously** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
 | **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean.** V4b-core is committed at `34ca68e`; the review fix and this acceptance record are committed at `3d5dfb6` |
-| **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None. Nothing is approved to begin.** A **V5 boundary proposal** is recorded at [v5-proposal.md](v5-proposal.md) — verified `EvidenceItem`s into structured requirement *proposals* / RAF population, decisions **J1–J9** — and is **PROPOSED, NOT APPROVED**; V5 must not begin until its boundary is approved. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
+| **Working tree** | **Clean** at the V5 boundary-approval commit. V4b-core is committed at `34ca68e`, accepted at `3d5dfb6` |
+| **Work in progress** | **V5 implementation**, against the approved boundary. Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **Implement V5.** Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -98,6 +99,7 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 | Item | Blocked on |
 |---|---|
 | **V2-PDF** — PDF adapter, rasterisation, `pdf_region` rectangle lists, `L0-ING-008` wired | (1) a representative Arabic PDF corpus per [s2-corpus-request.md](s2-corpus-request.md) · (2) **spike S2 completed** against it, producing the exact-precision yield rate · (3) **ADR-0037 approved**. Enforced mechanically by the checker rule `pdf-engine-not-approved`; `@embedpdf/pdfium` is **not installed** |
+| **V4b-eval, and every live provider call** | **Three** things, not two: (1) an approved credential · (2) E1-permitted representative material · (3) **H3 — limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads to be retained and migration 006 retains metadata only, so **no live provider call is permitted while the gap stands** — an unretained live payload is unrecoverable. **V5 is unaffected: it is replay-only** |
 | **Vision quality measurement** | No live provider has ever been called and no recorded corpus exists. Shape, refusals, egress and provenance are proven; **accuracy is not** |
 | **Broker-consumer wiring, recorded fixtures, interaction persistence** | **Discharged by V4a** (§6). D6 deferred these from V3; the broker now has a real consumer, interactions persist, and replay fixtures exist |
 | **Captured (as opposed to authored) fixtures** | **No credential exists in this environment**, so no live call has been made. The capture path is built and exercised against an authored stub; the first real capture is a credentialed operation, not a code change |
@@ -1129,14 +1131,14 @@ excluded permanently, because it would reverse
 
 ## 12. Next step
 
-### V3, V4a and V4b-core are ACCEPTED. V4b-eval, V2-PDF, V5 and H1/H2 have not started.
+### V3, V4a and V4b-core are ACCEPTED. V5's boundary is APPROVED and in progress. V4b-eval, V2-PDF and H1/H2/H3 have not started.
 
 | | |
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
 | **V4b-core — AI evidence extraction** | **ACCEPTED / COMPLETE**, 2026-08-23 — §7, reviewed in §7.10. Discharges the approved V4b-core scope; needed no credential. **Accepted for mechanics and governance, explicitly not model quality** — §7.8 |
-| **V5 — evidence to structured requirement proposals** | **PROPOSED, NOT APPROVED** — [v5-proposal.md](v5-proposal.md), decisions **J1–J9**. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
+| **V5 — evidence to structured requirement proposals** | **BOUNDARY APPROVED 2026-08-23**, implementation in progress — [v5-proposal.md](v5-proposal.md), decisions **J1–J9**, plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
 | **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
@@ -1145,4 +1147,5 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-**Do not begin V4b-eval, V2-PDF or V5 without approval.**
+**V5's boundary is approved; V4b-eval and V2-PDF are not. No live provider call is permitted while
+limitation 62 / H3 stands.**

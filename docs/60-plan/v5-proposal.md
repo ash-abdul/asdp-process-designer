@@ -642,8 +642,10 @@ entities. **Three things would need one, and all three are refused above:** lett
 exist with no evidence and no inference rationale; letting the model own slot assignment unchecked;
 and creating an approved requirement without a human signature.
 
-**J2, J3-a and J6 are re-cuts or additions to approved artefacts** — the provisional slice sequence
-and the validation rule catalogue — and need explicit approval even though neither is an ADR.
+**J3-a and J6 were re-cuts or additions to approved artefacts** — the provisional slice sequence and
+the validation rule catalogue — and were **approved as such** on 2026-08-23; both are recorded in
+[phase-2-plan.md](phase-2-plan.md) §3.7 and §3.10 so the sequence is not read as untouched. **J2 was
+approved as J2-a, so conflicts did not move**: they remain V6 in full.
 
 ### 16.1 J9 in full, and a pre-existing gap it uncovered
 
@@ -757,5 +759,16 @@ ADR-0037, spike S2, or Docker.
 
 ## 20. Status
 
-**PROPOSED — NOT APPROVED. No V5 code exists and none will be written until this boundary, and the
-decisions J1–J9, are explicitly approved.**
+**✅ APPROVED 2026-08-23. Decisions J1–J9 all approved**, with three approver-set conditions carried
+into the plan of record ([phase-2-plan.md](phase-2-plan.md) §3.10):
+
+1. **No V5 route** may produce `approved`, `in_review`, `needs_clarification`, **L4**, an approval
+   baseline or an approval signature — enforced in SQL (**J4**).
+2. **V5 must not claim that propositions agree** merely because no conflict check ran.
+   `crossSourceAgreement` stays `silent`; deterministic collapse of identical text with an identical
+   evidence set is **deduplication, not conflict resolution** (**J2**).
+3. **H3 blocks the first live-provider call and V4b-eval, not V5.** V5 is replay-only. If resolving
+   H3 becomes technically necessary to preserve an approved invariant, **stop and raise it** rather
+   than expanding scope silently.
+
+**ADRs required: none.** **Dependencies added: none** — seven, unchanged.
