@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0, V1 complete and accepted. V2 (DOCX) complete, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 3.0 · **Updated:** 2026-08-23
+> **Status:** **V0, V1, V2 (DOCX) complete and accepted. V2-PDF blocked on spike S2. V3 proposed, not approved.** · **Version:** 3.1 · **Updated:** 2026-08-23
 > **Working tree:** clean at the time of writing
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -12,12 +12,12 @@
 | | |
 |---|---|
 | Slices completed | **V0 — Foundation** · **V1 — Text intake and provenance** · **V2 — DOCX document intake** |
-| Next slice | **V2-PDF — PDF intake.** **BLOCKED** on spike S2 completing against representative Arabic PDFs **and** [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval. Then V3, provisional |
+| Next slice | **V3 — multimodal and structural intake.** A detailed boundary is **proposed, awaiting approval** — [v3-proposal.md](v3-proposal.md). **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **480 pass · 0 fail · 0 skipped · 0 suppressed** (288 at V0, 415 at V1) |
-| Verification | build · `check:arch` (91 files) · checker self-test (24 cases) · `check:docs` (84 files, 592 links) — all clean |
+| Verification | build · `check:arch` (98 files) · checker self-test (26 cases) · `check:docs` — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md), [ADR-0035](../adr/ADR-0035-persistence-plain-sql-pglite.md), [ADR-0036](../adr/ADR-0036-build-toolchain.md) in V0. **V1 and V2 added none.** [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) is **PROPOSED — HELD**, and no dependency from it is present |
-| Decisions | **A1–A7 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4 |
+| Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction |
 | Dependencies added | **NONE in V1 or V2.** Runtime dependencies stand at seven, unchanged since V0 |
 | Slices V3–V7 | **Provisional.** Capability sequence only; each requires approval of its boundary before it begins — [phase-2-plan.md](phase-2-plan.md) §3.5 |
 
@@ -28,7 +28,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 |---|---|
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
-| V2 | *this change* — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* |
+| V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
 
 ---
 
@@ -430,13 +430,13 @@ excluded permanently, because it would reverse
 
 ## 9. Next step
 
-### V2 (DOCX) is complete and awaiting review. V2-PDF has not started.
+### V2 (DOCX) is complete and accepted. V2-PDF and V3 have not started.
 
 | | |
 |---|---|
-| **V2 — DOCX document intake** | **Complete**, awaiting review. Zero new dependencies |
+| **V2 — DOCX document intake** | **Complete and accepted** at `1bd8d8d`. Zero new dependencies |
 | **V2-PDF — PDF intake** | **BLOCKED.** Not started |
-| **V3** | **Provisional**, and not approved — [phase-2-plan.md](phase-2-plan.md) §3.5 |
+| **V3 — multimodal and structural intake** | **Proposed**, not approved — [v3-proposal.md](v3-proposal.md). Unblocked from OD-1 by **A8**, but carries material decisions needing approval |
 
 ### V2-PDF is blocked on three things, all of them explicit
 

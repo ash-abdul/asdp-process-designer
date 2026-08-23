@@ -174,6 +174,10 @@ and a test asserts it. A stale refusal message is a small thing that tells a use
 
 ### 3.5 Provisional capability sequence — V3–V7
 
+**V3 has a detailed proposal awaiting approval:** [v3-proposal.md](v3-proposal.md). It remains
+**provisional and unimplemented**.
+
+
 > **PROVISIONAL.** The current *planned* capability sequence, not a record of approved slice
 > boundaries. Each requires **refinement and explicit approval before it begins**, and the
 > boundaries may be re-cut. No implementation commitment is made here.
@@ -227,9 +231,9 @@ gate) were resolved in Phase 1 and gate V4.
 
 ---
 
-## 4. Approved decisions A1–A7
+## 4. Approved decisions A1–A8
 
-All seven are **approved and binding**.
+All eight are **approved and binding**.
 
 ### A1 — NestJS · **Approved**
 
@@ -317,6 +321,33 @@ This makes CI reproducible and provider-independent, and it means a provider out
 revision can never turn the build red. It is consistent with
 [ADR-0031](../adr/ADR-0031-corpus-as-data.md) and with the Phase 1 evaluation harness, which
 computes metrics from recordings with no network.
+
+### A8 — Live AI provider for development · **Approved**
+
+**Claude API may be used as the initial live AI provider** for development and the MVP, under five
+conditions:
+
+| # | Condition |
+|---|---|
+| 1 | Accessed **only through the existing AI Provider Abstraction** ([ADR-0020](../adr/ADR-0020-ai-provider-abstraction.md)). No vendor concept becomes load-bearing, and the `vendor-sdk-leak` checker rule stays in force |
+| 2 | **Capability negotiation remains in place** ([ADR-0022](../adr/ADR-0022-capability-negotiation.md)). A capability is asked for, not assumed |
+| 3 | The architecture **continues to support future private/enterprise endpoints**. The generic private-endpoint adapter stays, and stays tested |
+| 4 | **Source egress still obeys the approved data-governance policy** ([ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md)), enforced at the transport boundary |
+| 5 | **A7 is unchanged**: normal CI and `npm run verify` make **no live call**. Live evaluation stays a separately triggered capability |
+
+### The distinction this draws
+
+**OD-1 no longer blocks development.** It was recorded as blocking "P2 completion", which conflated
+two different dependencies:
+
+| | Dependency | Status |
+|---|---|---|
+| **Development / MVP** | An approved live provider for non-sensitive or sanitised evidence | **Resolved by A8** — Claude API, through the abstraction |
+| **Enterprise / private deployment** | A private endpoint for classified material | **Still open (OD-1)** — a *deployment and governance* dependency, not a development blocker |
+
+A private enterprise endpoint remains required before classified material can be analysed at all.
+That is a deployment gate, and the egress policy is what keeps the two apart: restricted content
+cannot reach an external provider regardless of which adapter is configured.
 
 ---
 

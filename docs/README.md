@@ -97,6 +97,7 @@ for the module you are building.
 | [phase-1-status.md](60-plan/phase-1-status.md) | Phase 1 implementation status, defects found, deferrals |
 | [phase-2-plan.md](60-plan/phase-2-plan.md) | Phase 2 objective, slices V0–V7, approved V2 boundary, acceptance criteria |
 | [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — V0, V1 and V2 (DOCX) complete; V2-PDF blocked |
+| [v3-proposal.md](60-plan/v3-proposal.md) | V3 boundary proposal — multimodal and structural intake. **Provisional, awaiting approval** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 

@@ -1,6 +1,7 @@
 # Open Decisions Register
 
-> **Status:** Approved (Phase 0) · **Version:** 1.0 · **Updated:** 2026-08-22
+> **Status:** Approved (Phase 0) · **Version:** 1.1 · **Updated:** 2026-08-23
+> **OD-1 revised 2026-08-23** by approved decision A8 — see below.
 
 What is settled, what is genuinely open, and **when** each open item starts blocking. Nothing
 here blocks Phase 0.
@@ -11,7 +12,7 @@ here blocks Phase 0.
 
 | Was open | Now settled as |
 |---|---|
-| AI provider dependency | **AI Provider Abstraction.** Claude API is one adapter; enterprise/private endpoints must be supportable; external providers permitted in the MVP dev environment where policy allows ([ADR-0020](../adr/ADR-0020-ai-provider-abstraction.md)) |
+| AI provider dependency | **AI Provider Abstraction.** Claude API is one adapter; enterprise/private endpoints must be supportable; external providers permitted in the MVP dev environment where policy allows ([ADR-0020](../adr/ADR-0020-ai-provider-abstraction.md)). **A8 (2026-08-23)** approves Claude API as the *initial live* provider for development, under five conditions |
 | Data egress | **Not all source material may leave the enterprise.** Classification-driven egress policy, enforced at one choke point ([ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md)) |
 | Language scope | **Arabic and English**, including mixed and RTL. UX localisation phased; data/evidence/anchoring/text/rendering architecture bilingual from day one ([ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md)) |
 | Camunda target | **Camunda 8.x**, version-agnostic core, versioned profiles ([ADR-0025](../adr/ADR-0025-camunda-version-profiles.md)) |
@@ -24,10 +25,25 @@ here blocks Phase 0.
 ## 2. Open decisions
 
 ### OD-1 — Which private/enterprise model endpoint will be available?
-**Blocks:** P2 completion (routing and quality tiers cannot be measured against a real
-endpoint).
-**Not blocking:** P0, P1. The generic private-endpoint adapter is built against a stub with a
-reduced capability descriptor.
+
+> **REVISED 2026-08-23 by approved decision A8.** This was recorded as blocking "P2 completion",
+> which conflated two different dependencies. It is now split:
+>
+> | | Dependency | State |
+> |---|---|---|
+> | **Development / MVP** | An approved live provider for non-sensitive or sanitised evidence | **Resolved.** Claude API, through the AI Provider Abstraction ([phase-2-plan.md](phase-2-plan.md) §4 A8) |
+> | **Enterprise / private deployment** | A private endpoint for classified material | **Still open — this decision** |
+>
+> A private enterprise endpoint is a **deployment and governance dependency, not a development
+> blocker.** The egress policy is what keeps the two apart: restricted content cannot reach an
+> external provider regardless of which adapter is configured, so development can proceed on
+> permitted material without pre-empting the deployment decision.
+
+**Blocks:** analysis of `RESTRICTED` or higher material, and therefore any enterprise deployment
+that holds it. Also blocks measuring routing and quality tiers against a real private endpoint.
+**Not blocking:** development or the MVP on `PUBLIC`/`INTERNAL` and redacted `CONFIDENTIAL`
+material (A8). The generic private-endpoint adapter remains built and tested against a stub with a
+reduced capability descriptor, so the swap stays an adapter change.
 **What we need:** endpoint type (OpenAI-compatible? custom HTTP?), model family, context size,
 whether it supports vision, structured output, and tool calling.
 **Why it matters:** vision is the one capability with **no degradation path**. If the on-premise
