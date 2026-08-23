@@ -1,6 +1,7 @@
 # ASDP Process Designer — Documentation Index
 
-> **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V3 complete** · **Version:** 1.5 · **Updated:** 2026-08-23
+> **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V2 accepted, V3 awaiting review** · **Version:** 1.6 · **Updated:** 2026-08-23
+> **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0
 
 All documents are versioned specifications, not notes. Where a document and an ADR appear to
 disagree, **the ADR wins** and the document is a defect.

@@ -112,7 +112,7 @@ Governed by [ADR-0005](docs/adr/ADR-0005-ir-first-compilation.md),
 | `docs/40-quality/` | Validation architecture, rule catalogue, test scenarios, AI evaluation |
 | `docs/50-governance/` | Gates G0–G4, Camunda integration, handoff & divergence, audit |
 | `docs/60-plan/` | Roadmap, phase plans, phase status, open decisions |
-| [docs/adr/](docs/adr/README.md) | **36 ADRs — the binding decisions** |
+| [docs/adr/](docs/adr/README.md) | **38 ADRs — the binding decisions.** ADR-0037 is the only one still `PROPOSED` |
 
 Documents in `docs/` are **versioned specifications, not notes.**
 
@@ -138,6 +138,7 @@ Read these before changing anything structural:
 | [0034](docs/adr/ADR-0034-nestjs-application-layer.md) | NestJS is the **composition layer only** — conditions N1–N5 |
 | [0035](docs/adr/ADR-0035-persistence-plain-sql-pglite.md) | Plain parameterised SQL; PGlite in dev, PostgreSQL in production. No ORM |
 | [0036](docs/adr/ADR-0036-build-toolchain.md) | Compiled build; `erasableSyntaxOnly` retained outside `apps/api` |
+| [0038](docs/adr/ADR-0038-target-versus-content-verification.md) | **Target vs content verification.** Visual evidence is `content_unverified`, never `resolved` — never conflate the two |
 
 ---
 
@@ -292,8 +293,10 @@ their scope stated. **V2–V7 are provisional** — capability names only, delib
 scope, because the original boundaries were never durably recorded. Before starting one of those,
 propose the boundary and get it approved; do not infer scope from the capability name.
 
-Current state and the approved next step are recorded in
-[docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md).
+**Start every session by reading the checkpoint:**
+[docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md) **§0** — phase, current slice,
+commit, approved decisions, blocked items, open ADRs, next approved action and work in progress, in
+one place. It is the durable record; a conversation is not.
 The slice definitions, the approved decisions **A1–A7**, and the consolidated acceptance criteria
 are in [docs/60-plan/phase-2-plan.md](docs/60-plan/phase-2-plan.md).
 

@@ -9,7 +9,8 @@
 > No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-23
 > **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)
-> to understand it · [docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md) for current state
+> to understand it · **[docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md) §0 for the
+> current checkpoint** — phase, slice, commit, decisions, blocked items and next action
 
 The ASDP Process Designer is an AI-assisted, requirements-driven process-engineering
 application. It transforms unstructured and structured business inputs into a governed,

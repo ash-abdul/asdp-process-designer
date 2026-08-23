@@ -1,11 +1,94 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0, V1, V2 (DOCX) accepted. V3 complete, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.0 · **Updated:** 2026-08-23
-> **Working tree:** clean at the time of writing
+> **Status:** **V0, V1, V2 accepted. V3 complete, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.1 · **Updated:** 2026-08-23
+> **Checkpoint:** §0 · **Commit:** `dc2e683` · **Working tree:** clean
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
 ---
+
+## 0. Checkpoint — 2026-08-23
+
+The single place to read to know where this project stands. Everything below is
+traceable to a commit or an approved decision; nothing here is reconstructed.
+
+| | |
+|---|---|
+| **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
+| **Current slice** | **V3 — multimodal and structural intake.** Implementation **complete**, **awaiting review** |
+| **Commit** | **`dc2e683`** — *Phase 2 V3: image intake, vision evidence, ADR-0038 verification, structural import* |
+| **Working tree** | **Clean.** Nothing uncommitted |
+| **Work in progress** | **None.** No partial implementation, no scratch state in the repository. Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **None — awaiting a decision.** V3 needs review; V4 and V2-PDF both need approval before any work begins |
+
+### Completed slices
+
+| Slice | Commit | State |
+|---|---|---|
+| **V0** — Foundation: compiled toolchain, NestJS composition, PGlite persistence, BlobStore | `8f2a665` | **Accepted** |
+| **V1** — Text intake, resolvable provenance, source viewer, `L0-ING` rules | `922761a` | **Accepted** |
+| **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
+| **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` | **Complete, awaiting review** |
+
+**V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
+
+### Verification at this commit
+
+| | |
+|---|---|
+| Tests | **554 pass · 0 fail · 0 skipped · 0 todo** · 108 suites |
+| `check:arch` | passed — 108 source files |
+| `check:arch:selftest` | passed — 28 cases |
+| `check:docs` | passed — 86 files, 635 links |
+| `npm run verify` | **green end to end** |
+| Durability | Verified by execution: sources, text, units, images and evidence survive a full service restart, and anchors minted before it still resolve after it |
+| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` |
+
+### Approved decisions
+
+**A1–A8**, all binding — [phase-2-plan.md](phase-2-plan.md) §4.
+
+| | |
+|---|---|
+| **A1** | NestJS as the composition layer (ADR-0034, N1–N5) |
+| **A2** | PGlite in development; PostgreSQL the production target (ADR-0035) |
+| **A3** | `TextExtractor` + `PageRasteriser`; text first, per-page confidence-driven vision fallback; page-level provenance preserved either way |
+| **A4** | New dependencies with controls: pin, manifest, document, avoid, preserve checker rules, raise material ones |
+| **A5** | Prisma spike-first → proved non-viable → plain parameterised SQL (ADR-0035) |
+| **A6** | BlobStore port with a filesystem development adapter |
+| **A7** | **No live AI calls in normal CI**; replay fixtures; live evaluation separately invoked |
+| **A8** | Claude API as the **initial live provider** for development, through the abstraction, under five conditions |
+
+**V3 decisions D1–D5**, all approved — [phase-2-plan.md](phase-2-plan.md) §3.6. D1 became
+[ADR-0038](../adr/ADR-0038-target-versus-content-verification.md); D2 plain `fetch`; D3 reuse the XML
+tokeniser; D4 ceilings as functions; D5 a checker rule for live AI in tests.
+
+### ADRs
+
+**38 total.** ADR-0001…0032 approved in Phase 0. ADR-0033 discharged by ADR-0034.
+
+| ADR | State |
+|---|---|
+| ADR-0034, 0035, 0036 | **Approved**, V0 |
+| **ADR-0038** — target versus content verification | **Approved**, V3 |
+| **ADR-0037** — binary document extraction toolchain | **PROPOSED — HELD.** The only open ADR |
+
+### Blocked items
+
+| Item | Blocked on |
+|---|---|
+| **V2-PDF** — PDF adapter, rasterisation, `pdf_region` rectangle lists, `L0-ING-008` wired | (1) a representative Arabic PDF corpus per [s2-corpus-request.md](s2-corpus-request.md) · (2) **spike S2 completed** against it, producing the exact-precision yield rate · (3) **ADR-0037 approved**. Enforced mechanically by the checker rule `pdf-engine-not-approved`; `@embedpdf/pdfium` is **not installed** |
+| **Vision quality measurement** | No live provider has ever been called and no recorded corpus exists. Shape, refusals, egress and provenance are proven; **accuracy is not** |
+| **Ceiling enforcement** | No requirements exist yet to enforce ceilings on. `ceilingFor` is computable and tested; V5 enforces it |
+| **Element-wise confirmation records** | V5. V3 made each region individually addressable, which is its prerequisite |
+| Collation behaviour, PostgreSQL container, MinIO, OIDC, durable job queue, container build | **Docker unavailable** — §8, each with a named trigger |
+| `RESTRICTED`+ material analysis | **OD-1**, now scoped as a *deployment* gate rather than a development blocker (A8) |
+
+### What is NOT started
+
+**V4** (AI analysis passes) and **V5–V7** are provisional — capability names only, each needing its
+boundary approved, not merely a go-ahead. **No generation capability of any kind exists**: no BPMN,
+DMN or form generation, no Process IR, no Specification Studio, no graphical designer.
 
 ## 1. Position
 
@@ -14,7 +97,7 @@
 | Slices completed | **V0 — Foundation** · **V1 — Text intake** · **V2 — DOCX intake** · **V3 — multimodal and structural intake** |
 | Next slice | **V4 — AI analysis passes.** **Provisional**, not approved. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **554 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2) |
-| Verification | build · `check:arch` (108 files) · checker self-test (29 cases) · `check:docs` — all clean |
+| Verification | build · `check:arch` (108 files) · checker self-test (28 cases) · `check:docs` — all clean |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
 | Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction |
@@ -29,7 +112,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V0 | `8f2a665` — *compiled toolchain, NestJS composition, PGlite persistence, BlobStore* |
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
 | V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
-| V3 | *this change* — *image intake, vision, ADR-0038 verification, structural import* |
+| V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **awaiting review** |
 
 ---
 

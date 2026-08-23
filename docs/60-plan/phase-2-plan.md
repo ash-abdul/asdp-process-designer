@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V3 complete · V2-PDF blocked · V4–V7 **provisional** · **Version:** 4.1 · **Updated:** 2026-08-23
+> **Status:** V0–V2 accepted · V3 complete, awaiting review · V2-PDF blocked · V4–V7 **provisional** · **Version:** 4.2 · **Updated:** 2026-08-23
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -173,10 +173,10 @@ can rasterise without a PDF engine and nothing consumes a page image until V3.
 the slice that would parse it. That became untrue with the split, so V2 corrected it to **V2-PDF**
 and a test asserts it. A stale refusal message is a small thing that tells a user something false.
 
-### 3.6 V3 — approved boundary ✅ **COMPLETE**
+### 3.6 V3 — approved boundary ✅ **COMPLETE, awaiting review**
 
-**Approved 2026-08-23** as an **evidence-ingestion slice only**, and delivered the same day; see
-[phase-2-status.md](phase-2-status.md) §5. Full rationale and design in
+**Approved 2026-08-23** as an **evidence-ingestion slice only**, and implemented at commit
+`dc2e683`. Delivered state: [phase-2-status.md](phase-2-status.md) §5; checkpoint: §0. Full rationale and design in
 [v3-proposal.md](v3-proposal.md); the governing decision on provenance is
 [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md).
 
