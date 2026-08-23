@@ -281,6 +281,14 @@ export function scopesFor(units: readonly SourceUnit[]): {
     byUnitId.set(unit.id, { charStart: offsets.start, charEnd: offsets.end });
   }
 
+  // Heading texts that occur more than once. A document repeating a heading
+  // verbatim cannot be disambiguated by it, so it must not appear to be: keeping
+  // the first would hand back a scope that selects the FIRST occurrence of a
+  // repeated quote, which is the arbitrary pick §4.4 forbids, wearing a hint as
+  // cover. A repeated heading therefore resolves to NOTHING and the candidate
+  // falls through to the ambiguous rejection.
+  const repeatedHeadings = new Set<string>();
+
   for (const [index, entry] of ranges.entries()) {
     if (entry.offsets === null || entry.unit.type !== 'heading' || entry.unit.text === null) continue;
     const depth = entry.unit.depth ?? 1;
@@ -290,12 +298,14 @@ export function scopesFor(units: readonly SourceUnit[]): {
       if (later.unit.type === 'heading' && (later.unit.depth ?? 1) <= depth) break;
       end = later.offsets.end;
     }
-    // First heading with a given text wins. A document repeating a heading
-    // verbatim cannot be disambiguated by it, so it must not appear to be.
-    if (!byHeading.has(entry.unit.text)) {
-      byHeading.set(entry.unit.text, { charStart: entry.offsets.start, charEnd: end });
+    if (byHeading.has(entry.unit.text)) {
+      repeatedHeadings.add(entry.unit.text);
+      continue;
     }
+    byHeading.set(entry.unit.text, { charStart: entry.offsets.start, charEnd: end });
   }
+
+  for (const text of repeatedHeadings) byHeading.delete(text);
 
   return { byUnitId, byHeading };
 }

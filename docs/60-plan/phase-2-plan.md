@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V2 accepted · V3 complete, awaiting review · V2-PDF blocked · V4–V7 **provisional** · **Version:** 4.2 · **Updated:** 2026-08-23
+> **Status:** V0–V3, V4a and V4b-core accepted · V4b-eval deferred · V2-PDF blocked · V5–V7 **provisional** · **Version:** 4.3 · **Updated:** 2026-08-23
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
@@ -271,7 +271,7 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 | Slice | Capability |
 |---|---|
-| **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core approved / V4b-eval deferred** (§3.9) |
+| **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core accepted / V4b-eval deferred** (§3.9) |
 | **V5** | Structured requirement model and epistemic handling |
 | **V6** | Conflicts, precedence and coverage |
 | **V7** | Human requirements workspace and G1 approval |
@@ -329,11 +329,11 @@ is in [v4-proposal.md](v4-proposal.md) §3, along with the four changes that *wo
 
 **Dependencies added: none.** Runtime dependencies stay at seven.
 
-### 3.9 V4b — approved boundary (V4b-core, **implemented**) and deferred sequel (V4b-eval)
+### 3.9 V4b — approved boundary (V4b-core, ✅ **ACCEPTED 2026-08-23**) and deferred sequel (V4b-eval)
 
-**Approved 2026-08-23.** V4b is **split** on its one external dependency: **V4b-core** is approved
-and **implemented** — delivered state in [phase-2-status.md](phase-2-status.md) §7, awaiting review —
-and needs **no credential**; **V4b-eval** is deferred until an approved
+**Approved 2026-08-23.** V4b is **split** on its one external dependency: **V4b-core** is approved,
+**implemented and accepted** — delivered state in [phase-2-status.md](phase-2-status.md) §7 and the
+acceptance review in §7.10 — and needed **no credential**; **V4b-eval** is deferred until an approved
 credential and **E1**-permitted material exist. Full boundary, decisions **F1–F5**, acceptance
 criteria and the one behaviour change are in [v4b-proposal.md](v4b-proposal.md).
 

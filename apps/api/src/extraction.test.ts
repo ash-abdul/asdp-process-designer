@@ -27,6 +27,7 @@ import { counterIdGenerator, systemClock } from './repo-memory.ts';
 import { createBrokerEvidenceExtractor } from './ai/broker-extractor.ts';
 import { createAuthoredStubProvider, createRefusingProvider, STUB_PROVIDER_ID } from './ai/stub-provider.ts';
 import { gateCandidate, scopesFor } from './ai/extraction-gate.ts';
+import { unitsForDocument } from './ai/extraction-plan.ts';
 import type { Database } from './persistence/db.ts';
 import type { EvidenceExtractor } from './ports.ts';
 import { DEFAULT_EGRESS_POLICY, CHUNK_STRATEGY_VERSION, planChunks, type AiProvider } from '@asdp/ai';
@@ -365,6 +366,52 @@ describe('provenance §4.4 enforcement', () => {
     if (outcome.kind !== 'rejected') return;
     assert.equal(outcome.reason, 'ambiguous_citation');
     assert.equal(outcome.hintApplied, false, 'an unresolvable hint is not an applied hint');
+  });
+
+  test('A REPEATED HEADING RESOLVES NOTHING — it must not select the first section', async () => {
+    // A heading that occurs twice does not identify a section, so it cannot
+    // disambiguate an occurrence. Keeping the first one would hand back a scope
+    // containing exactly one candidate and accept it at EXACT precision — the
+    // arbitrary pick of §4.4, wearing a hint as cover.
+    const doc = [
+      '# Fees',
+      '',
+      '## Charges',
+      'The fee is 100 AED.',
+      '',
+      '## Notes',
+      'Filler.',
+      '',
+      '## Charges',
+      'The fee is 100 AED.',
+    ].join('\n');
+
+    const units = unitsForDocument('src-1', doc);
+    const scoped = scopesFor(units);
+    assert.equal(
+      scoped.byHeading.has('Charges'),
+      false,
+      'a heading occurring twice must resolve to no scope at all',
+    );
+    assert.equal(scoped.byHeading.has('Notes'), true, 'a unique heading still resolves');
+
+    const outcome = gateCandidate({
+      sourceId: 'src-1',
+      storedText: doc,
+      // No unitId, so the heading is the only hint on offer — which is exactly
+      // the case the schema permits and the first-wins map used to reward.
+      candidate: { quote: 'The fee is 100 AED.', locator: { heading: 'Charges' } },
+      scopesByUnitId: scoped.byUnitId,
+      scopesByHeading: scoped.byHeading,
+      extractorVersion: 'test@1',
+      confidenceInputs: { sourceAuthorityRank: 0, providerCapabilityTier: 'unknown', degradations: [] },
+    });
+
+    assert.equal(outcome.kind, 'rejected');
+    if (outcome.kind !== 'rejected') return;
+    assert.equal(outcome.reason, 'ambiguous_citation');
+    assert.equal(outcome.matchCount, 2);
+    assert.equal(outcome.hintApplied, false, 'a repeated heading is not an applied hint');
   });
 
   test('A FABRICATED QUOTE IS REJECTED — the unsupported-evidence case', async () => {

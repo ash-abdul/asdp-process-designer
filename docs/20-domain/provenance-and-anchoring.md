@@ -172,9 +172,21 @@ place to refuse is where the ambiguity is still visible.
 the system cannot say *where* they came from. That is the same trade the "no match → reject" rule
 already makes, applied to a case Phase 0 treated more leniently.
 
-**Not yet implemented.** V4a performs no quote location, so nothing in the code implements this rule
-today. It governs **V4b**, where `EXTRACT_EVIDENCE` and post-hoc citation verification arrive —
-[v4-proposal.md](../60-plan/v4-proposal.md) §6.
+**Implemented in V4b-core** (accepted 2026-08-23) — `locateQuote` and `mayBecomeEvidence` in
+`@asdp/provenance`, and the shared persistence gate that every extraction passes through
+([phase-2-status.md](../60-plan/phase-2-status.md) §7.2–§7.3). Three properties of that
+implementation are part of the rule rather than of the code:
+
+- **A hint is *applied*, not counted.** Only `unitId` and an enclosing heading resolve, because only
+  those can be checked against stored structure. `page` and `section` are recorded and disambiguate
+  nothing on their own.
+- **A locator that names two places resolves nothing.** A heading occurring more than once in a
+  document does not identify a section, so it yields no scope at all and the candidate is rejected —
+  keeping the first would be the arbitrary pick this section forbids, wearing a hint as cover
+  ([phase-2-status.md](../60-plan/phase-2-status.md) §7.10).
+- **Demotion is available and inert for this purpose.** The ambiguous outcome still offers a
+  page-precision anchor for navigation and display; `mayBecomeEvidence` returns false for it at any
+  precision.
 
 ### 4.3 Native citations
 

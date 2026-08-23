@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V3 and V4a ACCEPTED. V4b-core implemented, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.6 · **Updated:** 2026-08-23
-> **Checkpoint:** §0 · **Commit:** `34ca68e` — V4b-core implemented (V4a accepted at `d82d285`)
+> **Status:** **V0–V3, V4a and V4b-core ACCEPTED. V4b-eval deferred. V2-PDF blocked on spike S2.** · **Version:** 4.7 · **Updated:** 2026-08-23
+> **Checkpoint:** §0 · **Commit:** `34ca68e` — V4b-core implemented; **accepted** at the commit recorded below (V4a accepted at `d82d285`)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -15,11 +15,11 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V4b-core — AI evidence extraction.** Boundary approved 2026-08-23 ([v4b-proposal.md](v4b-proposal.md)); implementation **complete, awaiting review** — §7. V0–V3 and V4a accepted |
-| **Commit** | **`34ca68e`** — *Phase 2 V4b-core: EXTRACT_EVIDENCE, §4.4 enforcement, persistence gate*. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean.** V4b-core is committed at `34ca68e` and awaits review |
+| **Current slice** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
+| **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at the acceptance commit recorded here. V4a accepted at **`d82d285`** |
+| **Working tree** | **Clean.** V4b-core is committed at `34ca68e`; the review fix and this acceptance record are the acceptance commit |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Review V4b-core** (§7). **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
+| **Next approved action** | **None. Nothing is approved to begin.** A **V5 boundary proposal** — verified `EvidenceItem`s into structured requirement *proposals* / RAF — is presented for review and is **not approved**; V5 must not begin until its boundary is approved. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -30,7 +30,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
-| **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` | **Complete, awaiting review** — §7 |
+| **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + the acceptance commit | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -38,10 +38,10 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **620 pass · 0 fail · 0 skipped · 0 todo** · 124 suites |
+| Tests | **621 pass · 0 fail · 0 skipped · 0 todo** · 124 suites |
 | `check:arch` | passed — 124 source files |
 | `check:arch:selftest` | passed — **36 cases** |
-| `check:docs` | passed — 88 files, 726 links |
+| `check:docs` | passed — 88 files, 728 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
 | Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` · `007_evidence_confidence` |
@@ -108,19 +108,23 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 
 ### What is NOT started
 
-**V4b** (AI evidence extraction) is approved in shape only and must not begin until V4a is accepted
-and the E2 conflict is resolved. **No extraction pass exists**: `PROFILE_SOURCE` reports what a
-document *is* and cannot report what it *requires*. **V5–V7** remain provisional — capability names only, each needing
-its boundary approved, not merely a go-ahead. **No generation capability of any kind exists**: no
-BPMN, DMN or form generation, no Process IR, no Specification Studio, no graphical designer.
+**V4b-eval** has not started and is not startable here: it needs an approved credential and
+E1-permitted material. **No requirements capability exists**: `EXTRACT_EVIDENCE` reports what a
+document *says*, verbatim and anchored, and nothing turns that into a requirement. There is **no RAF
+population, no `POPULATE_FRAME`, no `RECONCILE_SOURCES`, no conflict precedence, no
+clarification-question generation, no requirements workspace and no G1** — the task names exist in
+the vocabulary and have no implementation. **V5–V7** remain provisional — capability names only, each
+needing its boundary approved, not merely a go-ahead; a **V5 proposal is under review and is not
+approved**. **No generation capability of any kind exists**: no BPMN, DMN or form generation, no
+Process IR, no Specification Studio, no graphical designer.
 
 ## 1. Position
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) — all accepted. **V4b-core** (§7) implemented, awaiting review |
-| Next slice | **V4b-eval — real-provider evaluation.** Deferred: needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **620 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a) |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) — all accepted |
+| Next slice | **None approved.** A **V5 boundary** — verified evidence into structured requirement *proposals* — is proposed and awaiting review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Tests | **621 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 620 V4b-core) |
 | Verification | build · `check:arch` (124 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
@@ -137,6 +141,8 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V1 | `922761a` — *text intake, provenance, source viewer, L0-ING rules* · **accepted** |
 | V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
 | V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** at `bea4041` |
+| V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
+| V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at the acceptance commit |
 
 ---
 
@@ -908,6 +914,44 @@ exists.
   from the record.
 - The gold-set **provenance check** — the harness refuses non-human ground truth.
 
+### 7.10 Accepted after independent review — and the defect the review found
+
+V4b-core was reviewed against [v4b-proposal.md](v4b-proposal.md) §1 and §4 item by item on
+2026-08-23 and **accepted**. Eleven of the twelve acceptance criteria held as written. **Criterion 3
+— "no arbitrary occurrence is ever selected" — did not**, in one narrow case, and the fix is part of
+the acceptance commit.
+
+**The defect.** `scopesFor` mapped heading text to a code-point range with **first-wins**: when a
+document repeated a heading verbatim, the map kept the *first* one. A candidate whose only locator
+was that heading therefore received a scope containing exactly one occurrence of a quote that
+appeared once under each identical heading, and was accepted at **`exact`** precision — pointing at
+the first occurrence. That is the arbitrary pick §4.4 forbids, made eligible by a hint that did not
+actually identify anything, which is the same shape as the pre-revision `matches[0]` behaviour V4b-core
+was written to remove.
+
+The function's own comment stated the correct rule — *"A document repeating a heading verbatim cannot
+be disambiguated by it, so it must not appear to be"* — and the code did the opposite. **The comment
+was right.**
+
+**The fix.** A heading text that occurs more than once now resolves to **no scope at all** and is
+removed from the map, so the candidate falls through to the ambiguous rejection with its match count
+recorded. `unitId` is unaffected: unit ids are unique by construction, and the extraction prompt asks
+for `unitId` rather than a heading, which is why this was reachable only through a schema-permitted
+locator the prompt does not request.
+
+**Reachability, stated plainly.** No test, no corpus document and no gold-set item exercised it, and
+the authored stub supplies `unitId`, so nothing in the delivered numbers changes. It was live rather
+than latent — a real provider returning a heading locator on a document with two identically-titled
+sections would have produced a confident citation to a location nobody verified.
+
+A regression test asserts both halves — the repeated heading resolves nothing, the unique heading
+still resolves — and it was **confirmed to fail against the unfixed code** before being accepted as
+evidence. Tests: **621 pass · 0 fail · 0 skipped**.
+
+**No decision was made in fixing it.** §4.4 already says a locator must uniquely identify one
+occurrence; a heading naming two sections does not. This is an implementation correction inside the
+slice under review, not a change of boundary — and the recall cost is recorded as limitation **61**.
+
 ---
 
 ## 8. Accepted HTTP status posture
@@ -1044,6 +1088,7 @@ behaviour as correct.
 | 58 | **Sentence-level granularity comes from the provider, not the system** | The stub splits on sentence terminators; a real model may return clauses or paragraphs. The gate does not require a particular granularity, so extraction granularity is a *prompt* property and will need measuring against real output in V4b-eval |
 | 59 | **Per-pass deduplication is by quote checksum within one source** | Two identical sentences in different sources are two evidence items, correctly. But the same quote extracted twice in one pass collapses to one item, so a document that genuinely states the same obligation in two places yields one citation — the second is reachable only by a manual record |
 | 60 | **`crossSourceAgreement` is always `silent`** | Cross-source reconciliation is V6. Confidence therefore never reflects corroboration or contradiction, which is honest rather than neutral: nothing has been compared |
+| 61 | **A repeated heading resolves to no scope at all** — §7.10 | Deliberate, and it costs recall: a quote repeated under two identically-titled sections is rejected as ambiguous even though a reader could tell the sections apart by their position. The alternative was accepting the first occurrence, which is the pick §4.4 forbids. `unitId` resolves it whenever the provider supplies one, and the prompt asks for `unitId` |
 
 ---
 
@@ -1082,13 +1127,14 @@ excluded permanently, because it would reverse
 
 ## 12. Next step
 
-### V3 and V4a are ACCEPTED. V4b-core awaits review. V4b-eval, V2-PDF and H1/H2 have not started.
+### V3, V4a and V4b-core are ACCEPTED. V4b-eval, V2-PDF, V5 and H1/H2 have not started.
 
 | | |
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
-| **V4b-core — AI evidence extraction** | **Complete, awaiting review** — §7. Discharges the approved V4b-core scope; needs no credential |
+| **V4b-core — AI evidence extraction** | **ACCEPTED / COMPLETE**, 2026-08-23 — §7, reviewed in §7.10. Discharges the approved V4b-core scope; needed no credential. **Accepted for mechanics and governance, explicitly not model quality** — §7.8 |
+| **V5 — evidence to structured requirement proposals** | **PROPOSED, NOT APPROVED.** A boundary is under review: verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **Must not begin without approval** |
 | **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
@@ -1097,4 +1143,4 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-**Do not begin V4b-eval or V2-PDF without approval.**
+**Do not begin V4b-eval, V2-PDF or V5 without approval.**
