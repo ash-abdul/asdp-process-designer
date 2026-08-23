@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
 > **Status:** **V0–V3 ACCEPTED. V4a implemented, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.4 · **Updated:** 2026-08-23
-> **Checkpoint:** §0 · **Commit:** V3 accepted at `bea4041`; **V4a implemented in the working tree**
+> **Checkpoint:** §0 · **Commit:** `09dfc9b` — V4a implemented (V3 accepted at `bea4041`)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -16,8 +16,8 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
 | **Current slice** | **V4a — AI Broker and Live-Path Foundation.** Boundary approved 2026-08-23; implementation **complete, awaiting review** — §6. **V3 is ACCEPTED / COMPLETE** |
-| **Commit** | V3: **`dc2e683`** + **`bea4041`** (accepted). **V4a: uncommitted in the working tree**, pending review |
-| **Working tree** | **Dirty, deliberately.** V4a is implemented and not yet committed, pending review |
+| **Commit** | **`09dfc9b`** — *Phase 2 V4a: AI broker wiring, PROFILE_SOURCE, ai_interaction, live path*. V3 accepted at **`bea4041`** |
+| **Working tree** | **Clean.** V4a is committed at `09dfc9b` and awaits review |
 | **Work in progress** | **V4a only**, and it is complete rather than partial — see §6. Spike S2's probe scripts lived outside the repo and were never committed |
 | **Next approved action** | **Review V4a** (§6). **V4b must not begin** until V4a is accepted and the recorded E2 conflict ([v4-proposal.md](v4-proposal.md) §6) is resolved. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
@@ -29,7 +29,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V1** — Text intake, resolvable provenance, source viewer, `L0-ING` rules | `922761a` | **Accepted** |
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
-| **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | *(uncommitted)* | **Complete, awaiting review** — §6 |
+| **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` | **Complete, awaiting review** — §6 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
