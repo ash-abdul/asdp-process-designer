@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
 > **Status:** **V0–V3, V4a and V4b-core ACCEPTED. V4b-eval deferred. V2-PDF blocked on spike S2.** · **Version:** 4.7 · **Updated:** 2026-08-23
-> **Checkpoint:** §0 · **Commit:** `34ca68e` — V4b-core implemented; **accepted** at the commit recorded below (V4a accepted at `d82d285`)
+> **Checkpoint:** §0 · **Commit:** `34ca68e` — V4b-core implemented; **accepted** at `3d5dfb6` (V4a accepted at `d82d285`)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -16,8 +16,8 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
 | **Current slice** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
-| **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at the acceptance commit recorded here. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean.** V4b-core is committed at `34ca68e`; the review fix and this acceptance record are the acceptance commit |
+| **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
+| **Working tree** | **Clean.** V4b-core is committed at `34ca68e`; the review fix and this acceptance record are committed at `3d5dfb6` |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
 | **Next approved action** | **None. Nothing is approved to begin.** A **V5 boundary proposal** — verified `EvidenceItem`s into structured requirement *proposals* / RAF — is presented for review and is **not approved**; V5 must not begin until its boundary is approved. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
@@ -30,7 +30,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
-| **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + the acceptance commit | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
+| **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -142,7 +142,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V2 | `1bd8d8d` — *DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors* · **accepted** |
 | V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** at `bea4041` |
 | V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
-| V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at the acceptance commit |
+| V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
 
 ---
 
