@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v4b-extract",
+    "taskType": "EXTRACT_EVIDENCE",
+    "promptVersion": "extract-evidence@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "d17b3748bbda99945715c8b0dc414ed2327dd78b18a4e79edd78a4e306be1373"
+  },
+  "keyHash": "2e38510c5d371fe2dc7b33585c70183e5c8b44fb8d4eecc325147bbe357184ff",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"quote\":\"An establishment must hold an active registration to renew its licence.\",\"locator\":{\"unitId\":\"su-3\"},\"modelSelfRating\":0.5},{\"quote\":\"The applicant must submit the renewal request within ninety days of expiry.\",\"locator\":{\"unitId\":\"su-3\"},\"modelSelfRating\":0.5},{\"quote\":\"A tenancy contract is required when the registered address has changed.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"The applicant must supply a valid identity document.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"The reviewing officer must complete the review within three working days.\",\"locator\":{\"unitId\":\"su-7\"},\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it selects sentences by marker word\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 567,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T16:03:18.171Z",
+  "classification": "PUBLIC"
+}

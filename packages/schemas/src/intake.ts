@@ -315,6 +315,18 @@ export const EvidenceItem = z.object({
   citationMode: CitationMode,
   /** MUST be true to persist (D1). */
   anchorVerified: z.boolean(),
+
+  // --- computed confidence (V4b-core) -------------------------------------
+  /**
+   * Confidence as COMPUTED by us, never as reported by a provider (ADR-0011).
+   *
+   * Present for AI-extracted evidence — migration 007 requires it — and absent on
+   * items recorded before the value existed. The **function version** travels with
+   * the score: a number whose function is unknown cannot be compared to another.
+   */
+  computedConfidence: z.number().min(0).max(1).optional(),
+  confidenceBand: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+  confidenceFunctionVersion: z.string().optional(),
   /** Inherited from the source; may be raised, never lowered (ADR-0021 rule 3). */
   classification: Classification,
   createdBy: EntityId,

@@ -22,6 +22,7 @@ import {
   SourceProfile,
   type AiRequest,
   type AiResponse,
+  type EvidenceExtraction,
   type ProviderDescriptor,
 } from '@asdp/schemas';
 
@@ -92,6 +93,50 @@ export function profileFromShape(text: string): SourceProfile {
   };
 }
 
+/**
+ * Extract candidate evidence from document SHAPE, deterministically.
+ *
+ * Selects sentences containing a modal or obligation marker, in English or
+ * Arabic, and quotes them **verbatim** with the unit id they came from. That is
+ * enough to exercise the whole gate — unique matches, repeated sentences,
+ * locator-disambiguated matches — without any model involved.
+ *
+ * Deliberately literal. It does not judge whether a sentence *is* a requirement,
+ * because a stub that appeared to judge would invite someone to read its output
+ * as a measurement of judgement.
+ */
+export function extractFromShape(text: string, unitIds: readonly string[]): EvidenceExtraction {
+  const items: EvidenceExtraction['items'] = [];
+  // Units are separated by a blank line in the assembled chunk text, matching how
+  // `planChunks` joins them — so the nth block is the nth offered unit id.
+  const blocks = text.split(/\n\n+/);
+
+  blocks.forEach((block, blockIndex) => {
+    const unitId = unitIds[blockIndex];
+    // Sentence-ish split that keeps Arabic full stops and avoids eating the
+    // terminator, because the quote has to be findable verbatim.
+    for (const raw of block.split(/(?<=[.!?۔])\s+/)) {
+      const sentence = raw.trim();
+      if (sentence.length === 0) continue;
+      if (!/\b(must|shall|may not|required|within)\b|يجب|خلال|يُشترط/i.test(sentence)) continue;
+      items.push({
+        quote: sentence,
+        ...(unitId === undefined ? {} : { locator: { unitId } }),
+        // A fixed value, and a middling one: a self-rating that varied would look
+        // like a judgement the stub is not making. It nudges confidence by 0 (0.5).
+        modelSelfRating: 0.5,
+      });
+    }
+  });
+
+  return {
+    items,
+    limitations: [
+      'produced by the authored stub provider, not by a model; it selects sentences by marker word',
+    ],
+  };
+}
+
 /** A provider that answers deterministically, offline, from document shape. */
 export function createAuthoredStubProvider(): AiProvider {
   const descriptor = stubDescriptor();
@@ -101,8 +146,20 @@ export function createAuthoredStubProvider(): AiProvider {
     health: async () => ({ ok: true, detail: 'authored stub; no network' }),
     async invoke(request: AiRequest): Promise<AiResponse> {
       const text = request.content.map((c) => (c.kind === 'text' ? c.text : '')).join('\n');
+      // The unit ids the prompt offered, read back out of the instruction. The
+      // stub is answering the same prompt a model would, which keeps the
+      // recording key honest: change the prompt and the recording misses.
+      const offered = /using ONLY these ids: ([^.\n]+)/.exec(request.systemInstruction);
+      const unitIds =
+        offered === null ? [] : (offered[1] as string).split(',').map((s) => s.trim()).filter(Boolean);
+
+      const payload =
+        request.taskType === 'EXTRACT_EVIDENCE'
+          ? extractFromShape(text, unitIds)
+          : profileFromShape(text);
+
       return {
-        outputs: [JSON.stringify(profileFromShape(text))],
+        outputs: [JSON.stringify(payload)],
         citations: [],
         usage: {
           inputUnits: text.length,

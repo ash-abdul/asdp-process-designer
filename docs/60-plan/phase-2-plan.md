@@ -329,10 +329,11 @@ is in [v4-proposal.md](v4-proposal.md) §3, along with the four changes that *wo
 
 **Dependencies added: none.** Runtime dependencies stay at seven.
 
-### 3.9 V4b — approved boundary (V4b-core) and deferred sequel (V4b-eval)
+### 3.9 V4b — approved boundary (V4b-core, **implemented**) and deferred sequel (V4b-eval)
 
 **Approved 2026-08-23.** V4b is **split** on its one external dependency: **V4b-core** is approved
-and cleared to begin and needs **no credential**; **V4b-eval** is deferred until an approved
+and **implemented** — delivered state in [phase-2-status.md](phase-2-status.md) §7, awaiting review —
+and needs **no credential**; **V4b-eval** is deferred until an approved
 credential and **E1**-permitted material exist. Full boundary, decisions **F1–F5**, acceptance
 criteria and the one behaviour change are in [v4b-proposal.md](v4b-proposal.md).
 

@@ -1,0 +1,84 @@
+{
+  "corpusId": "v4b-extract",
+  "authoredBy": "human",
+  "reviewedBy": "human",
+  "provenance": "Hand-authored labels (F1). No AI-generated expected output. Every expected item names its expected location, and the three cases of provenance \u00a74.4 are each represented: unique (g6), repeated-but-disambiguated-by-unit (g7), and repeated-within-one-unit (t1, must be rejected).",
+  "documents": [
+    {
+      "documentId": "licence-renewal-en",
+      "expected": [
+        {
+          "id": "g1",
+          "quote": "An establishment must hold an active registration to renew its licence.",
+          "location": {
+            "section": "1. Eligibility"
+          }
+        },
+        {
+          "id": "g2",
+          "quote": "The applicant must submit the renewal request within ninety days of expiry.",
+          "location": {
+            "section": "1. Eligibility"
+          }
+        },
+        {
+          "id": "g3",
+          "quote": "A tenancy contract is required when the registered address has changed.",
+          "location": {
+            "section": "2. Documents"
+          }
+        },
+        {
+          "id": "g4",
+          "quote": "The applicant must supply a valid identity document.",
+          "location": {
+            "section": "2. Documents"
+          }
+        },
+        {
+          "id": "g5",
+          "quote": "The reviewing officer must complete the review within three working days.",
+          "location": {
+            "section": "3. Review"
+          }
+        }
+      ],
+      "traps": []
+    },
+    {
+      "documentId": "repeated-clause-en",
+      "expected": [
+        {
+          "id": "g6",
+          "quote": "An escalated request must be resolved within five working days.",
+          "location": {
+            "section": "2. Escalation"
+          },
+          "note": "Unique in the document. Case 1 of provenance \u00a74.4: accept."
+        },
+        {
+          "id": "g7",
+          "quote": "The officer must verify the applicant's identity before proceeding.",
+          "location": {
+            "section": "1. Intake or 2. Escalation \u2014 each occurrence is in its OWN unit"
+          },
+          "note": "Appears verbatim in two sections, but in two DIFFERENT units. Case 2 of provenance \u00a74.4: a unit locator resolves it to one occurrence, so it is legitimately accepted. Expected exactly once after per-document deduplication."
+        }
+      ],
+      "traps": [
+        {
+          "id": "t1",
+          "quote": "The reviewer must sign the file before closure.",
+          "mustNotBecomeEvidence": "repeated_twice_inside_one_unit",
+          "note": "Appears twice in the SAME paragraph, so no unit or heading locator can resolve it to one occurrence. Case 3 of provenance \u00a74.4: reject. This is the trap that would previously have passed by taking matches[0]."
+        },
+        {
+          "id": "t2",
+          "quote": "The applicant must pay the fee in advance of submission.",
+          "mustNotBecomeEvidence": "not_present_in_document",
+          "note": "A plausible sentence appearing nowhere. NOT EXERCISED by the authored stub, which can only quote text it was given \u2014 a stub that fabricated would be rigged. Covered by unit test instead, and reported as not-exercised rather than as a pass."
+        }
+      ]
+    }
+  ]
+}

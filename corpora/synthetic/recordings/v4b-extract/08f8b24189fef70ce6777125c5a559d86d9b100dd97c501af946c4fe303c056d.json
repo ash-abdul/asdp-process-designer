@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v4b-extract",
+    "taskType": "EXTRACT_EVIDENCE",
+    "promptVersion": "extract-evidence@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "c9090d6ce9cb4211ba86b276c66c3d10b889cb953e6f14056792f5819a857e3a"
+  },
+  "keyHash": "08f8b24189fef70ce6777125c5a559d86d9b100dd97c501af946c4fe303c056d",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"quote\":\"The officer must verify the applicant's identity before proceeding.\",\"locator\":{\"unitId\":\"su-3\"},\"modelSelfRating\":0.5},{\"quote\":\"The officer must verify the applicant's identity before proceeding.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"An escalated request must be resolved within five working days.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it selects sentences by marker word\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 277,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T16:02:12.050Z",
+  "classification": "PUBLIC"
+}

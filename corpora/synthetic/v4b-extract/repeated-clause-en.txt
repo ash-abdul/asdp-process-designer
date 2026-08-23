@@ -1,0 +1,11 @@
+# Service Standards
+
+## 1. Intake
+The officer must verify the applicant's identity before proceeding.
+
+## 2. Escalation
+The officer must verify the applicant's identity before proceeding.
+An escalated request must be resolved within five working days.
+
+## 3. Closure
+The reviewer must sign the file before closure. The reviewer must sign the file before closure.

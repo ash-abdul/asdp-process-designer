@@ -22,6 +22,7 @@
     "verify": "npm run build && npm run check:arch && npm run check:arch:selftest && npm run check:docs && npm test",
     "ai:capture": "node apps/api/dist/ai/live-capture.js",
     "eval:baseline": "node apps/api/dist/ai/baseline.js",
+    "eval:extract": "node apps/api/dist/ai/extract-baseline.js",
     "start": "node apps/api/dist/main.js",
     "start:worker": "node apps/api/dist/worker.js",
     "build:assets": "node tools/copy-assets.mjs"

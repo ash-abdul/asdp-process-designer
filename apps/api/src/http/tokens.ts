@@ -24,3 +24,6 @@ export const VISION_EXTRACTOR = Symbol('ASDP_VISION_EXTRACTOR');
 
 /** The V4a `SourceProfiler` (`PROFILE_SOURCE`). Refuses when no provider is wired. */
 export const SOURCE_PROFILER = Symbol('ASDP_SOURCE_PROFILER');
+
+/** The V4b-core `EvidenceExtractor` (`EXTRACT_EVIDENCE`). Refuses when unwired. */
+export const EVIDENCE_EXTRACTOR = Symbol('ASDP_EVIDENCE_EXTRACTOR');

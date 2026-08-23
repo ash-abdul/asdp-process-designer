@@ -72,3 +72,12 @@ export {
   ClaudeTransportError,
   type ClaudeTransportConfig,
 } from './adapters/claude-transport.ts';
+
+export {
+  CHUNK_STRATEGY_VERSION,
+  planChunks,
+  type Chunk,
+  type ChunkPlan,
+  type ChunkOptions,
+  type ChunkableUnit,
+} from './chunking.ts';

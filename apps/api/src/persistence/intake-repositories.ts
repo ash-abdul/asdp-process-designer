@@ -137,6 +137,13 @@ function mapEvidenceItem(r: Record<string, unknown>): EvidenceItem {
     ...(interaction === undefined ? {} : { aiInteractionId: interaction }),
     citationMode: String(r.citation_mode) as EvidenceItem['citationMode'],
     anchorVerified: r.anchor_verified === true,
+    ...(r.computed_confidence === null || r.computed_confidence === undefined
+      ? {}
+      : {
+          computedConfidence: Number(r.computed_confidence),
+          confidenceBand: String(r.confidence_band) as EvidenceItem['confidenceBand'],
+          confidenceFunctionVersion: String(r.confidence_function_version),
+        }),
     classification: String(r.classification) as Classification,
     createdBy: String(r.created_by),
     createdAt: toIso(r.created_at),
@@ -370,14 +377,18 @@ class SqlEvidenceRepository implements EvidenceRepository {
         `insert into evidence_item (id, project_id, source_id, source_unit_id, anchor_json,
                                     verbatim_text, language, raf_slot_hint, extracted_by,
                                     ai_interaction_id, citation_mode, anchor_verified,
-                                    classification, created_by, created_at)
-         values ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+                                    classification, created_by, created_at,
+                                    computed_confidence, confidence_band,
+                                    confidence_function_version)
+         values ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
         [
           item.id, item.projectId, item.sourceId, item.sourceUnitId ?? null,
           JSON.stringify(item.anchor), item.verbatimText, item.language,
           item.rafSlotHint ?? null, item.extractedBy, item.aiInteractionId ?? null,
           item.citationMode, item.anchorVerified, item.classification,
           item.createdBy, item.createdAt,
+          item.computedConfidence ?? null, item.confidenceBand ?? null,
+          item.confidenceFunctionVersion ?? null,
         ],
       );
     } catch (err) {

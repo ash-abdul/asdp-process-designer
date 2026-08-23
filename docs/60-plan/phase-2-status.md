@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V3 and V4a ACCEPTED. V2-PDF blocked on spike S2.** · **Version:** 4.5 · **Updated:** 2026-08-23
+> **Status:** **V0–V3 and V4a ACCEPTED. V4b-core implemented, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.6 · **Updated:** 2026-08-23
 > **Checkpoint:** §0 · **Commit:** `d82d285` — V4a accepted (implemented at `09dfc9b`; V3 accepted at `bea4041`)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
@@ -15,11 +15,11 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **None in progress.** **V4a — AI Broker and Live-Path Foundation — is ACCEPTED / COMPLETE** (accepted 2026-08-23, §6). V0–V3 accepted |
+| **Current slice** | **V4b-core — AI evidence extraction.** Boundary approved 2026-08-23 ([v4b-proposal.md](v4b-proposal.md)); implementation **complete, awaiting review** — §7. V0–V3 and V4a accepted |
 | **Commit** | **`d82d285`** — *V4a accepted; E2 resolved*. V4a was implemented at **`09dfc9b`**; V3 accepted at **`bea4041`** |
-| **Working tree** | **Clean.** V4a is committed and accepted |
+| **Working tree** | **Dirty, deliberately.** V4b-core is implemented and not yet committed, pending review |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Implement V4b-core**, per [v4b-proposal.md](v4b-proposal.md) and decisions **F1–F5**. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
+| **Next approved action** | **Review V4b-core** (§7). **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -30,21 +30,23 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
+| **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | *(uncommitted)* | **Complete, awaiting review** — §7 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
-### Verification at V4a acceptance
+### Verification of the current working tree
 
 | | |
 |---|---|
-| Tests | **596 pass · 0 fail · 0 skipped · 0 todo** · 119 suites |
-| `check:arch` | passed — 118 source files |
+| Tests | **620 pass · 0 fail · 0 skipped · 0 todo** · 124 suites |
+| `check:arch` | passed — 124 source files |
 | `check:arch:selftest` | passed — **36 cases** |
-| `check:docs` | passed — 88 files, 722 links |
+| `check:docs` | passed — 88 files, 726 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
-| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` |
-| Baseline | `npm run eval:baseline` — 3 cases on a **synthetic** corpus: schema 100%, reproducibility 100%, label agreement 100%, **not usable for a routing decision** |
+| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` · `007_evidence_confidence` |
+| `eval:baseline` | `PROFILE_SOURCE`, **synthetic** corpus: schema 100%, reproducibility 100%, label agreement 100%, **not usable for a routing decision** |
+| `eval:extract` | `EXTRACT_EVIDENCE`, **synthetic** gold set: precision **100%**, recall **100%**, F1 **100%**, unsupported-accepted **0%**, hallucination **0%**, ambiguity rejections **2**, traps 2 rejected / 1 **not exercised**. **Mechanics, not model quality** |
 
 ### Approved decisions
 
@@ -101,7 +103,7 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 | **Captured (as opposed to authored) fixtures** | **No credential exists in this environment**, so no live call has been made. The capture path is built and exercised against an authored stub; the first real capture is a credentialed operation, not a code change |
 | **Ceiling enforcement** | No requirements exist yet to enforce ceilings on. `ceilingFor` is computable and tested; V5 enforces it |
 | **Element-wise confirmation records** | V5. V3 made each region individually addressable, which is its prerequisite |
-| Collation behaviour, PostgreSQL container, MinIO, OIDC, durable job queue, container build | **Docker unavailable** — §9, each with a named trigger |
+| Collation behaviour, PostgreSQL container, MinIO, OIDC, durable job queue, container build | **Docker unavailable** — §10, each with a named trigger |
 | `RESTRICTED`+ material analysis | **OD-1**, now scoped as a *deployment* gate rather than a development blocker (A8) |
 
 ### What is NOT started
@@ -116,10 +118,10 @@ BPMN, DMN or form generation, no Process IR, no Specification Studio, no graphic
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) — **all accepted** |
-| Next slice | **V4b — AI evidence extraction.** Approved in shape only; **its boundary needs approval before work begins**. E2 is resolved. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **596 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 accepted) |
-| Verification | build · `check:arch` (118 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) — all accepted. **V4b-core** (§7) implemented, awaiting review |
+| Next slice | **V4b-eval — real-provider evaluation.** Deferred: needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Tests | **620 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a) |
+| Verification | build · `check:arch` (124 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
 | Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction. **V3 decisions D1–D6 approved**, D6 deferring three in-scope items to V4 (§5.10) |
@@ -747,7 +749,168 @@ indistinguishable from an authorisation refusal in the log.
 
 ---
 
-## 7. Accepted HTTP status posture
+## 7. V4b-core capabilities delivered — AI evidence extraction
+
+**Complete, awaiting review.** Boundary: [v4b-proposal.md](v4b-proposal.md) and
+[phase-2-plan.md](phase-2-plan.md) §3.9. Decisions **F1–F5**. **No new dependency** — runtime
+dependencies stay at **seven**.
+
+This is the first slice in which AI output becomes **evidence a requirement may later cite**, so it
+is the first slice where the epistemic rules reject things. What it claims is that **what should be
+rejected is rejected**, and that the refusal is recorded. It claims nothing about model quality —
+§7.8.
+
+### 7.1 `EXTRACT_EVIDENCE`, end to end
+
+- Runs through the broker wired in V4a: classification, egress gate, capability negotiation,
+  routing, degradation planning, schema-enforced invocation, one call per chunk.
+- The model returns **verbatim quotes and locators, never offsets**. We locate the quote and mint the
+  anchor, so a model that misremembers a position cannot produce a confident citation to the wrong
+  place (provenance-and-anchoring.md §4).
+- The prompt and the schema agree, deliberately: `EvidenceExtraction` has **no field** for an
+  obligation, a rule, a process step or a decision, and the instruction forbids producing one. Either
+  alone would leak — a model fills the fields it is given, and a schema does not stop paraphrase.
+- Persisted items are `extractedBy: 'ai'` with `citationMode: 'post_hoc'`, their interaction named,
+  and computed confidence attached.
+
+### 7.2 Provenance §4.4 enforced — and the behaviour change it required
+
+`locateQuote` had implemented the **pre-revision** rule: when a quote matched several locations and a
+hint was merely *present*, it selected `matches[0]` — the first occurrence, arbitrarily — demoted
+precision to `page`, and `mayBecomeEvidence` accepted it. That is the exact combination §4.4 forbids.
+
+| Case | Behaviour |
+|---|---|
+| **1 — one location** | Accept the verified anchor |
+| **2 — several locations, deterministic locator resolves one** | Accept, at **`exact`** precision: the hint *selected among* candidates that were each exact, it did not approximate |
+| **3 — several locations remain** | **Reject.** No occurrence is chosen, and no precision makes it eligible |
+
+- A hint is **applied**, not counted: `unitId` and `heading` resolve to code-point ranges over stored
+  structure, and only a scope containing exactly one candidate accepts. `page` and `section` are
+  carried for the record and resolve nothing on their own — a model asserting "section 3" is a claim,
+  not a verification.
+- `mayBecomeEvidence` is now a **type guard** returning false for `ambiguous` at any precision, so a
+  caller cannot reach for an anchor the ambiguous case has no business handing out.
+- The ambiguous case still offers a **`citationOnlyAnchor`** over the enclosing scope, because §4.4
+  keeps demotion for navigation and display. The field is named for what it licenses.
+- **Two existing tests were rewritten**, and the reason is recorded in the test itself: they asserted
+  the old rule, and were correct against v1.0 of the specification and wrong against revision 1.1.
+
+### 7.3 The persistence gate — **F5**
+
+Four conditions, all of them, in one shared module:
+
+1. structured output **validates** — schema-checked per extraction
+2. the citation **resolves uniquely** — §4.4
+3. the anchor **verifies independently** — re-resolved against the stored text through the same
+   resolver every downstream consumer uses
+4. provenance rules **pass** — `resolved`, not `drifted`, not `broken`
+
+The gate is deliberately **shared with the evaluation harness**. If it lived in the command, the
+evaluation would measure a reimplementation of the rules rather than the rules, and the two would
+drift — which is what makes an evaluation number worse than no number.
+
+### 7.4 Rejections are recorded, countable, and not queued — **F2**
+
+- Reason codes are a **closed set**: `empty_quote`, `quote_not_found`, `ambiguous_citation`,
+  `anchor_unverified`. A closed set can be counted; free text cannot.
+- Each rejection records the reason, the **match count**, whether a hint was **applied**, and the
+  quote's **checksum** — enough to measure recall loss and diagnose, on the pass result and in an
+  append-only audit event.
+- **The checksum, not the quote.** A rejected item never became evidence, and the audit store is not
+  a content store; copying unanchored source text into audit rows would spread classified content
+  into records with different handling. Verbatim quotes appear only in the offline evaluation report
+  over the synthetic corpus, which is where diagnosis happens.
+- **No remediation queue exists**, and a test asserts the absence. A user-facing confirmation flow is
+  the later human requirements workspace, and building part of it here would start that slice.
+
+### 7.5 Structural chunking — **F4**
+
+- **Structural first**: whole `SourceUnit`s packed greedily to the budget, so a chunk **cannot split
+  a quote a unit contains** and the common case needs no overlap at all.
+- **Size fallback only for a single over-budget unit**, with controlled overlap, and a split unit
+  never shares a chunk with its neighbours.
+- Every chunk records its **id** and its **original source range**, so a proposal from chunk 3 of 7
+  traces to the text that produced it. The strategy is **versioned** (`structural-1`), so a recording
+  keyed on a different strategy misses rather than replaying wrongly.
+- Candidates are gated against the **whole source text**, not the chunk: an anchor must be valid in
+  the document, and it also means an overlap-duplicated quote is ambiguous exactly once rather than
+  accidentally unique per chunk.
+- **A defect the tests caught:** the split originally relied on the capability ladder to name
+  `chunked_context`, so a large-context provider would have produced an interaction saying
+  `contextMode: 'chunked'` with **no** degradation — a record contradicting itself, and a confidence
+  ignoring the split. The broker now accepts **caller-declared degradations**, and the extractor
+  declares the split itself (**E4** rules 4 and 5).
+
+### 7.6 Confidence propagation
+
+- Computed by `computeConfidence`, never provider-reported (ADR-0011), and stored with its **function
+  version** — a score whose function is unknown cannot be compared to another.
+- Migration **`007_evidence_confidence`** adds the three columns and constrains them: a band from a
+  closed set, a score in range, all-three-or-none, and **AI-extracted evidence must carry one**.
+- The declared `chunked_context` penalty of **0.15** is demonstrably applied: a test compares the
+  same document read whole and read in chunks by a large-context provider, and the chunked read is
+  strictly less confident.
+- **A consequence worth naming:** the new constraint failed three V3 tests, because the vision
+  evidence path wrote `extractedBy: 'ai'` with no confidence. The constraint was right and the path
+  was inconsistent, so `recordEvidence` now computes confidence for vision evidence too — as
+  **`interpreted`** at `page` precision, which lands materially below a text extraction and reaches
+  the same conclusion the L2 ceiling reaches by another route (ADR-0038).
+
+### 7.7 Gold-set evaluation — **F1**
+
+`npm run eval:extract` runs the **real** path offline: the real ingestion adapter, the real chunk
+planner, the real broker over a **replay** provider, and the real gate.
+
+| Metric | Result |
+|---|---|
+| Precision · recall · F1 | **100% · 100% · 100%** (7 true positives, 0 false positives, 0 false negatives) |
+| Candidates → accepted | 10 → 7 |
+| Rejections | `ambiguous_citation`: **2** |
+| Unsupported-accepted rate | **0%** — an accepted item absent from its document would be a defect, not a rare event |
+| Hallucination rate · anchor resolution | **0%** · **100%** — both are defect detectors, not scores |
+| Precision distribution | `exact`: 7 |
+| Traps | **2 rejected as required**, **1 not exercised** |
+| Corpus tier | **`synthetic`** · `usableForRoutingDecision`: **false** |
+
+- The gold set is **hand-authored and human-reviewed**, and the harness **refuses to run** on a gold
+  set that declares any other provenance (**F1**). A gold set generated by the same class of model
+  being measured turns evaluation into agreement-with-itself.
+- Every expected item names its **expected location**, so a citation to the right sentence in the
+  wrong place fails rather than passes.
+- The three §4.4 cases are each represented: unique, repeated-but-disambiguated-by-unit, and
+  repeated-inside-one-unit.
+- **A trap the pass never produced is reported as `notExercised`, never as a pass.** The authored stub
+  can only quote text it was given, so the fabrication trap is unexercisable there — it is covered by
+  unit test instead, and the report says so rather than counting an absence as evidence.
+- **The gold set caught a mistake in itself.** The first trap asserted that a clause repeated across
+  two *sections* must be rejected; the stub supplied a verified unit locator, so §4.4 case 2
+  legitimately accepted it. The trap was mis-specified, not the code — it was rewritten to repeat a
+  clause **inside one unit**, which is the case no locator can resolve.
+
+### 7.8 What V4b-core does NOT establish
+
+> **These numbers measure the pipeline, not a model.** The provider is the authored stub, the corpus
+> is synthetic, and the gold set is hand-written. Precision and recall here mean *the extraction
+> pipeline agreed with labelled expectations*; they do not mean a model reads real documents well.
+
+**Real model accuracy, precision and recall remain unmeasured**, and V4b-eval is where that changes.
+`usableForRoutingDecision` is false on every report, `TIER_WEIGHT` weights `synthetic` at 0.25, and
+ADR-0031 rule 4 refuses to accept a prompt change on synthetic evidence alone once a higher tier
+exists.
+
+### 7.9 Enforcement added
+
+- Migration **007**: confidence columns with four constraints, including **AI evidence must carry
+  computed confidence**.
+- `mayBecomeEvidence` as a **type guard**, so the ambiguous case cannot be dereferenced by accident.
+- **Caller-declared degradations** on the broker, so a caller-caused degradation cannot be omitted
+  from the record.
+- The gold-set **provenance check** — the harness refuses non-human ground truth.
+
+---
+
+## 8. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
 
@@ -792,7 +955,7 @@ behaviour as correct.
 
 ---
 
-## 8. Known limitations
+## 9. Known limitations
 
 | # | Limitation | Consequence |
 |---|---|---|
@@ -867,11 +1030,24 @@ behaviour as correct.
 | 49 | **No chunking algorithm.** An over-context source is refused by name (**E4**) | A large document cannot be profiled at all until V4b. Refusing is the honest failure: a profile of the first 120k characters would describe a fragment while reporting `contextMode: full` |
 | 50 | **Cost is recorded as the provider reports it, and the stub reports zero** | A cost dashboard built on this today would read zero. The column and the plumbing are real; the numbers arrive with a real provider |
 | 51 | **`AiInteraction.egressDecision` is always `permitted` in practice** | A refusal produces no interaction, because nothing was sent. The column exists so a disclosure report does not have to *infer* that egress was evaluated, and a future refusal-recording change has somewhere to write |
-| 52 | **The access log misreports domain errors as 500** — §6.7 | Pre-existing, raised rather than fixed because it is outside the V4a boundary. A 403 is logged at error level and a real fault is indistinguishable from an authorisation refusal |
+| 52 | **The access log misreports domain errors as 500** — §6.7. **Still unfixed, deliberately** | Pre-existing, raised rather than fixed because it is outside the V4a boundary. A 403 is logged at error level and a real fault is indistinguishable from an authorisation refusal |
+
+### V4b-core limitations
+
+| # | Limitation | Consequence |
+|---|---|---|
+| 53 | **Extraction quality is measured against a hand-authored synthetic gold set, using the authored stub.** Precision, recall and F1 are 100% — of the *pipeline against labelled expectations* | **No model has been measured.** These numbers say the gate accepts what it should and rejects what it must, reproducibly. They say nothing about how well a real model reads a real document, and `usableForRoutingDecision` is false on every report |
+| 54 | **The fabrication trap is not exercised by the corpus.** The authored stub can only quote text it was given | Covered by unit test instead, and the report says `notExercised` rather than counting an absence as a pass. A stub that fabricated would be rigged, which is worse |
+| 55 | **The gold set is two documents and seven expected items** | Enough to represent all three §4.4 cases and both trap classes. It is not a sample of anything, and ADR-0031 rule 4 blocks accepting a prompt change on it alone once a higher tier exists |
+| 56 | **`locateQuote` matching is whitespace-collapsed and match-folded** | A quote differing from the source only in diacritics, Alef form, digit form or line breaking still resolves, which is deliberate (providers reproduce text imperfectly). It also means a quote could in principle match a span that differs from it in exactly those ways — the anchor is over the *stored* text, so the stored span is what a reviewer sees |
+| 57 | **Only `unitId` and `heading` locators resolve.** `page` and `section` are recorded and resolve nothing | Correct for V4b-core: a text source has no pages, and `section` names a heading a model may spell differently. `page` becomes resolvable with V2-PDF |
+| 58 | **Sentence-level granularity comes from the provider, not the system** | The stub splits on sentence terminators; a real model may return clauses or paragraphs. The gate does not require a particular granularity, so extraction granularity is a *prompt* property and will need measuring against real output in V4b-eval |
+| 59 | **Per-pass deduplication is by quote checksum within one source** | Two identical sentences in different sources are two evidence items, correctly. But the same quote extracted twice in one pass collapses to one item, so a document that genuinely states the same obligation in two places yields one citation — the second is reachable only by a manual record |
+| 60 | **`crossSourceAgreement` is always `silent`** | Cross-source reconciliation is V6. Confidence therefore never reflects corroboration or contradiction, which is honest rather than neutral: nothing has been compared |
 
 ---
 
-## 9. Docker-deferred infrastructure
+## 10. Docker-deferred infrastructure
 
 Docker remains unavailable. Each item below is deferred **with a named trigger**, not dropped
 ([infra/README.md](../../infra/README.md)).
@@ -893,7 +1069,7 @@ is **untested** until Docker exists.
 
 ---
 
-## 10. Not started, by instruction
+## 11. Not started, by instruction
 
 BPMN generation, DMN generation, form generation, Process IR compilation, layout, the
 requirements-analysis passes, the Specification Studio, and any graphical process designer.
@@ -904,15 +1080,15 @@ excluded permanently, because it would reverse
 
 ---
 
-## 11. Next step
+## 12. Next step
 
-### V3 and V4a are ACCEPTED. V4b, V2-PDF and H1/H2 have not started.
+### V3 and V4a are ACCEPTED. V4b-core awaits review. V4b-eval, V2-PDF and H1/H2 have not started.
 
 | | |
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
-| **V4b-core — AI evidence extraction** | **Approved 2026-08-23**, not yet implemented — [v4b-proposal.md](v4b-proposal.md), decisions **F1–F5**. Needs no credential |
+| **V4b-core — AI evidence extraction** | **Complete, awaiting review** — §7. Discharges the approved V4b-core scope; needs no credential |
 | **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
@@ -921,4 +1097,4 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-**Do not begin V4b or V2-PDF without approval.**
+**Do not begin V4b-eval or V2-PDF without approval.**

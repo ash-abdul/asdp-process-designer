@@ -1,8 +1,11 @@
 # V4b — AI Evidence Extraction · APPROVED BOUNDARY (V4b-core) and DEFERRED SEQUEL (V4b-eval)
 
-> **Status:** **V4b-core APPROVED 2026-08-23** and cleared to begin. **V4b-eval DEFERRED** until an
-> approved credential and E1-permitted material exist — it is not blocked work, it is work whose
-> inputs do not yet exist.
+> **Status:** **V4b-core APPROVED 2026-08-23 and IMPLEMENTED** — delivered state in
+> [phase-2-status.md](phase-2-status.md) §7, awaiting review. **V4b-eval DEFERRED** until an approved
+> credential and E1-permitted material exist — it is not blocked work, it is work whose inputs do not
+> yet exist.
+>
+> **The V4b-core numbers measure the pipeline, not a model** — §7.8 of the status record.
 > **Version:** 1.0 · **Updated:** 2026-08-23
 > **Related:** [v4-proposal.md](v4-proposal.md), [phase-2-plan.md](phase-2-plan.md) §3.9,
 > [phase-2-status.md](phase-2-status.md) §0,
@@ -27,7 +30,7 @@ without one.
 
 | Slice | Character | State |
 |---|---|---|
-| **V4b-core** | Extraction, citation verification, §4.4 enforcement, persistence gate, confidence, chunking, and evaluation against a **human-labelled synthetic gold set**. Fully replay-capable | **APPROVED** |
+| **V4b-core** | Extraction, citation verification, §4.4 enforcement, persistence gate, confidence, chunking, and evaluation against a **human-labelled synthetic gold set**. Fully replay-capable | **IMPLEMENTED**, awaiting review — [phase-2-status.md](phase-2-status.md) §7 |
 | **V4b-eval** | First real provider capture, drift-checked recordings, evaluation against sanitised representative material, comparison against the core baseline | **DEFERRED** — needs a credential and an E1-permitted corpus |
 
 **V4b-core is explicitly not blocked** by live credentials or corpus availability (**F3**). It is

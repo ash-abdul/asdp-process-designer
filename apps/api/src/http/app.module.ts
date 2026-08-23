@@ -14,6 +14,7 @@ import type { Config } from '../config.ts';
 import type {
   Clock,
   DependencyProbe,
+  EvidenceExtractor,
   HealthReport,
   IdGenerator,
   Repositories,
@@ -39,6 +40,7 @@ import { SourceViewerController } from './source-viewer.controller.ts';
 import { EvidenceController } from './evidence.controller.ts';
 import { AnalysisController } from './analysis.controller.ts';
 import { unavailableSourceProfiler } from '../ai/broker-profiler.ts';
+import { unavailableEvidenceExtractor } from '../ai/broker-extractor.ts';
 import { ActorGuard } from './actor.guard.ts';
 import { CorrelationInterceptor } from './correlation.interceptor.ts';
 import {
@@ -52,6 +54,7 @@ import {
   PAGE_RASTERISER,
   VISION_EXTRACTOR,
   SOURCE_PROFILER,
+  EVIDENCE_EXTRACTOR,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
@@ -78,6 +81,13 @@ export interface AppDependencies {
    * wiring one is a deliberate configuration act rather than a fallback.
    */
   readonly sourceProfiler?: SourceProfiler;
+  /**
+   * Overrides the `EXTRACT_EVIDENCE` extractor (V4b-core).
+   *
+   * The default REFUSES, for the same reason every other AI port's does: the
+   * application ships unable to reach a provider.
+   */
+  readonly evidenceExtractor?: EvidenceExtractor;
 }
 
 /**
@@ -149,6 +159,10 @@ export class AppModule {
         { provide: PAGE_RASTERISER, useValue: deps.pageRasteriser ?? unavailableRasteriser() },
         { provide: VISION_EXTRACTOR, useValue: deps.visionExtractor ?? unavailableVisionExtractor() },
         { provide: SOURCE_PROFILER, useValue: deps.sourceProfiler ?? unavailableSourceProfiler() },
+        {
+          provide: EVIDENCE_EXTRACTOR,
+          useValue: deps.evidenceExtractor ?? unavailableEvidenceExtractor(),
+        },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },
         { provide: ID_GENERATOR, useValue: deps.ids },

@@ -19,6 +19,7 @@ import type {
   PageImage,
   Project,
   Source,
+  EvidenceExtraction,
   SourceProfile,
   SourceStatus,
   SourceUnit,
@@ -262,4 +263,59 @@ export type ProfileSourceOutcome =
 export interface SourceProfiler {
   readonly id: string;
   profile(request: ProfileSourceRequest): Promise<ProfileSourceOutcome>;
+}
+
+/**
+ * The `EvidenceExtractor` port — `EXTRACT_EVIDENCE` (V4b-core).
+ *
+ * One call per chunk, so the caller owns context assembly (**F4**) and the port
+ * stays a single request/response. The extractor returns **candidates**, never
+ * evidence: locating the quote, verifying the anchor and applying the persistence
+ * gate are the command's job, because they are the part that must not depend on a
+ * provider behaving well.
+ */
+export interface ExtractEvidenceRequest {
+  readonly projectId: string;
+  readonly sourceId: string;
+  /** The chunk's text, already assembled. */
+  readonly text: string;
+  /** Chunk identity and original source range, for the interaction record (E4). */
+  readonly chunk: {
+    readonly chunkId: string;
+    readonly charStart: number;
+    readonly charEnd: number;
+    readonly index: number;
+    readonly total: number;
+    readonly overlapChars: number;
+    readonly strategyVersion: string;
+  };
+  /**
+   * Unit ids present in this chunk, offered to the model as locators.
+   *
+   * A model may only cite a unit it was shown; anything else has no scope and is
+   * treated as an absent hint (provenance §4.4).
+   */
+  readonly unitIds: readonly string[];
+  readonly classification: Classification;
+  readonly languageHints: readonly string[];
+  readonly correlationId?: string;
+}
+
+export type ExtractEvidenceOutcome =
+  | {
+      readonly kind: 'extracted';
+      readonly extraction: EvidenceExtraction;
+      readonly interaction: AiInteraction;
+    }
+  | {
+      readonly kind: 'refused';
+      readonly reason: string;
+      readonly degradations: readonly string[];
+      readonly options: readonly string[];
+      readonly interaction?: AiInteraction;
+    };
+
+export interface EvidenceExtractor {
+  readonly id: string;
+  extract(request: ExtractEvidenceRequest): Promise<ExtractEvidenceOutcome>;
 }

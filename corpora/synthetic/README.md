@@ -13,6 +13,7 @@ once any higher-tier corpus is registered.
 | Directory | Contents |
 |---|---|
 | `v4a-profile/` | Three authored documents — English, Arabic, and mixed — with `sourceKind` as the label `PROFILE_SOURCE` agreement is scored against |
+| `v4b-extract/` | Two hand-authored documents with a **gold set** (`gold.json`): explicitly labelled expected `EvidenceItem`s, each naming its expected location, plus **traps** — a deliberately repeated clause and a sentence that appears nowhere. Ground truth is human-authored, never AI-generated (**F1**) |
 | `recordings/` | Replay fixtures. Provider id `synthetic-stub` means **authored**, not captured from a model |
 
 ## Why the recordings say `synthetic-stub`

@@ -44,6 +44,7 @@ import {
 } from '@asdp/provenance';
 import { codePointLength, sliceByCodePoints, baseDirection, normalise } from '@asdp/text';
 import { evaluateL0Ingestion, summariseFindings } from '@asdp/validation';
+import { computeConfidence, type ConfidenceResult } from '@asdp/domain';
 import { modelElementIds } from '@asdp/ingestion';
 import { classificationRank } from '@asdp/schemas';
 import type {
@@ -916,6 +917,31 @@ export async function recordEvidence(
       }
     : { extractedBy: 'parser' as const, citationMode: 'none' as const };
 
+  // --- computed confidence for AI-derived evidence ------------------------
+  //
+  // Added in V4b-core, and NOT optional: migration 007 requires every
+  // AI-extracted item to carry a computed value, because a model's reading
+  // entering the requirements path without one is indistinguishable from a
+  // parser's verbatim extraction at the point it matters most.
+  //
+  // Vision evidence is `interpreted`, not `extracted` — ADR-0038: for an image
+  // only the target is verifiable, and the content is a model's reading. With
+  // `page` precision that lands materially below a text extraction, which is the
+  // same conclusion the L2 ceiling reaches by a different route.
+  let confidence: ConfidenceResult | undefined;
+  if (visionRead) {
+    const interaction = await ctx.repos.aiInteractions.get(unitInteractionId as string);
+    confidence = computeConfidence({
+      extractionMode: 'interpreted',
+      evidenceCount: 1,
+      sourceAuthorityRank: source.authorityRank,
+      crossSourceAgreement: 'silent',
+      anchorPrecision: anchor.precision,
+      providerCapabilityTier: interaction?.capabilityTier ?? 'unknown',
+      degradations: [...(interaction?.routing.degradations ?? [])],
+    });
+  }
+
   const item: EvidenceItem = {
     id: ctx.ids.next('ev'),
     projectId: input.projectId,
@@ -926,6 +952,13 @@ export async function recordEvidence(
     language: anchor.language,
     ...(input.rafSlotHint === undefined ? {} : { rafSlotHint: input.rafSlotHint }),
     ...attribution,
+    ...(confidence === undefined
+      ? {}
+      : {
+          computedConfidence: confidence.score,
+          confidenceBand: confidence.band,
+          confidenceFunctionVersion: confidence.version,
+        }),
     anchorVerified: true,
     classification,
     createdBy: actor.subject,
@@ -954,6 +987,8 @@ export async function recordEvidence(
         extractedBy: item.extractedBy,
         citationMode: item.citationMode,
         aiInteractionId: item.aiInteractionId,
+        computedConfidence: item.computedConfidence,
+        confidenceBand: item.confidenceBand,
       },
     });
     return item;

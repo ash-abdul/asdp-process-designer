@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v4b-extract",
+    "taskType": "EXTRACT_EVIDENCE",
+    "promptVersion": "extract-evidence@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "16f8b7152dd844e2c0448a3b6a09ffc0d564803493d192149d0b1c0500f1d48e"
+  },
+  "keyHash": "c559b3cd8ca1a0d14425b2c7c3c55882cd74569908c84a42a7aa901d6cf8c864",
+  "response": {
+    "outputs": [
+      "{\"items\":[{\"quote\":\"The officer must verify the applicant's identity before proceeding.\",\"locator\":{\"unitId\":\"su-3\"},\"modelSelfRating\":0.5},{\"quote\":\"The officer must verify the applicant's identity before proceeding.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"An escalated request must be resolved within five working days.\",\"locator\":{\"unitId\":\"su-5\"},\"modelSelfRating\":0.5},{\"quote\":\"The reviewer must sign the file before closure.\",\"locator\":{\"unitId\":\"su-7\"},\"modelSelfRating\":0.5},{\"quote\":\"The reviewer must sign the file before closure.\",\"locator\":{\"unitId\":\"su-7\"},\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it selects sentences by marker word\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 354,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-23T16:03:18.174Z",
+  "classification": "PUBLIC"
+}

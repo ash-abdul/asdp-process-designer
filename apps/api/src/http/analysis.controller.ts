@@ -19,14 +19,31 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  extractEvidence,
   listAiInteractions,
   profileSource,
   type AnalysisContext,
 } from '../commands/analysis.ts';
 import type { Actor } from '../commands.ts';
 import { ActorGuard, CorrelationId, CurrentActor } from './actor.guard.ts';
-import { CLOCK, ID_GENERATOR, REPOSITORIES, SOURCE_PROFILER, UNIT_OF_WORK } from './tokens.ts';
-import type { Clock, IdGenerator, Repositories, SourceProfiler, UnitOfWork } from '../ports.ts';
+import {
+  CLOCK,
+  CONFIG,
+  EVIDENCE_EXTRACTOR,
+  ID_GENERATOR,
+  REPOSITORIES,
+  SOURCE_PROFILER,
+  UNIT_OF_WORK,
+} from './tokens.ts';
+import type {
+  Clock,
+  EvidenceExtractor,
+  IdGenerator,
+  Repositories,
+  SourceProfiler,
+  UnitOfWork,
+} from '../ports.ts';
+import type { Config } from '../config.ts';
 import { optionalString } from './request-parsing.ts';
 
 @Controller('projects/:projectId')
@@ -38,6 +55,8 @@ export class AnalysisController {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(SOURCE_PROFILER) private readonly profiler: SourceProfiler,
+    @Inject(EVIDENCE_EXTRACTOR) private readonly extractor: EvidenceExtractor,
+    @Inject(CONFIG) private readonly config: Config,
   ) {}
 
   private ctx(correlationId: string): AnalysisContext {
@@ -48,6 +67,9 @@ export class AnalysisController {
       correlationId,
       uow: this.uow,
       profiler: this.profiler,
+      extractor: this.extractor,
+      extractionChunkChars: this.config.extractionChunkChars,
+      extractionOverlapChars: this.config.extractionOverlapChars,
     };
   }
 
@@ -69,6 +91,25 @@ export class AnalysisController {
     @CorrelationId() correlationId: string,
   ): Promise<unknown> {
     return profileSource(this.ctx(correlationId), actor, { projectId, sourceId });
+  }
+
+  /**
+   * Extract evidence from a source.
+   *
+   * **201 with a report, not an error, when candidates are rejected.** A rejection
+   * is a normal outcome — an ambiguous citation, a quote that is not in the
+   * document — and the caller is told how many and why (**F2**). Returning 4xx
+   * would say the request was bad when it was not.
+   */
+  @Post('sources/:sourceId/extract-evidence')
+  @HttpCode(201)
+  async extract(
+    @Param('projectId') projectId: string,
+    @Param('sourceId') sourceId: string,
+    @CurrentActor() actor: Actor,
+    @CorrelationId() correlationId: string,
+  ): Promise<unknown> {
+    return extractEvidence(this.ctx(correlationId), actor, { projectId, sourceId });
   }
 
   /**

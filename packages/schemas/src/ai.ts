@@ -347,3 +347,58 @@ export const SourceProfile = z.object({
   limitations: z.array(z.string()).default([]),
 });
 export type SourceProfile = z.infer<typeof SourceProfile>;
+
+// ---------------------------------------------------------------------------
+// EXTRACT_EVIDENCE output contract (V4b-core)
+// ---------------------------------------------------------------------------
+
+/**
+ * One candidate evidence item, as a provider returns it.
+ *
+ * **A quote and a locating hint — never an offset.** The AI never computes an
+ * offset (provenance-and-anchoring.md §4): we locate the quote ourselves and mint
+ * the anchor, so a model that misremembers a position cannot produce a confident
+ * citation to the wrong place.
+ *
+ * The hint's job is to **disambiguate a repeated quote**, and only a hint that a
+ * parser can resolve against stored structure counts — §4.4. `unitId` is the
+ * strongest, because it names something the ingestion adapter created.
+ */
+export const EvidenceCandidate = z.object({
+  /** Verbatim, as it appears in the source. Located, then verified. */
+  quote: z.string().min(1),
+  /**
+   * Where the model says this came from. Presence licenses nothing (§4.4).
+   *
+   * `unitId` must be one of the unit ids supplied in the prompt; anything else is
+   * treated as absent rather than trusted.
+   */
+  locator: z
+    .object({
+      unitId: z.string().optional(),
+      section: z.string().optional(),
+      heading: z.string().optional(),
+      page: z.number().int().positive().optional(),
+    })
+    .optional(),
+  /** RAF slot this may be a candidate for. A hint, never a commitment. */
+  rafSlotHint: z.string().max(120).optional(),
+  /** Model self-rating. Weighted low and never the band by itself (ADR-0011). */
+  modelSelfRating: z.number().min(0).max(1).optional(),
+});
+export type EvidenceCandidate = z.infer<typeof EvidenceCandidate>;
+
+/**
+ * The `EXTRACT_EVIDENCE` result.
+ *
+ * Deliberately a flat list of quotes. There is no field for an obligation, a
+ * rule, a process step or a decision, because V4b extracts **evidence**, and
+ * turning evidence into a requirement is V5's work behind a human gate — a schema
+ * that offered those fields would be filled in, and the boundary would be gone.
+ */
+export const EvidenceExtraction = z.object({
+  items: z.array(EvidenceCandidate).default([]),
+  /** What the model could not read, or chose not to report. Never silent. */
+  limitations: z.array(z.string()).default([]),
+});
+export type EvidenceExtraction = z.infer<typeof EvidenceExtraction>;

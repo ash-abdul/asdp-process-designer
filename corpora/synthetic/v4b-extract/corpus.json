@@ -1,0 +1,26 @@
+{
+  "id": "v4b-extract",
+  "name": "V4b-core EXTRACT_EVIDENCE gold corpus",
+  "tier": "synthetic",
+  "classification": "PUBLIC",
+  "languages": [
+    "en"
+  ],
+  "heldOut": false,
+  "goldSetRef": "gold.json",
+  "documents": [
+    {
+      "documentId": "licence-renewal-en",
+      "sourceKind": "brd",
+      "language": "en",
+      "provenance": "AUTHORED BY HAND for this repository. Invented content; no real organisation or process. Expected items in gold.json were chosen and reviewed by a human, not generated."
+    },
+    {
+      "documentId": "repeated-clause-en",
+      "sourceKind": "sop",
+      "language": "en",
+      "provenance": "AUTHORED BY HAND. Contains a clause repeated across two SECTIONS (disambiguable by unit locator) and a clause repeated twice inside ONE paragraph (not disambiguable), so all three cases of provenance \u00a74.4 are measurable."
+    }
+  ],
+  "notes": "SYNTHETIC (F1). Expected EvidenceItems are explicitly labelled in gold.json, each with its expected source location. Ground truth is human-authored; no AI output was used as ground truth. Weighted 0.25 by TIER_WEIGHT and never usable for a routing decision (ADR-0031 rule 4). NO REAL-WORLD MODEL QUALITY CLAIM MAY BE MADE FROM THIS TIER."
+}

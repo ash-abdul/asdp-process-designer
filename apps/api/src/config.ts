@@ -35,6 +35,16 @@ export interface Config {
    * this is almost certainly the wrong file rather than a very long BRD.
    */
   readonly maxSourceBytes: number;
+  /**
+   * Character budget for one `EXTRACT_EVIDENCE` call (**F4**).
+   *
+   * A property of the wired model's context window, so it is configuration rather
+   * than a constant in the command. Structural chunking packs whole units up to
+   * this budget and splits a single over-budget unit by size.
+   */
+  readonly extractionChunkChars: number;
+  /** Overlap applied ONLY when splitting a single over-budget unit (**F4**). */
+  readonly extractionOverlapChars: number;
   readonly camundaTargetProfileId: string;
   readonly rulePackVersion: string;
   readonly rafVersion: string;
@@ -92,6 +102,12 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     replicaCount: num(env.ASDP_REPLICA_COUNT, 1, 'ASDP_REPLICA_COUNT'),
     objectStoreEndpoint: env.ASDP_OBJECT_STORE_ENDPOINT,
     maxSourceBytes: num(env.ASDP_MAX_SOURCE_BYTES, 10 * 1024 * 1024, 'ASDP_MAX_SOURCE_BYTES'),
+    extractionChunkChars: num(env.ASDP_EXTRACTION_CHUNK_CHARS, 24_000, 'ASDP_EXTRACTION_CHUNK_CHARS'),
+    extractionOverlapChars: num(
+      env.ASDP_EXTRACTION_OVERLAP_CHARS,
+      400,
+      'ASDP_EXTRACTION_OVERLAP_CHARS',
+    ),
     camundaTargetProfileId: env.ASDP_CAMUNDA_TARGET_PROFILE ?? 'camunda-8x-baseline',
     rulePackVersion: env.ASDP_RULE_PACK_VERSION ?? 'rp-1.2',
     rafVersion: env.ASDP_RAF_VERSION ?? 'raf-1.1',
@@ -103,6 +119,17 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     shutdownGraceMs: num(env.ASDP_SHUTDOWN_GRACE_MS, 10_000, 'ASDP_SHUTDOWN_GRACE_MS'),
   };
 
+  if (config.extractionChunkChars <= 0) {
+    throw new ConfigError(
+      `ASDP_EXTRACTION_CHUNK_CHARS must be positive, got ${config.extractionChunkChars}; a zero ` +
+        'budget would chunk every unit into nothing',
+    );
+  }
+  if (config.extractionOverlapChars < 0) {
+    throw new ConfigError(
+      `ASDP_EXTRACTION_OVERLAP_CHARS must not be negative, got ${config.extractionOverlapChars}`,
+    );
+  }
   if (config.maxSourceBytes <= 0) {
     throw new ConfigError(
       `ASDP_MAX_SOURCE_BYTES must be positive, got ${config.maxSourceBytes}; there is no ` +

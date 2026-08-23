@@ -2,10 +2,10 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0–V3 and V4a accepted** · V2-PDF blocked on spike S2
+> **Phase 2 V0–V3 and V4a accepted · V4b-core implemented** · V2-PDF blocked on spike S2
 > Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
 > composition layer, durable PGlite persistence, and text, Word-document, image and structural-model
-> intake with resolvable provenance. **596 tests pass, none skipped.**
+> intake with resolvable provenance. **620 tests pass, none skipped.**
 > No generation capability exists yet — no BPMN, DMN, forms, or Process IR compilation.
 > **Last updated:** 2026-08-23
 > **Read next:** [CLAUDE.md](CLAUDE.md) to work on this · [docs/START-HERE.md](docs/START-HERE.md)
@@ -112,7 +112,7 @@ files** as evidence: an image region carries a target-verified anchor marked
 **`content_unverified`** — target verified, interpreted content not — so a vision citation is never
 mistaken for a verified one, and evidence over it is attributed to the AI interaction that read it.
 **No live provider has ever been called:** the vision extractor refuses unless one is configured,
-and verification is entirely replay-based. **596 tests pass; none are skipped or suppressed.**
+and verification is entirely replay-based. **620 tests pass; none are skipped or suppressed.**
 
 **No generation capability exists.** BPMN, DMN and form generation, Process IR compilation, the
 Specification Studio, and any graphical designer are out of scope for Phase 2.

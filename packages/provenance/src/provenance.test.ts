@@ -280,24 +280,68 @@ describe('quote location — the post_hoc citation path (obligation 6)', () => {
     assert.equal(out.status, 'ambiguous');
     if (out.status !== 'ambiguous') return;
     assert.equal(out.matchCount, 2);
-    assert.equal(out.anchor, undefined);
-    assert.equal(mayBecomeEvidence(out), false, 'ambiguous without hint cannot be evidence');
+    assert.equal(out.citationOnlyAnchor, undefined, 'no scope, so nothing honest to point at');
+    assert.equal(out.hintApplied, false);
+    assert.equal(mayBecomeEvidence(out), false, 'ambiguous cannot be evidence');
   });
 
-  test('a repeated quote with a locating hint mints a page-precision anchor', () => {
+  // REPLACES a test that asserted a page hint's PRESENCE mints a page-precision
+  // anchor which `mayBecomeEvidence` accepts. That assertion was correct against
+  // provenance-and-anchoring.md v1.0 and is WRONG against revision 1.1 §4.4: it
+  // is the exact combination now forbidden — an arbitrarily chosen occurrence
+  // (the code took `matches[0]`) made eligible by demotion. Decision E2.
+  test('A HINT\'S PRESENCE LICENSES NOTHING — it must resolve to one occurrence', () => {
     const doc = normalise('التحقق من الهوية ثم التحقق من الهوية مرة أخرى').text;
     const out = locateQuote({
       sourceId: 'src-1',
       storedText: doc,
       quote: 'التحقق من الهوية',
       extractorVersion: EXTRACTOR,
+      // A page number the model asserted. Nothing checked it against structure.
       hint: { page: 7 },
     });
     assert.equal(out.status, 'ambiguous');
     if (out.status !== 'ambiguous') return;
-    assert.ok(out.anchor !== undefined);
-    assert.equal(out.anchor?.precision, 'page', 'precision demoted, not exact');
+    assert.equal(out.hintApplied, false, 'a page number is not an applied scope');
+    assert.equal(out.citationOnlyAnchor, undefined);
+    assert.equal(mayBecomeEvidence(out), false, 'no occurrence may be chosen arbitrarily');
+  });
+
+  test('an APPLIED hint scope that resolves to exactly one occurrence yields an EXACT anchor', () => {
+    const doc = normalise('التحقق من الهوية ثم التحقق من الهوية مرة أخرى').text;
+    const first = doc.indexOf('التحقق');
+    const second = doc.indexOf('التحقق', first + 1);
+    const out = locateQuote({
+      sourceId: 'src-1',
+      storedText: doc,
+      quote: 'التحقق من الهوية',
+      extractorVersion: EXTRACTOR,
+      // A range a parser resolved from stored structure — a unit, a section.
+      hint: { unitId: 'su-2', scope: { charStart: second, charEnd: doc.length } },
+    });
+    assert.equal(out.status, 'located');
+    if (out.status !== 'located') return;
+    assert.equal(out.disambiguatedByHint, true);
+    // Exact is honest: the hint selected among candidates that were each exact.
+    assert.equal(out.anchor.precision, 'exact');
     assert.equal(mayBecomeEvidence(out), true);
+  });
+
+  test('a scope containing SEVERAL occurrences stays ambiguous, with a citation-only anchor', () => {
+    const doc = normalise('التحقق من الهوية ثم التحقق من الهوية مرة أخرى').text;
+    const out = locateQuote({
+      sourceId: 'src-1',
+      storedText: doc,
+      quote: 'التحقق من الهوية',
+      extractorVersion: EXTRACTOR,
+      hint: { section: '1', scope: { charStart: 0, charEnd: doc.length } },
+    });
+    assert.equal(out.status, 'ambiguous');
+    if (out.status !== 'ambiguous') return;
+    assert.equal(out.hintApplied, true, 'the scope WAS applied — it just did not narrow to one');
+    // Offered for navigation, over the enclosing scope rather than a guess.
+    assert.equal(out.citationOnlyAnchor?.precision, 'page');
+    assert.equal(mayBecomeEvidence(out), false, 'a citation-only anchor is not evidence');
   });
 
   test('a precision ceiling caps the minted anchor (diagram images can never be exact)', () => {

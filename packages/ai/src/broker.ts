@@ -20,6 +20,7 @@ import type {
   AiTaskType,
   Capability,
   ContentPart,
+  Degradation,
   Proposal,
 } from '@asdp/schemas';
 import { classifyContent, type EgressPolicy, type ProjectEgressSettings } from './egress.ts';
@@ -76,6 +77,20 @@ export interface BrokerInvocation {
     readonly charEnd: number;
   }[];
   readonly chunkStrategyVersion?: string;
+  /**
+   * Degradations the CALLER caused, merged into the interaction record.
+   *
+   * The routing plan names degradations that follow from provider *capability* —
+   * no native citations, no large context. It cannot know about a degradation the
+   * caller introduced by its own choice, and chunking is exactly that: a caller
+   * that split a document because the document is large must say so even when the
+   * provider could have taken it whole.
+   *
+   * Without this, an interaction could record `contextMode: 'chunked'` and no
+   * `chunked_context` degradation — a record that contradicts itself, and a
+   * confidence value that ignores the split (**E4** rules 4 and 5).
+   */
+  readonly declaredDegradations?: readonly Degradation[];
 }
 
 export type BrokerOutcome =
@@ -197,7 +212,10 @@ export async function invoke(deps: BrokerDeps, call: BrokerInvocation): Promise<
         reason: r.reason,
       })),
       selectedProvider: provider.id,
-      degradations: [...(plan?.degradations ?? [])],
+      // Capability-driven degradations from the routing plan, plus any the caller
+      // declared. Deduplicated, because a degradation named twice is still one
+      // degradation and a reader should not have to notice.
+      degradations: [...new Set([...(plan?.degradations ?? []), ...(call.declaredDegradations ?? [])])],
     },
     usage: response.usage,
     humanVerdict: 'pending',

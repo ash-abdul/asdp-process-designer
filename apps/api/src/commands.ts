@@ -90,6 +90,9 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   // interaction log is wider: the AI-disclosure question — "what was sent
   // outside, and why?" — is exactly what a compliance reviewer is there to ask.
   { name: 'profileSource', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  // Extraction spends money, causes egress, AND writes evidence the requirements
+  // path will cite. It is an analyst act, not a contributor's.
+  { name: 'extractEvidence', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
   { name: 'listAiInteractions', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
 ];
 

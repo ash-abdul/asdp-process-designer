@@ -51,14 +51,22 @@ import {
   assertNotHeldOut,
   type ReplayMode,
 } from '@asdp/eval';
-import { SourceProfile, type Classification } from '@asdp/schemas';
+import { EvidenceExtraction, SourceProfile, type Classification } from '@asdp/schemas';
 import { profileInstruction, PROFILE_PROMPT_VERSION, PROFILE_TASK_VERSION } from './broker-profiler.ts';
+import {
+  extractInstruction,
+  EXTRACT_PROMPT_VERSION,
+  EXTRACT_TASK_VERSION,
+} from './broker-extractor.ts';
+import { planForUnits, unitsForDocument } from './extraction-plan.ts';
 import { counterIdGenerator, systemClock } from '../repo-memory.ts';
 import { CORPUS_ROOT, RECORDINGS_ROOT } from './corpus-paths.ts';
 import { createAuthoredStubProvider } from './stub-provider.ts';
 
 interface Args {
   readonly corpus: string;
+  /** Which pass to capture. Both use the same confined path and the same gates. */
+  readonly task: 'profile' | 'extract';
   readonly provider: 'stub' | 'claude';
   readonly model: string;
   readonly mode: ReplayMode;
@@ -71,6 +79,10 @@ function parseArgs(): Args {
     const match = /^--([a-zA-Z-]+)=(.*)$/.exec(arg);
     if (match !== null) flags.set(match[1] as string, match[2] as string);
   }
+  const task = flags.get('task') ?? 'profile';
+  if (task !== 'profile' && task !== 'extract') {
+    throw new Error(`unknown --task '${task}'; expected 'profile' or 'extract'`);
+  }
   const provider = flags.get('provider') ?? 'stub';
   if (provider !== 'stub' && provider !== 'claude') {
     throw new Error(`unknown --provider '${provider}'; expected 'stub' or 'claude'`);
@@ -81,6 +93,7 @@ function parseArgs(): Args {
   }
   return {
     corpus: flags.get('corpus') ?? 'v4a-profile',
+    task,
     provider,
     model: flags.get('model') ?? 'claude-sonnet-5',
     mode,
@@ -140,7 +153,12 @@ async function main(): Promise<void> {
     store,
     mode: args.mode,
     corpusId: corpus.id,
-    taskContext: { promptVersion: PROFILE_PROMPT_VERSION, classification: corpus.classification },
+    taskContext: {
+      // The prompt version is part of the recording key, so a prompt change misses
+      // rather than replaying an answer to a different question.
+      promptVersion: args.task === 'extract' ? EXTRACT_PROMPT_VERSION : PROFILE_PROMPT_VERSION,
+      classification: corpus.classification,
+    },
     clock: systemClock(),
     onDrift: (report) => {
       if (report.drifted) {
@@ -166,41 +184,66 @@ async function main(): Promise<void> {
 
   for (const document of corpus.documents) {
     const text = await corpora.readDocument(corpus.id, document.documentId);
-    const content = [
-      { kind: 'text' as const, text, classification: corpus.classification },
-    ];
 
-    // Both gates, in order: the permanent policy, then E1's development ceiling.
-    assertTransportPermitted(content, inner.descriptor());
-    assertDevelopmentCeiling(content, inner.descriptor(), args.ceiling);
+    // One request per chunk for extraction, one per document for profiling. The
+    // planner is SHARED with the evaluation harness, because a recording is keyed
+    // on the instruction and the content — if the two built requests differently,
+    // every replay would miss for a reason unrelated to extraction.
+    const requests =
+      args.task === 'extract'
+        ? planForUnits(unitsForDocument(document.documentId, text)).chunks.map((chunk, index, all) => ({
+            label: `${document.documentId} ${chunk.chunkId}`,
+            instruction: extractInstruction(chunk.unitIds),
+            text: chunk.text,
+            chunkCount: all.length,
+          }))
+        : [
+            {
+              label: document.documentId,
+              instruction: profileInstruction(),
+              text,
+              chunkCount: 1,
+            },
+          ];
 
-    const outcome = await invoke(deps, {
-      projectId: '',
-      taskType: 'PROFILE_SOURCE',
-      taskVersion: PROFILE_TASK_VERSION,
-      promptVersion: PROFILE_PROMPT_VERSION,
-      systemInstruction: profileInstruction(),
-      content,
-      project: { allowExternalProviders: true, classificationCeiling: args.ceiling },
-      languageHints: [document.language],
-      mode: args.provider === 'claude' ? 'live' : 'replay',
-      contextMode: 'full',
-      outputSchema: SourceProfile,
-    });
+    for (const request of requests) {
+      const content = [
+        { kind: 'text' as const, text: request.text, classification: corpus.classification },
+      ];
 
-    if (outcome.kind === 'refused') {
-      console.error(`REFUSED ${document.documentId}: ${outcome.detail}`);
-      continue;
+      // Both gates, in order: the permanent policy, then E1's development ceiling.
+      assertTransportPermitted(content, inner.descriptor());
+      assertDevelopmentCeiling(content, inner.descriptor(), args.ceiling);
+
+      const outcome = await invoke(deps, {
+        projectId: '',
+        taskType: args.task === 'extract' ? 'EXTRACT_EVIDENCE' : 'PROFILE_SOURCE',
+        taskVersion: args.task === 'extract' ? EXTRACT_TASK_VERSION : PROFILE_TASK_VERSION,
+        promptVersion: args.task === 'extract' ? EXTRACT_PROMPT_VERSION : PROFILE_PROMPT_VERSION,
+        systemInstruction: request.instruction,
+        content,
+        project: { allowExternalProviders: true, classificationCeiling: args.ceiling },
+        languageHints: [document.language],
+        mode: args.provider === 'claude' ? 'live' : 'replay',
+        contextMode: request.chunkCount > 1 ? 'chunked' : 'full',
+        ...(request.chunkCount > 1 ? { chunkCount: request.chunkCount } : {}),
+        outputSchema: args.task === 'extract' ? EvidenceExtraction : SourceProfile,
+      });
+
+      if (outcome.kind === 'refused') {
+        console.error(`REFUSED ${request.label}: ${outcome.detail}`);
+        continue;
+      }
+      captured++;
+      console.log(
+        `${args.mode === 'verify' ? 'verified' : 'recorded'} ${request.label} ` +
+          `(${inner.id}, ${corpus.tier} corpus)`,
+      );
     }
-    captured++;
-    console.log(
-      `${args.mode === 'verify' ? 'verified' : 'recorded'} ${document.documentId} ` +
-        `(${inner.id}, ${corpus.tier} corpus)`,
-    );
   }
 
   console.log(
-    `\n${args.mode} complete: ${captured}/${corpus.documents.length} document(s), ` +
+    `\n${args.mode} complete: ${captured} request(s) over ${corpus.documents.length} document(s), ` +
       `provider '${inner.id}'${args.provider === 'stub' ? ' — AUTHORED, not captured from a model' : ''}.`,
   );
   if (drifted > 0) exit(1);
