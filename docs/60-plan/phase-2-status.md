@@ -20,7 +20,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
 | **Working tree** | **Clean.** V5 is committed at `4b148b4` and **accepted** at `43ab748` |
 | **Work in progress** | **None.** V5 is complete and awaiting review. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None. Nothing is approved to begin.** **V6 has not started and its boundary is not approved.** Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
+| **Next approved action** | **None. Nothing is approved to begin.** A **V6 boundary proposal** — canonicalisation, conflict **candidates**, deterministic precedence, reconciliation — is recorded at [v6-proposal.md](v6-proposal.md) with decisions **Q1–Q9** and is **PROPOSED, NOT APPROVED**; V6 must not begin until it is approved. Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -127,7 +127,7 @@ Process IR, no Specification Studio, no graphical designer.
 | | |
 |---|---|
 | Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) — all accepted |
-| Next slice | **None approved.** **V6** — conflicts, precedence and coverage — remains provisional and needs its boundary approved before it begins. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Next slice | **None approved.** A **V6 boundary** is recorded at [v6-proposal.md](v6-proposal.md) — canonicalisation, conflict candidates, deterministic precedence — and awaits review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **664 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · **664 V5**) |
 | Verification | build · `check:arch` (135 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
@@ -1342,7 +1342,7 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-| **V6 — conflicts, precedence and coverage** | **Provisional, not approved.** Boundary must be approved before it begins |
+| **V6 — conflicts, precedence and reconciliation** | **PROPOSED, NOT APPROVED** — [v6-proposal.md](v6-proposal.md), decisions **Q1–Q9**. **Must not begin without approval** |
 
 **V4b-eval, V2-PDF and V6 are not approved. No live provider call is permitted while limitation 62 /
 H3 stands.**
