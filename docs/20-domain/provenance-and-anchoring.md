@@ -1,7 +1,11 @@
 # Provenance and Anchoring
 
-> **Status:** Approved (Phase 0) · **Version:** 1.0 · **Updated:** 2026-08-22
-> **Related:** [ADR-0008](../adr/ADR-0008-resolvable-anchors.md), [ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md), [multilingual-architecture.md](../10-architecture/multilingual-architecture.md)
+> **Status:** Approved (Phase 0) · **Version:** 1.1 · **Updated:** 2026-08-23
+> **Related:** [ADR-0008](../adr/ADR-0008-resolvable-anchors.md), [ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md), [multilingual-architecture.md](../10-architecture/multilingual-architecture.md), [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md)
+> **Revision 1.1 (2026-08-23) — §4.2 changed materially.** Ambiguous multi-match quote location no
+> longer makes an **AI-extracted** `EvidenceItem` eligible for downstream requirement analysis;
+> precision demotion survives for general source citation only. See §4.4 for exactly what changed
+> and why. Approved as decision **E2** — [phase-2-plan.md](../60-plan/phase-2-plan.md) §3.8.
 
 An anchor is a machine-resolvable pointer into a source. If anchors are unreliable, the
 product's central claim is false. Everything in this document exists to prevent that.
@@ -105,9 +109,15 @@ locateQuote(quote, source) :
   2. search the source's MATCH form
   3. map the match position back to STORED-form code-point offsets via the offset map
   4. if exactly one match      → mint an exact anchor
-     if several matches        → mint the anchor only if the model also supplied a
-                                 locating hint (section/page); else demote to page or
-                                 document precision
+     if several matches        → mint the anchor only if a DETERMINISTIC locating hint
+                                 supplied with the extraction (section, page, unit id,
+                                 enclosing heading) resolves to exactly ONE occurrence.
+                                 Otherwise the outcome depends on what the anchor is FOR:
+                                   · general source citation → demote to page or document
+                                     precision (§4.4)
+                                   · AI-extracted EvidenceItem intended for downstream
+                                     requirement analysis → REJECT (§4.4). Never select an
+                                     occurrence arbitrarily
      if no match               → REJECT the item. It does not become evidence.
                                  It may be retained as an L2 interpretation with no anchor,
                                  or dropped, per task policy.
@@ -116,6 +126,55 @@ locateQuote(quote, source) :
 **A rejected quote never becomes L1 evidence.** This is the mechanism that preserves the
 traceability guarantee across providers of differing capability: recall may drop, provenance
 integrity does not.
+
+### 4.4 Ambiguity, by what the anchor is for — **E2**
+
+> **This is a material change to the rule as approved in Phase 0**, made on 2026-08-23 by decision
+> **E2** and recorded rather than presented as though it had always been the rule. Version 1.0 of
+> this document allowed an ambiguous multi-match quote to be **demoted** to `page` or `document`
+> precision in every case. Demotion survives — but it no longer makes an **AI-extracted** item
+> eligible to support a requirement.
+
+**Two different questions were being answered by one rule.**
+
+| Purpose | Ambiguous multi-match outcome |
+|---|---|
+| **General source citation** — pointing a reader at roughly where something is, for navigation, display, or an explicitly lower-precision reference | **Demotion is permitted**, exactly as before. The result is a `page`- or `document`-precision anchor, which §5 already caps at L2/L3 content and never L1 evidence |
+| **An AI-extracted `EvidenceItem` intended to participate in downstream requirement analysis** | **REJECTED.** It does not become evidence for that purpose |
+
+The three-case rule, stated once:
+
+1. **Exactly one location** → accept the verified anchor.
+2. **Several locations, but deterministic locating information supplied with the extraction
+   uniquely identifies one occurrence** → accept the uniquely resolved anchor. "Deterministic" is
+   the operative word: a section number, page, unit id or enclosing heading that a *parser* can
+   check, not a model's assertion that it meant the third one.
+3. **Several locations still possible** → **reject the AI-extracted `EvidenceItem` for downstream
+   use.**
+
+**Two things are forbidden outright:**
+
+- **Never select an occurrence arbitrarily** — not the first, not the longest, not the nearest to a
+  guess. An arbitrary pick produces a *confident* citation to a location nobody verified, which is
+  worse than no citation because it survives review.
+- **Never let document-level demotion make an ambiguous AI claim eligible for later requirement
+  generation.** Demoting precision changes how strongly the anchor is *described*; it does not make
+  the underlying location known. Using demotion as a route to keep an ambiguous claim alive would
+  turn a precision label into a laundering step.
+
+**Why the asymmetry is principled rather than convenient.** An anchor's job differs by consumer. A
+reader following a `document`-precision citation knows they are being pointed at a document and will
+look. A requirement generated from an ambiguous anchor inherits a false premise silently, and by
+then the ambiguity is invisible: the requirement cites *an* anchor, and the anchor resolves. The
+place to refuse is where the ambiguity is still visible.
+
+**The cost is recall, and it is accepted.** Some true statements will not become evidence because
+the system cannot say *where* they came from. That is the same trade the "no match → reject" rule
+already makes, applied to a case Phase 0 treated more leniently.
+
+**Not yet implemented.** V4a performs no quote location, so nothing in the code implements this rule
+today. It governs **V4b**, where `EXTRACT_EVIDENCE` and post-hoc citation verification arrive —
+[v4-proposal.md](../60-plan/v4-proposal.md) §6.
 
 ### 4.3 Native citations
 
@@ -131,6 +190,11 @@ more than a located quote; it is simply cheaper to obtain.
 | `cell` | Spreadsheet range | High |
 | `page` | Scanned page via vision; ambiguous quote with a page hint | Medium |
 | `document` | Provider gave only document-level attribution | Low — permitted only for L2/L3 content, never for L1 evidence |
+
+**Precision is a description, not a permission (§4.4).** A `page`- or `document`-precision anchor
+records that the location is imprecise; it does not license an AI-extracted item whose location is
+*ambiguous* to support a requirement. Those are different defects: imprecise means "we know roughly
+where"; ambiguous means "we do not know which".
 
 ## 6. Highlighting
 

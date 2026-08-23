@@ -2,7 +2,7 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0–V3 accepted · V4a implemented** · V2-PDF blocked on spike S2
+> **Phase 2 V0–V3 and V4a accepted** · V2-PDF blocked on spike S2
 > Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
 > composition layer, durable PGlite persistence, and text, Word-document, image and structural-model
 > intake with resolvable provenance. **596 tests pass, none skipped.**
@@ -95,6 +95,11 @@ development BlobStore — is complete at commit `8f2a665`.
 **Phase 2 V3** — image intake, vision evidence and structural BPMN/DMN/Form import — is complete and
 **accepted**; three in-scope items are deliberately deferred to V4
 ([`phase-2-status.md`](docs/60-plan/phase-2-status.md) §5.10). Neither added a new dependency.
+**Phase 2 V4a** — the AI broker and live-path foundation: `PROFILE_SOURCE` through the provider
+abstraction, `ai_interaction` persistence, an explicitly invoked live path and deterministic replay
+fixtures — is complete and **accepted**. **Its acceptance covers the foundation, not extraction
+quality:** every recording is stub-produced, and no live external model has been evaluated
+([`phase-2-status.md`](docs/60-plan/phase-2-status.md) §6.0).
 **V2-PDF** is blocked on a representative Arabic PDF corpus, on spike S2, and on
 [`ADR-0037`](docs/adr/ADR-0037-binary-document-extraction.md) being approved.
 

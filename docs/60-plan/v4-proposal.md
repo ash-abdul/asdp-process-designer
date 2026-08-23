@@ -1,9 +1,11 @@
 # V4 — AI Analysis Passes · APPROVED BOUNDARY (V4a) and PROPOSED SEQUEL (V4b)
 
-> **Status:** **V4a APPROVED 2026-08-23 and IMPLEMENTED** — delivered state in
-> [phase-2-status.md](phase-2-status.md) §6, awaiting review. **V4b approved in shape, not in
-> detail** — it does not begin until V4a is reviewed and accepted, and one recorded conflict (§6)
-> must be resolved first.
+> **Status:** **V4a APPROVED, IMPLEMENTED and ACCEPTED 2026-08-23** — delivered state in
+> [phase-2-status.md](phase-2-status.md) §6. **The E2 conflict is RESOLVED** (§6). **V4b approved in
+> shape, not in detail** — it does not begin until its boundary is approved.
+>
+> **V4a acceptance is for the broker and live-path FOUNDATION. It is not evidence of AI extraction
+> quality** — §6.5 of the status record, and §4 below.
 > **Version:** 1.0 · **Updated:** 2026-08-23
 > **Related:** [phase-2-plan.md](phase-2-plan.md) §3.8, [phase-2-status.md](phase-2-status.md) §0,
 > [roadmap.md](roadmap.md) P2, [ai-provider-abstraction.md](../10-architecture/ai-provider-abstraction.md),
@@ -28,7 +30,7 @@ The split separates the part that is mostly plumbing from the part where epistem
 
 | Slice | Character | State |
 |---|---|---|
-| **V4a — AI Broker and Live-Path Foundation** | Wiring, persistence, one low-stakes pass, the governed live path, the first fixtures, the evaluation baseline | **APPROVED and IMPLEMENTED** — [phase-2-status.md](phase-2-status.md) §6 |
+| **V4a — AI Broker and Live-Path Foundation** | Wiring, persistence, one low-stakes pass, the governed live path, the first fixtures, the evaluation baseline | **ACCEPTED / COMPLETE** 2026-08-23 — [phase-2-status.md](phase-2-status.md) §6 |
 | **V4b — AI Evidence Extraction** | `EXTRACT_EVIDENCE`, post-hoc citation verification, provenance enforcement, confidence propagation | **Approved in shape only.** Needs V4a accepted, and §6 resolved |
 
 V4a deliberately **makes no substantive requirements claim**. Its acceptance proves the *chain*, not
@@ -87,7 +89,7 @@ variation of it: the production policy already refuses `RESTRICTED` and above at
 boundary, and E1 lowers the development ceiling further, to `INTERNAL`. Enforced at the same
 boundary, as a configured ceiling rather than a reviewer's discretion.
 
-### E2 — Multi-match quotes
+### E2 — Multi-match quotes · **RESOLVED 2026-08-23**
 
 **Reject** an ambiguous multi-match citation unless a deterministic locating hint, or equivalent
 source information, uniquely identifies the intended occurrence.
@@ -95,9 +97,29 @@ source information, uniquely identifies the intended occurrence.
 - **Never silently select one occurrence.**
 - **Never weaken provenance integrity to raise extraction recall.**
 
-**This applies from V4b.** V4a locates no quotes. See §6 — E2 as approved is *stricter* than
-provenance-and-anchoring.md §4.2, which currently specifies precision demotion for this case, and the
-two must be reconciled before V4b begins.
+**The conflict with the approved specification is resolved by distinguishing what the anchor is
+for**, and the specification has been changed accordingly —
+[provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) **§4.4**, revision 1.1:
+
+| Purpose | Ambiguous multi-match outcome |
+|---|---|
+| **General source citation** | **Demotion permitted**, unchanged from version 1.0 — a `page`- or `document`-precision anchor, already capped at L2/L3 by §5 |
+| **AI-extracted `EvidenceItem` intended for downstream requirement analysis** | **REJECTED for downstream use** |
+
+1. Exactly one location → accept the verified anchor.
+2. Several locations, but **deterministic** locating information supplied with the extraction
+   uniquely identifies one → accept the uniquely resolved anchor.
+3. Several locations still possible → **reject** the AI-extracted item for downstream use.
+
+Forbidden outright: selecting an occurrence arbitrarily, and using document-level demotion to make an
+ambiguous AI claim eligible for later requirement generation. **Precision is a description, not a
+permission** — imprecise means "we know roughly where"; ambiguous means "we do not know which".
+
+**The specification change is recorded as a change**, not retrofitted: §4.4 states what version 1.0
+allowed, what changed, on whose decision, and that the cost is recall. No ADR is required — no ADR is
+contradicted, [ADR-0008](../adr/ADR-0008-resolvable-anchors.md) is tightened rather than weakened, and
+the change is traceable to approved decision **E2**. Nothing implements it yet: **V4a locates no
+quotes**, so §4.4 governs **V4b**.
 
 ### E3 — AI-extracted evidence
 
@@ -206,7 +228,7 @@ Acceptance proves the chain, and each criterion is exercisable rather than asser
 | 8 | **`PROFILE_SOURCE` output is propositional.** It is stored as a proposal against an interaction, never as domain state, and no requirement, RAF item or BPS element is created | Asserted structurally: no such write path exists |
 | 9 | **Verification stays complete and deterministic** — build, `check:arch`, self-test, `check:docs`, tests, nothing skipped or suppressed | `npm run verify` |
 
-### What V4a acceptance will *not* prove
+### What V4a acceptance does NOT prove — recorded at acceptance
 
 - **Real vision or profiling quality.** No live provider has been called in this environment, and no
   credentials exist here. The first recordings are **authored synthetic fixtures**, not captured
@@ -231,32 +253,33 @@ Acceptance proves the chain, and each criterion is exercisable rather than asser
 
 ---
 
-## 6. RECORDED CONFLICT — E2 versus provenance-and-anchoring.md §4.2
+## 6. RESOLVED — E2 versus provenance-and-anchoring.md §4.2
 
-**This must be resolved before V4b begins. It does not block V4a**, which locates no quotes.
+**Resolved 2026-08-23. V4b is no longer blocked on it.**
 
-| Source | Says |
+| Source | Said |
 |---|---|
-| **E2** (approved 2026-08-23) | **Reject** an ambiguous multi-match citation unless a hint uniquely identifies the occurrence |
-| [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) §4.2 (Phase 0 specification) | *"if several matches → mint the anchor only if the model also supplied a locating hint (section/page); else **demote to page or document precision**"* |
+| **E2** (approved) | **Reject** an ambiguous multi-match citation unless a hint uniquely identifies the occurrence |
+| provenance-and-anchoring.md §4.2 **v1.0** | *"if several matches → mint the anchor only if the model also supplied a locating hint (section/page); else **demote to page or document precision**"* |
 
-Both refuse to guess an occurrence, so neither is unsafe. They differ in what happens to the item:
-E2 **drops** it; §4.2 **retains it at lower precision**, which by §5 caps it at L2/L3 and so cannot
-become L1 evidence.
+**Resolution — the second of the two recorded options, refined.** One rule had been answering two
+different questions, so it is now two rules:
 
-Per [CLAUDE.md](../../CLAUDE.md) §7 this is raised rather than silently resolved, and it is a
-*specification* conflict rather than an ADR conflict — E2 is stricter, so nothing approved is being
-weakened. Two admissible resolutions:
+- **General source citation keeps demotion.** Nothing is taken away from navigation, display, or an
+  explicitly lower-precision reference.
+- **An AI-extracted `EvidenceItem` intended for downstream requirement analysis must have a uniquely
+  identifiable supporting location**, or it is rejected for that use.
 
-1. **E2 supersedes §4.2 for this case** → update provenance-and-anchoring.md in the V4b change, with
-   the reason recorded. Recall drops; provenance integrity is unchanged.
-2. **E2 governs claims of exact-precision extraction; §4.2's demotion path stays available for
-   explicitly lower-precision retention** → no specification change, and the item survives as an L2
-   interpretation that can never be mistaken for verbatim evidence.
+Recorded in [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) **§4.4** as
+**revision 1.1**, with what changed, what version 1.0 allowed, the deciding decision, and the
+accepted cost (recall). §5 gains one clarification: **precision is a description, not a permission.**
 
-**Resolution 2 appears to be closer to both intents** — it satisfies "never silently select one
-occurrence" and "never weaken provenance integrity for recall" while keeping the L2 retention the
-epistemic model already provides. It is **not** decided here.
+**Why not simply keep demotion for everything.** A reader following a `document`-precision citation
+knows they are being pointed at a document and will look. A requirement generated from an ambiguous
+anchor inherits a false premise *silently* — it cites an anchor, and the anchor resolves. The place
+to refuse is where the ambiguity is still visible.
+
+**Implementation is V4b.** V4a performs no quote location, so no code changed for this.
 
 ---
 

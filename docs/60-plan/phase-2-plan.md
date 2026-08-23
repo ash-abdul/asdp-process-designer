@@ -286,10 +286,11 @@ already exist and should be read from their own documents rather than paraphrase
 | V6 | [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md); [traceability-model.md](../20-domain/traceability-model.md) |
 | V7 | [governance-and-gates.md](../50-governance/governance-and-gates.md); [ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) |
 
-### 3.8 V4 — approved boundary (V4a, **implemented**) and approved shape (V4b)
+### 3.8 V4 — approved boundary (V4a, ✅ **ACCEPTED 2026-08-23**) and approved shape (V4b)
 
-**Approved 2026-08-23.** V4 is **split**: **V4a — AI Broker and Live-Path Foundation** is approved
-and **implemented** — delivered state in [phase-2-status.md](phase-2-status.md) §6, awaiting review; **V4b — AI Evidence Extraction** is approved in shape only and does not begin
+**Approved 2026-08-23.** V4 is **split**: **V4a — AI Broker and Live-Path Foundation** is approved,
+implemented and **ACCEPTED** — delivered state in [phase-2-status.md](phase-2-status.md) §6, and the
+scope of that acceptance in §6.0: **the foundation, explicitly not extraction quality**; **V4b — AI Evidence Extraction** is approved in shape only and does not begin
 until V4a is reviewed and accepted. Full boundary, acceptance criteria and the recorded E2 conflict
 are in [v4-proposal.md](v4-proposal.md).
 
@@ -317,7 +318,7 @@ Process IR, generation, PDF, spreadsheets, and the **H1/H2** hardening candidate
 | # | Decision | Outcome |
 |---|---|---|
 | **E1** | Live AI data | **Approved.** Live external calls in development may use **only** synthetic, sanitised, or `PUBLIC`/`INTERNAL` evidence where policy permits. `CONFIDENTIAL`, `RESTRICTED` and `PROHIBITED` material must **not** go to an external provider merely for development. **Stricter than** [ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md), enforced at the same transport boundary. A private-endpoint decision stays a deployment matter (**OD-1**) |
-| **E2** | Multi-match quotes | **Approved: reject**, unless a deterministic locating hint uniquely identifies the occurrence. Never silently select one; never weaken provenance integrity for recall. **Applies from V4b**, and is *stricter* than provenance-and-anchoring.md §4.2 — the conflict is recorded in [v4-proposal.md](v4-proposal.md) §6 and must be resolved before V4b |
+| **E2** | Multi-match quotes | **Approved, and RESOLVED 2026-08-23.** Reject unless deterministic locating information uniquely identifies the occurrence; never select one arbitrarily; never let document-level demotion make an ambiguous AI claim eligible for requirement generation. Resolved by distinguishing **general source citation** (demotion survives) from an **AI-extracted `EvidenceItem` intended for downstream requirement analysis** (rejected). [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) **§4.4, revision 1.1** records the specification change as a change. **Applies from V4b** — V4a locates no quotes |
 | **E3** | AI-extracted evidence | **Approved.** Automatic persistence only when the output validates, the anchor is **independently verified**, and provenance rules pass. Persisted AI evidence stays **explicitly AI-derived** and never automatically becomes an approved requirement, RAF item or BPS element — human approval remains a later gate ([ADR-0004](../adr/ADR-0004-ai-proposes-code-commits.md), [ADR-0007](../adr/ADR-0007-epistemic-ladder.md)) |
 | **E4** | Chunking | **Approved** for over-context sources, under six requirements: deterministic and versioned strategy · `ai_interaction` records full-versus-chunked · chunk ids and source ranges retained · degradation explicitly recorded · confidence accounts for it · **never silent**. `chunked_context` already carries a declared **0.15** confidence penalty. **V4a implements the record; the algorithm is V4b, and an over-context source is refused by name until then** |
 | **E5** | Evaluation baseline | **Approved.** V4 is **not** successful merely because the call and the schema work. Measured where ground truth permits: extraction precision and recall, citation/provenance validity, schema validity, hallucinated-evidence rate, degradation behaviour, reproducibility from fixtures. Initial corpus is synthetic or sanitised with its limitations stated — already mechanical via `CorpusTier` weighting, `buildReport`'s tier requirement and ADR-0031 rule 4. For V4a's single pass the extraction metrics are reported **not-applicable**, not omitted |

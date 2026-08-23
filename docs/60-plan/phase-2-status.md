@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V3 ACCEPTED. V4a implemented, awaiting review. V2-PDF blocked on spike S2.** · **Version:** 4.4 · **Updated:** 2026-08-23
-> **Checkpoint:** §0 · **Commit:** `09dfc9b` — V4a implemented (V3 accepted at `bea4041`)
+> **Status:** **V0–V3 and V4a ACCEPTED. V2-PDF blocked on spike S2.** · **Version:** 4.5 · **Updated:** 2026-08-23
+> **Checkpoint:** §0 · **Commit:** `09dfc9b` — V4a **accepted** (V3 accepted at `bea4041`)
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -15,11 +15,11 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V4a — AI Broker and Live-Path Foundation.** Boundary approved 2026-08-23; implementation **complete, awaiting review** — §6. **V3 is ACCEPTED / COMPLETE** |
+| **Current slice** | **None in progress.** **V4a — AI Broker and Live-Path Foundation — is ACCEPTED / COMPLETE** (accepted 2026-08-23, §6). V0–V3 accepted |
 | **Commit** | **`09dfc9b`** — *Phase 2 V4a: AI broker wiring, PROFILE_SOURCE, ai_interaction, live path*. V3 accepted at **`bea4041`** |
-| **Working tree** | **Clean.** V4a is committed at `09dfc9b` and awaits review |
-| **Work in progress** | **V4a only**, and it is complete rather than partial — see §6. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Review V4a** (§6). **V4b must not begin** until V4a is accepted and the recorded E2 conflict ([v4-proposal.md](v4-proposal.md) §6) is resolved. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
+| **Working tree** | **Clean.** V4a is committed and accepted |
+| **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **None — awaiting a decision.** V4b's boundary needs approval before any work begins; **E2 is resolved** ([v4-proposal.md](v4-proposal.md) §6, [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) §4.4). V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -29,18 +29,18 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V1** — Text intake, resolvable provenance, source viewer, `L0-ING` rules | `922761a` | **Accepted** |
 | **V2** — DOCX intake, A3 ports, ZIP/XML readers, `docx_block` anchors | `1bd8d8d` | **Accepted** |
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
-| **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` | **Complete, awaiting review** — §6 |
+| **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` | **Accepted** — 2026-08-23, §6 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
-### Verification of the current working tree
+### Verification at V4a acceptance
 
 | | |
 |---|---|
 | Tests | **596 pass · 0 fail · 0 skipped · 0 todo** · 119 suites |
 | `check:arch` | passed — 118 source files |
 | `check:arch:selftest` | passed — **36 cases** |
-| `check:docs` | passed — 87 files, 699 links |
+| `check:docs` | passed — 87 files, 704 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
 | Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` |
@@ -68,8 +68,10 @@ tokeniser; D4 ceilings as functions; D5 a checker rule barring real provider cal
 
 **V4 decisions E1–E5**, all approved 2026-08-23 and implemented in V4a where they apply — [phase-2-plan.md](phase-2-plan.md) §3.8 and
 [v4-proposal.md](v4-proposal.md) §2. E1 development egress ceiling (`INTERNAL` and below only, and
-never `CONFIDENTIAL`+ to an external provider for development); E2 reject ambiguous multi-match
-citations; E3 AI evidence stays AI-derived and never auto-approves; E4 chunking explicit, versioned
+never `CONFIDENTIAL`+ to an external provider for development); **E2 resolved** — ambiguous
+multi-match citations are rejected for AI-extracted evidence while demotion survives for general
+source citation ([provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) §4.4,
+revision 1.1); E3 AI evidence stays AI-derived and never auto-approves; E4 chunking explicit, versioned
 and never silent; E5 an evaluation baseline is part of success. **No ADR is required for V4a** —
 v4-proposal.md §3 checks it item by item and names the four changes that would need one.
 
@@ -108,8 +110,8 @@ BPMN, DMN or form generation, no Process IR, no Specification Studio, no graphic
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** — all accepted (§5). **V4a** implemented, awaiting review (§6) |
-| Next slice | **V4b — AI evidence extraction.** Approved in shape only; blocked on V4a acceptance and the E2 conflict ([v4-proposal.md](v4-proposal.md) §6). **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) — **all accepted** |
+| Next slice | **V4b — AI evidence extraction.** Approved in shape only; **its boundary needs approval before work begins**. E2 is resolved. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **596 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 accepted) |
 | Verification | build · `check:arch` (118 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
@@ -612,6 +614,24 @@ response → `ai_interaction` audit → deterministic replay. It makes **no subs
 claim**, and `PROFILE_SOURCE` structurally cannot: the schema has no field for an obligation, a rule
 or a process step, and the prompt forbids reporting one.
 
+### 6.0 THE SCOPE OF THIS ACCEPTANCE — recorded at acceptance
+
+> **V4a is accepted specifically for the AI broker and live-path foundation. The acceptance is NOT
+> evidence of AI extraction quality.** Stated here, in the record a fresh session reads, because a
+> green suite and a 100% baseline are exactly the kind of numbers that get quoted later as though
+> they measured something they did not.
+
+| | |
+|---|---|
+| **The current recordings use the synthetic stub** | Every fixture in `corpora/synthetic/recordings/` was produced by the **authored stub provider**, `synthetic-stub`. None was captured from a model |
+| **No live external model has yet been evaluated** | No credential exists in this environment and no live provider has ever been called, in this slice or any earlier one |
+| **What the current baseline proves** | **Schema** conformance · **governance** — the egress gate, the development ceiling, capability negotiation, degradation naming · **replay** determinism · **integration** — the chain from source through the broker to a persisted, auditable interaction |
+| **What it does NOT establish** | **Model accuracy. Precision. Recall.** No number in the baseline is a measurement of a model, and `usableForRoutingDecision` is **false** by construction on a `synthetic` tier |
+
+Every artefact carries this rather than relying on the reader remembering it: the provider id in each
+recording and key hash, the corpus tier on every report, the four extraction metrics listed as
+not-applicable with reasons, and limitation **46**.
+
 ### 6.1 The broker has a real consumer — **D6** item 4 discharged
 
 - `PROFILE_SOURCE` runs through the **real** broker: classification, egress gate, capability
@@ -835,7 +855,7 @@ behaviour as correct.
 
 | # | Limitation | Consequence |
 |---|---|---|
-| 46 | **No live provider has ever been called, and no credential exists in this environment.** The capture path is built, confined and exercised against an **authored stub** | The chain is proven; **model quality is not measured at all**. Every fixture and every baseline number carries provider id `synthetic-stub` and corpus tier `synthetic`, so the limitation travels with the numbers rather than being a footnote |
+| 46 | **No live external model has ever been evaluated, and no credential exists in this environment.** The capture path is built, confined and exercised against the **authored stub**; every recording in the repository is stub-produced | The chain is proven — schema, governance, replay, integration. **Model accuracy, precision and recall are NOT established**, and V4a's acceptance explicitly does not assert them (§6.0). Every fixture and baseline number carries provider id `synthetic-stub` and corpus tier `synthetic`, so the limitation travels with the numbers rather than being a footnote |
 | 47 | **The baseline corpus is three authored documents** | Enough to exercise English, Arabic and mixed text through the chain. It is not a sample of anything: `usableForRoutingDecision` is **false** and ADR-0031 rule 4 refuses to accept a prompt change on synthetic evidence once any higher-tier corpus exists |
 | 48 | **`PROFILE_SOURCE` output is never used by anything** | Deliberate. It is a proposal, and V4a builds no consumer for it — the pass exists to prove the chain at the lowest possible stakes. A profile that fed a decision would be a substantive claim |
 | 49 | **No chunking algorithm.** An over-context source is refused by name (**E4**) | A large document cannot be profiled at all until V4b. Refusing is the honest failure: a profile of the first 120k characters would describe a fragment while reporting `contextMode: full` |
@@ -880,13 +900,13 @@ excluded permanently, because it would reverse
 
 ## 11. Next step
 
-### V3 is ACCEPTED. V4a awaits review. V4b, V2-PDF and H1/H2 have not started.
+### V3 and V4a are ACCEPTED. V4b, V2-PDF and H1/H2 have not started.
 
 | | |
 |---|---|
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
-| **V4a — AI broker and live-path foundation** | **Complete, awaiting review** — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies |
-| **V4b — AI evidence extraction** | **Not started.** Requires V4a accepted **and** the E2 conflict resolved ([v4-proposal.md](v4-proposal.md) §6) |
+| **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
+| **V4b — AI evidence extraction** | **Not started.** V4a is accepted and **E2 is resolved**; what remains is approval of V4b's own boundary |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
 | **V4 — AI analysis passes** | **Provisional**, not approved. It now also carries the **D6** deferrals: broker-consumer wiring, recorded fixtures, interaction persistence |
