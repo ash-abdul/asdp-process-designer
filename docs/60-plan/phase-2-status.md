@@ -18,7 +18,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Current slice** | **None in progress.** **V5 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary and decisions **J1–J9**, §8.11. V0–V3, V4a, V4b-core and V5 accepted |
 | **Previously** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
 | **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean.** V5 is committed at `4b148b4` and **accepted** at the acceptance commit recorded here |
+| **Working tree** | **Clean.** V5 is committed at `4b148b4` and **accepted** at `43ab748` |
 | **Work in progress** | **None.** V5 is complete and awaiting review. Spike S2's probe scripts lived outside the repo and were never committed |
 | **Next approved action** | **None. Nothing is approved to begin.** **V6 has not started and its boundary is not approved.** Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
 
@@ -32,7 +32,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
-| **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + the acceptance commit | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
+| **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -147,7 +147,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V3 | `dc2e683` — *image intake, vision, ADR-0038 verification, structural import* · **accepted** at `bea4041` |
 | V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
 | V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
-| V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at the acceptance commit |
+| V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at `43ab748` |
 
 ---
 
