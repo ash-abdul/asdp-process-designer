@@ -107,10 +107,11 @@ V1 required **no new decisions and no new dependencies**. Delivered as specified
 
 ---
 
-## 3. V2 and V3 — approved boundaries
+## 3. V2, V3 and V4 — approved boundaries
 
 The V2 boundary was **approved on 2026-08-23** and is recorded verbatim in §3.1. The **V3** boundary
-was approved the same day and is in §3.6.
+was approved the same day and is in §3.6; the **V4** boundary — split into **V4a** and **V4b** — was
+approved on the same day and is in §3.8.
 
 **§3.4 splits it** into **V2 (DOCX)** and **V2-PDF** — approved on 2026-08-23 as a sequencing
 decision only. Nothing was removed from the approved capability: every item in §3.1 is still to be
@@ -261,13 +262,15 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 
 
-> **PROVISIONAL.** The current *planned* capability sequence, not a record of approved slice
-> boundaries. Each requires **refinement and explicit approval before it begins**, and the
+> **PROVISIONAL for V5–V7.** The current *planned* capability sequence, not a record of approved
+> slice boundaries. Each requires **refinement and explicit approval before it begins**, and the
 > boundaries may be re-cut. No implementation commitment is made here.
+>
+> **V4 is no longer provisional:** its boundary was approved on 2026-08-23 and is recorded in §3.8.
 
 | Slice | Capability |
 |---|---|
-| **V4** | AI analysis passes — **plus the three items deferred from V3 by D6**: broker-consumer wiring for the vision path, recorded replay fixtures through `@asdp/eval`, and persistence of the AI-interaction record |
+| **V4** | AI analysis passes — **now split and no longer provisional**: **V4a approved** (§3.8), **V4b approved in shape**. V4a discharges the three items deferred from V3 by **D6** |
 | **V5** | Structured requirement model and epistemic handling |
 | **V6** | Conflicts, precedence and coverage |
 | **V7** | Human requirements workspace and G1 approval |
@@ -282,6 +285,47 @@ already exist and should be read from their own documents rather than paraphrase
 | V5 | [requirement-analysis-frame.md](../20-domain/requirement-analysis-frame.md); [epistemic-model.md](../20-domain/epistemic-model.md); [ADR-0007](../adr/ADR-0007-epistemic-ladder.md), [ADR-0011](../adr/ADR-0011-computed-confidence.md) |
 | V6 | [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md); [traceability-model.md](../20-domain/traceability-model.md) |
 | V7 | [governance-and-gates.md](../50-governance/governance-and-gates.md); [ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) |
+
+### 3.8 V4 — approved boundary (V4a) and approved shape (V4b)
+
+**Approved 2026-08-23.** V4 is **split**: **V4a — AI Broker and Live-Path Foundation** is approved
+and cleared to begin; **V4b — AI Evidence Extraction** is approved in shape only and does not begin
+until V4a is reviewed and accepted. Full boundary, acceptance criteria and the recorded E2 conflict
+are in [v4-proposal.md](v4-proposal.md).
+
+V4a is the first slice in which AI reads a document in this product, and it **makes no substantive
+requirements claim**: its acceptance proves the chain — source → broker → governed live/replay
+provider → structured response → `ai_interaction` audit → deterministic replay.
+
+| V4a in scope | Discharges |
+|---|---|
+| Wire the real broker consumer through the AI Provider Abstraction | **D6** item 4 |
+| `PROFILE_SOURCE` as the first low-risk end-to-end pass | roadmap P2 |
+| `ai_interaction` persistence — provider, model, capabilities used, prompt version, classification, egress decision, degradation state, tokens and cost, timestamps, correlation ids | **D6** item 10 |
+| The explicitly invoked live path; **`npm run verify`, tests and CI never invoke a live provider** | **A7**, **A8** |
+| The first deterministic recorded/replay fixtures through `@asdp/eval` | **D6** item 9 |
+| Cost, prompt version and degradation metadata on every interaction | ADR-0011, ADR-0022 |
+| All approved egress controls preserved | ADR-0021 |
+| An initial evaluation baseline — **E5** | ADR-0031 |
+
+**Out of scope for V4a:** `EXTRACT_EVIDENCE`, post-hoc citation verification, RAF population,
+structured requirements, `RECONCILE_SOURCES`, conflict precedence, clarification questions, G1,
+Process IR, generation, PDF, spreadsheets, and the **H1/H2** hardening candidates.
+
+#### Approved decisions E1–E5
+
+| # | Decision | Outcome |
+|---|---|---|
+| **E1** | Live AI data | **Approved.** Live external calls in development may use **only** synthetic, sanitised, or `PUBLIC`/`INTERNAL` evidence where policy permits. `CONFIDENTIAL`, `RESTRICTED` and `PROHIBITED` material must **not** go to an external provider merely for development. **Stricter than** [ADR-0021](../adr/ADR-0021-data-classification-egress-policy.md), enforced at the same transport boundary. A private-endpoint decision stays a deployment matter (**OD-1**) |
+| **E2** | Multi-match quotes | **Approved: reject**, unless a deterministic locating hint uniquely identifies the occurrence. Never silently select one; never weaken provenance integrity for recall. **Applies from V4b**, and is *stricter* than provenance-and-anchoring.md §4.2 — the conflict is recorded in [v4-proposal.md](v4-proposal.md) §6 and must be resolved before V4b |
+| **E3** | AI-extracted evidence | **Approved.** Automatic persistence only when the output validates, the anchor is **independently verified**, and provenance rules pass. Persisted AI evidence stays **explicitly AI-derived** and never automatically becomes an approved requirement, RAF item or BPS element — human approval remains a later gate ([ADR-0004](../adr/ADR-0004-ai-proposes-code-commits.md), [ADR-0007](../adr/ADR-0007-epistemic-ladder.md)) |
+| **E4** | Chunking | **Approved** for over-context sources, under six requirements: deterministic and versioned strategy · `ai_interaction` records full-versus-chunked · chunk ids and source ranges retained · degradation explicitly recorded · confidence accounts for it · **never silent**. `chunked_context` already carries a declared **0.15** confidence penalty. **V4a implements the record; the algorithm is V4b, and an over-context source is refused by name until then** |
+| **E5** | Evaluation baseline | **Approved.** V4 is **not** successful merely because the call and the schema work. Measured where ground truth permits: extraction precision and recall, citation/provenance validity, schema validity, hallucinated-evidence rate, degradation behaviour, reproducibility from fixtures. Initial corpus is synthetic or sanitised with its limitations stated — already mechanical via `CorpusTier` weighting, `buildReport`'s tier requirement and ADR-0031 rule 4. For V4a's single pass the extraction metrics are reported **not-applicable**, not omitted |
+
+**ADRs required for V4a: none.** Every item implements an approved decision; the item-by-item check
+is in [v4-proposal.md](v4-proposal.md) §3, along with the four changes that *would* need one.
+
+**Dependencies added: none.** Runtime dependencies stay at seven.
 
 ### Sequencing constraints that are structural, not planning choices
 

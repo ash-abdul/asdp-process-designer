@@ -15,11 +15,11 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **None in progress.** **V3 — multimodal and structural intake — is ACCEPTED / COMPLETE** (accepted 2026-08-23, after the three corrections in §5.9) |
+| **Current slice** | **V4a — AI Broker and Live-Path Foundation.** Boundary **approved** 2026-08-23 ([v4-proposal.md](v4-proposal.md), [phase-2-plan.md](phase-2-plan.md) §3.8), implementation **in progress**. **V3 is ACCEPTED / COMPLETE** |
 | **Commit** | **`bea4041`** — *Phase 2 V3 acceptance: AI attribution defect, test-rule refinement, durable §5*. V3 was implemented at **`dc2e683`** |
 | **Working tree** | **Clean.** The §5.9 corrections are committed |
 | **Work in progress** | **None.** No partial implementation, no scratch state. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None — awaiting a decision.** V4's boundary and V2-PDF both need approval before any work begins. The **H1/H2** hardening candidates (§5.12) are proposed, not approved |
+| **Next approved action** | **Implement V4a**, per [v4-proposal.md](v4-proposal.md) §1 and decisions **E1–E5**. **V4b must not begin** until V4a is reviewed and accepted, and the recorded E2 conflict (v4-proposal.md §6) is resolved. V2-PDF stays blocked; the **H1/H2** hardening candidates (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -39,7 +39,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | Tests | **572 pass · 0 fail · 0 skipped · 0 todo** · 113 suites |
 | `check:arch` | passed — 109 source files |
 | `check:arch:selftest` | passed — **32 cases** |
-| `check:docs` | passed — 86 files, 659 links |
+| `check:docs` | passed — 87 files, 692 links |
 | `npm run verify` | **green end to end** |
 | Durability | Verified by execution: sources, text, units, images and evidence survive a full service restart, and anchors minted before it still resolve after it |
 | Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` |
@@ -63,6 +63,13 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md); D2 plain `fetch`; D3 reuse the XML
 tokeniser; D4 ceilings as functions; D5 a checker rule barring real provider calls in tests;
 **D6 defers V3 in-scope items 4, 9 and 10 to V4** — §5.10.
+
+**V4 decisions E1–E5**, all approved 2026-08-23 — [phase-2-plan.md](phase-2-plan.md) §3.8 and
+[v4-proposal.md](v4-proposal.md) §2. E1 development egress ceiling (`INTERNAL` and below only, and
+never `CONFIDENTIAL`+ to an external provider for development); E2 reject ambiguous multi-match
+citations; E3 AI evidence stays AI-derived and never auto-approves; E4 chunking explicit, versioned
+and never silent; E5 an evaluation baseline is part of success. **No ADR is required for V4a** —
+v4-proposal.md §3 checks it item by item and names the four changes that would need one.
 
 ### ADRs
 
@@ -88,9 +95,10 @@ tokeniser; D4 ceilings as functions; D5 a checker rule barring real provider cal
 
 ### What is NOT started
 
-**V4** (AI analysis passes) and **V5–V7** are provisional — capability names only, each needing its
-boundary approved, not merely a go-ahead. **No generation capability of any kind exists**: no BPMN,
-DMN or form generation, no Process IR, no Specification Studio, no graphical designer.
+**V4b** (AI evidence extraction) is approved in shape only and must not begin until V4a is accepted
+and the E2 conflict is resolved. **V5–V7** remain provisional — capability names only, each needing
+its boundary approved, not merely a go-ahead. **No generation capability of any kind exists**: no
+BPMN, DMN or form generation, no Process IR, no Specification Studio, no graphical designer.
 
 ## 1. Position
 
