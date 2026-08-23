@@ -3,7 +3,9 @@
 > **Status: PROPOSED — NOT APPROVED. Nothing is implemented.** This is a boundary proposal for
 > review under [CLAUDE.md](../../CLAUDE.md) §11. **V5 must not begin until its boundary is approved**,
 > and approval of the capability name is not approval of this scope.
-> **Version:** 0.1 · **Written:** 2026-08-23
+> **Version:** 0.2 · **Written:** 2026-08-23 · **Revised:** 2026-08-23 — J6 namespace settled,
+> J7 regrouped to six passes, **J9 added** (rejected-proposal retention versus ADR-0032), J3 split
+> into J3-a/J3-b, and §6 given a route for propositions that exceed their evidence
 > **Related:** [phase-2-plan.md](phase-2-plan.md) §3.7, [phase-2-status.md](phase-2-status.md) §0,
 > [v4b-proposal.md](v4b-proposal.md),
 > [requirement-analysis-frame.md](../20-domain/requirement-analysis-frame.md),
@@ -196,6 +198,21 @@ is enforced in V5 by the gate (§13) *and* by SQL, not by convention.
 | **Missing information** | — | — | The **absence** of proposals in a slot, surfaced by coverage arithmetic. Never a record the model creates |
 | **Unsupported claim** | — | — | **Rejected at the gate with a closed reason code, never persisted**, and counted — the V4b posture applied to propositions |
 
+**Where a proposition that exceeds its evidence actually goes.** Excluding L3 must not become a
+route to silently discarding what the model noticed, so V5 gives each case a named destination —
+none of which is a `Requirement` row:
+
+| Case | Destination |
+|---|---|
+| The model proposes something with **no cited evidence** | **Rejected** at the gate, reason `no_evidence_cited`, counted, and retained per **J9** |
+| The model says it **cannot tell** from the evidence | Its `limitations[]`, recorded on the pass result and the audit event. Not domain state, because it is a statement about the read, not about the business |
+| The proposition is grounded but **imprecise, untestable, or actor-less** | A **`RequirementFlag`** on the grounded proposal (`raisedBy: 'rule'`), which RAF §3 aggregates into the `ambiguities` derived slot |
+| The **evidence itself states an assumption** | The `assumptions` slot, as an ordinary grounded proposal |
+| The model wants to supply an assumption **of its own** | **Refused.** That is L3 by definition, and admitting it here creates a record whose only correct disposition — explicit human confirmation ([epistemic-model.md](../20-domain/epistemic-model.md) §1) — does not exist until V7 |
+
+**The case this table cannot cover** is a proposition that cites real evidence and overstates it.
+No destination catches that, because no mechanical check detects it — §18, **R-V5-1**.
+
 **On L3.** [epistemic-model.md](../20-domain/epistemic-model.md) §1 **permits** L3 with an
 `inferenceRationale`, so excluding it from V5 is a **slice-scope tightening, not a spec requirement**
 — stated plainly so the approver is choosing rather than ratifying. The argument for excluding it:
@@ -251,6 +268,14 @@ precedence and coverage"** to **V6**. `RECONCILE_SOURCES` exists in the task voc
 So detection and resolution are not separated by the specifications — they are two ends of one
 record, and a `Conflict` with no route to `decision` is a record with no correct disposition, which
 is the same objection raised against L3 in §6.
+
+**[ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md) checked directly**, because it is
+the binding decision here and it is more permissive than the slice plan: *"AI **MAY** detect
+contradiction candidates and explain them"*, precedence **MUST** be computed deterministically from
+authority rank → effective date → specificity → epistemic level, *"a **human MUST decide** every
+conflict"*, and unresolved conflicts **MUST** block G1. So AI detection in V5 would **not** violate
+ADR-0012 — the ADR permits it and assigns it to no slice. What argues against it is the plan's
+sequencing and the canonicalisation dependency below, not the ADR.
 
 **Recommendation — decision J2, and it is genuinely the approver's call:**
 
@@ -366,34 +391,63 @@ in SQL rather than in a command:
 
 ### 11.4 What V5 does **not** add
 
-No `conflict` table (unless **J2-b**) · no `open_question` table · no `requirement_relation` table ·
-no `raf_slot_value` table — the slot record is **computed**, and materialising it would create a
-second source of truth for something ADR-0010 says code derives.
+No `conflict` table (unless **J2-b**) · no `open_question` table · no `requirement_relation` table.
+
+**On `RafCoverage`** — [domain-model.md](../20-domain/domain-model.md) §3 **does** name it as an
+entity (`requirementSetId`, `slot`, `itemCount`, `evidenceCount`, `confidenceBand`,
+`requiredForExecutability`, `status`), so *not* creating the table is a deliberate deferral rather
+than an oversight, and it is decision **J3-b**:
+
+| Option | Consequence |
+|---|---|
+| **J3-b-i (recommended)** — compute on read, no table | No staleness question. Proposals are insert-only, so a stored snapshot goes out of date the moment the next proposal lands, and a stale coverage row is worse than none |
+| **J3-b-ii** — persist a `raf_coverage` snapshot per set | Needed eventually, because a coverage snapshot is part of what a G1 **baseline** freezes ([ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md)) — but V5 takes no baseline, so it would be a table with no consumer |
 
 ---
 
 ## 12. AI task design — focused passes, not one prompt
 
-**One AI task, invoked once per RAF slot group per evidence batch.** Nine groups
-(`business_context`, `participants`, `process_behaviour`, `decisions_and_rules`, `data`,
-`external_interaction`, `time_failure_recovery`, `quality_and_control`, `framing`).
+**One AI task, invoked once per *pass* per evidence batch — six passes, not nine, and not
+twenty-seven.**
 
-**Why per-group rather than one call over all 27 slots**, which is the control/evaluation/traceability
-argument the request asks for:
+**The partition is chosen by disjointness closure, not by tidiness.** `DISJOINTNESS_RULES` in
+`@asdp/raf` names four pairs, and one of them — `outcomes ↔ outputs` — **crosses** the RAF groups
+`process_behaviour` and `data`. A partition that followed the nine RAF groups literally would split
+that pair across two calls, and a model asked for `outcomes` in one call and `outputs` in another
+will legitimately offer the same item twice. So each pass is a **disjointness-closed** set of slots:
 
-- a single prompt carrying 27 slot definitions invites the model to dump everything into
-  `processSteps`, and the disjointness rules then reject work that need never have been proposed
-- per-group calls give **per-group precision and recall**, so "the model is good at actors and poor
-  at exceptions" is measurable rather than averaged away
-- each call carries only its group's slot definitions and their `question` text, which is what
-  `RAF_SLOTS` already stores for the coverage dashboard
-- a failure or refusal degrades **one group**, not the pass
+| Pass | Slots | Closes |
+|---|---|---|
+| **P1 Context & framing** | `businessObjective` `serviceDescription` `scopeAndExclusions` `successMeasures` `currentStateProcess` `dependencies` `assumptions` `constraints` | — |
+| **P2 Participants & behaviour** | `actors` `responsibilities` `trigger` `preconditions` `processSteps` `alternativePaths` | `actors ↔ responsibilities`, `processSteps ↔ alternativePaths` |
+| **P3 Outcomes & data** | `outcomes` `inputs` `outputs` `dataRequirements` | **`outcomes ↔ outputs`** — the cross-group pair |
+| **P4 Rules & decisions** | `businessRules` `decisions` | — |
+| **P5 Time, failure & external** | `slasAndTimers` `exceptions` `escalations` `integrations` `notifications` | `exceptions ↔ escalations` |
+| **P6 Quality & control** | `nonFunctionalRequirements` `securityAndPrivacy` | — |
+
+**27 slots, each in exactly one pass. All four disjointness pairs inside a single call.**
+
+**The RAF groups are not redefined.** `RafGroup` stays exactly as `@asdp/raf` declares it, and the
+coverage dashboard still reports by group. A *pass* is a prompting partition and nothing more — it
+has no representation in the data model, which is why regrouping later is configuration rather than
+a migration.
+
+**Why not one prompt, and why not twenty-seven:**
+
+- one prompt carrying 27 slot definitions invites the model to dump everything into `processSteps`,
+  and the disjointness rules then reject work that need never have been proposed
+- per-pass calls give **per-pass precision and recall**, so "good at actors, poor at exceptions" is
+  measurable rather than averaged away
+- a refusal degrades **one pass**, and retry is per-pass rather than per-document
 - each call is separately recorded and separately replayable, so a proposal traces to *its* interaction
+- but a pass per slot would fragment for no gain: a two-slot pass costs a whole call to decide
+  nothing, and slots that must be told apart would be split across calls, which is the failure the
+  partition exists to prevent
 
-**Cost is the trade, and it is real:** nine calls per evidence batch rather than one. Mitigated by
-prompt caching where the provider offers it (`promptCaching` is already a negotiated capability), and
-the grouping is configuration, so a coarser batching can be measured against the finer one rather
-than argued about.
+**Cost:** **six calls per evidence batch**, not one and not nine, plus chunking within a batch where
+the evidence exceeds the budget. Mitigated by `promptCaching` where the provider offers it — already
+a negotiated capability. The partition is **configuration**, so a coarser one can be measured against
+this one rather than argued about.
 
 **Task:** `POPULATE_FRAME` — already in the task vocabulary with `schemaConstrainedOutput` required
 and `largeContext` / `promptCaching` preferred. No new task type is introduced.
@@ -453,41 +507,53 @@ than the rules, and the two would drift.
 `disjointness_violation`, `classification_violation`, `empty_text`, `inferred_derivation`.
 
 **Rejections are recorded and countable, and no remediation workflow is built** — **F2** applied
-again. What is retained per rejection: reason code, slot, group, chunk id, cited evidence ids, and a
-**checksum of the proposed text, not the text**. Same reasoning as V4b: a rejected proposition never
-became a requirement, and the audit store is not a content store. Verbatim rejected text appears only
-in the offline evaluation report over the synthetic corpus.
+again. What is retained per rejection: reason code, slot, pass, chunk id, cited evidence ids, and the
+**proposed text itself** — see **J9**, which is a change from V4b's checksum-only posture and is
+argued there rather than assumed here.
 
 **Computed after the gate, never taken from the model:** `epistemicLevel` · `derivation` ·
 `confidence` + factors + function version · `classification` · `humanConfirmationRequired` ·
 `generatedBy` and the AI-provenance fields · every `RequirementFlag`.
 
-### 13.1 Validation rules — a catalogue change that needs approving
+### 13.1 Validation rules — namespace `L1-REQ-*`, and **no eighth layer**
 
-[validation-rule-catalog.md](../40-quality/validation-rule-catalog.md) has **no requirement-quality
-family**; the ambiguity kinds live in `RequirementFlag.kind` in the domain model. V5 therefore
-proposes a **new rule family** — decision **J6** — and the catalogue's own growth rules apply to each
-rule: a catalogue entry, positive and negative fixtures, a documented rationale, a
-specification-level remediation, and **messages plus fix hints in both catalogue languages**. Rule
-IDs are never reused or renumbered.
+[validation-architecture.md](../40-quality/validation-architecture.md) §3 defines **seven layers**
+and their scopes; [validation-rule-catalog.md](../40-quality/validation-rule-catalog.md) has **no
+requirement-quality family**. Choosing where V5's rules live is decision **J6**, and it is permanent
+— IDs are never reused or renumbered.
 
-Proposed rules, gated at **G1** like the `L0-ING` family:
+**Three candidates, and why one wins:**
+
+| Candidate | Verdict |
+|---|---|
+| Extend **`L0-ING-*`** | **No.** L0's scope is *ingestion integrity* — "sources parsed, anchors resolvable, text normalised, classification assigned". A requirement is not an ingestion artefact, and stretching a layer's meaning to avoid naming a new family is how layer names stop meaning anything |
+| A **new eighth layer** | **No.** "Seven layers" is a stated architectural structure referenced across the quality documents, and the by-layer tally in the catalogue depends on it. An eighth layer is a bigger change than these rules justify |
+| **`L1-REQ-*`** | **Recommended.** L1's scope is *"Schema & structural"* and its gates are *"All"*. V5's persisted-state rules are exactly structural invariants over an entity — evidence linkage (**D2**), classification monotonicity (**D10**), identifier discipline (**D15**), slot legality — which is what L1 already covers for every other entity |
+
+**And a distinction that shrinks the family considerably.** Requirement *quality* signals — vague
+quantifier, actor unknown, untestable — are **not** catalogue rules. RAF §3 derives the `ambiguities`
+slot from **`RequirementFlag`** records, and `RequirementFlag` already carries
+`severity: blocking | warning | info` and `raisedBy: ai | human | rule`. G1's criterion is
+*"0 blocking flags"* — **flags, not rules**. So V5 raises flags for quality signals and reserves
+catalogue IDs only for structural checks over persisted state.
 
 | Proposed ID | Sev | Check |
 |---|---|---|
-| `L0-REQ-001` | E | A requirement cites no evidence (**D2**) |
-| `L0-REQ-002` | E | A cited anchor no longer resolves |
-| `L0-REQ-003` | E | Classification below the maximum over cited evidence (**D10**) |
-| `L0-REQ-004` | W | Vague quantifier with no threshold → flag `vague_quantifier` |
-| `L0-REQ-005` | W | Obligation with no identifiable actor → flag `actor_unknown` |
-| `L0-REQ-006` | W | Proposition not stated in testable terms → flag `untestable` |
-| `L0-REQ-007` | E | A disjointness pair is violated |
-| `L0-REQ-008` | I | A proposal rests only on `content_unverified` visual evidence ([ADR-0038](../adr/ADR-0038-target-versus-content-verification.md)) |
-| `L0-REQ-009` | I | A proposal rests only on evidence from a single source |
+| `L1-REQ-001` | E | A requirement cites no evidence (**D2**) |
+| `L1-REQ-002` | E | A cited evidence anchor no longer resolves |
+| `L1-REQ-003` | E | Classification below the maximum over cited evidence (**D10**) |
+| `L1-REQ-004` | E | A disjointness pair is violated in persisted state |
+| `L1-REQ-005` | I | A proposal rests only on `content_unverified` visual evidence ([ADR-0038](../adr/ADR-0038-target-versus-content-verification.md)) |
 
-The **family letter and gate placement are part of J6**: `L0` is ingestion integrity and `L1` is
-schema/structural, so requirement quality arguably belongs to neither. Naming it wrongly is cheap now
-and permanent later, because IDs are never renumbered.
+**Five rules, and four of them should be unreachable**, because the gate refuses those writes. That
+is the established pattern rather than a weakness: validation-architecture.md §3 says structurally
+unreachable rules "remain implemented as defence against compiler defects, and a violation is
+reported as an **internal error**, not a user error". `L1-REQ-002` is the one genuinely reachable
+rule, since an anchor can drift after the proposal is written.
+
+Each rule still owes the catalogue's growth obligations: an entry, positive **and negative**
+fixtures, a documented rationale, a specification-level remediation, and messages plus fix hints in
+**both** catalogue languages.
 
 ---
 
@@ -561,12 +627,14 @@ editing · **V4b-eval** · **V2-PDF** · spreadsheet intake · **H1/H2**.
 |---|---|---|
 | **J1** | **No L3 / `inferred` propositions in V5.** Every proposal cites ≥1 evidence item | **Approve.** A tightening beyond the epistemic model, not a requirement of it (§6). Reversible later; the reverse is not |
 | **J2** | **Conflicts: V6 (a) or detect-and-record in V5 (b)?** The plan assigns conflicts to V6; the stated expectation is (b) | **J2-a recommended** (§8). This is a re-cut of the provisional sequence either way, and genuinely the approver's call |
-| **J3** | **Coverage arithmetic: V5 or V6?** The plan assigns coverage to V6; the code already exists in `@asdp/raf`, unused | **Approve for V5.** Without it, "which slots are empty" is unanswerable and V5's own output cannot be assessed. A re-cut, and it must be approved rather than assumed |
+| **J3-a** | **Coverage arithmetic: V5 or V6?** The plan assigns coverage to V6; `computeFrameCoverage` already exists in `@asdp/raf`, unused | **Approve for V5.** It needs **no conflict input** — `FrameCoverage` has no `conflicts` field — so it is assessment of the populated frame, not reconciliation. A re-cut, and it must be approved rather than assumed |
+| **J3-b** | **`RafCoverage`: compute on read, or persist a snapshot?** The domain model names it an entity | **Compute on read (J3-b-i).** A stored snapshot goes stale on the next insert; freezing one is a **baseline** act, and V5 takes no baseline — §11.4 |
 | **J4** | **Proposals are `draft` only, enforced by SQL check constraint** | **Approve.** The boundary you named, made structural rather than remembered |
 | **J5** | **A four-condition gate shared by command and evaluation** | **Approve.** The V4b arrangement, for the reason V4b recorded |
-| **J6** | **A new validation rule family for requirement quality**, plus its letter and gate placement | **Approve the family; decide the letter.** IDs are never renumbered, so the name is permanent |
-| **J7** | **Per-slot-group AI passes** rather than one prompt over 27 slots | **Approve**, accepting ~9× call count against per-group measurability |
+| **J6** | **Validation rule namespace** for structured requirement quality | **`L1-REQ-*`, five rules, no eighth layer** — §13.1. Quality signals become `RequirementFlag`s, not catalogue rules, because G1's criterion is "0 blocking **flags**" |
+| **J7** | **How many AI passes** over the 27 slots | **Six disjointness-closed passes** — §12. Not one (invites slot dumping), not nine (splits `outcomes ↔ outputs` across calls), not twenty-seven |
 | **J8** | **The model proposes a slot; code decides legality.** Disjointness is code-owned | **Approve.** This is ADR-0010 restated, listed because it is the line most easily eroded |
+| **J9** | **Rejected proposals: retain the text, or only a checksum?** | **Retain the text.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires retaining "the complete append-only audit log, **including rejected proposals and rejected requirements**" — V5's exact subject, and a case that did not exist in V4b. See below |
 
 **Would any of this need an ADR?** On this reading, **no** — J1, J4, J5, J7 and J8 implement
 ADR-0004, 0007, 0008, 0010, 0011 and 0016 as written, and the domain model already specifies the
@@ -574,8 +642,35 @@ entities. **Three things would need one, and all three are refused above:** lett
 exist with no evidence and no inference rationale; letting the model own slot assignment unchecked;
 and creating an approved requirement without a human signature.
 
-**J2, J3 and J6 are re-cuts or additions to approved artefacts** — the provisional slice sequence and
-the validation rule catalogue — and need explicit approval even though neither is an ADR.
+**J2, J3-a and J6 are re-cuts or additions to approved artefacts** — the provisional slice sequence
+and the validation rule catalogue — and need explicit approval even though neither is an ADR.
+
+### 16.1 J9 in full, and a pre-existing gap it uncovered
+
+V4b's **F2** retains a rejected item's **checksum, not its text**, because a rejected *quote* is
+unanchored **source** content and the audit store is not a content store. **That argument does not
+transfer to V5**, for two reasons: a rejected proposal is **model-authored text**, not a copied
+source span; and [ADR-0032](../adr/ADR-0032-retain-everything.md) names *"rejected proposals and
+rejected requirements"* explicitly — a category that did not exist before this slice. So **J9 is not
+a reversal of F2**; F2 governs quotes and continues to.
+
+**The gap.** ADR-0032 also requires retaining *"all AI interactions, including prompt and response
+payloads, subject to classification-based access control"*. Migration `006_ai_interaction` retains
+**metadata only** — no prompt column, no response column, and a `proposal_id` that references
+nothing, because no proposal store exists. **Prompt and response payloads are not retained anywhere
+in the domain today.** Recorded fixtures in `@asdp/eval` hold request/response for *replay*, but that
+is the evaluation corpus, not the domain, and a live call in production writes no payload at all.
+
+This is **pre-existing, from V4a, and out of V5's boundary** — it is recorded rather than fixed here,
+as [phase-2-status.md](phase-2-status.md) limitation **62** and hardening candidate **H3**. Its
+consequence for V5 is direct: with no payload store to fall back on, a checksum-only rejection record
+would mean a rejected proposal is retained **nowhere**, which contradicts ADR-0032 outright.
+
+| Option | Verdict |
+|---|---|
+| **J9-a (recommended)** — V5's rejection record carries the full proposed text, classified at the evidence batch's classification and read under the same controls | Satisfies ADR-0032 for V5's own output without touching an accepted slice's schema |
+| **J9-b** — add payload retention to `ai_interaction` first | Correct eventually, and it closes the gap generally — but it is **H3**, not V5, and making V5 depend on it blocks this slice on unrelated work |
+| **J9-c** — checksum only, as V4b | **Refused.** It would put a recorded contradiction with ADR-0032 into the slice that creates the very category the ADR names |
 
 ---
 
@@ -588,7 +683,7 @@ Measurable, in the twelve-criterion shape V4b-core was accepted against.
 | 1 | Proposals are produced end to end from real stored `EvidenceItem`s through the broker, and **every persisted proposal cites ≥1 evidence item whose anchor resolves** | End-to-end tests over the HTTP surface |
 | 2 | **Ineligible evidence cannot be cited**: unresolved, drifted, broken, or another project's | A test per case |
 | 3 | **The gate holds all four conditions**, and a failure of any one writes nothing | A test per condition |
-| 4 | **Rejections are recorded and countable** — closed reason code, slot, cited ids, text checksum — and never silently dropped | Audit assertions + a rejection count in the pass result |
+| 4 | **Rejections are recorded, countable and retained in full** — closed reason code, slot, pass, cited ids and the proposed text (**J9**, [ADR-0032](../adr/ADR-0032-retain-everything.md)) — and never silently dropped | Audit assertions + a rejection count in the pass result |
 | 5 | **No proposal is ever `approved`**, and no route promotes one. `status = 'draft'` enforced in SQL | Tests + the check constraint |
 | 6 | **Epistemic level, derivation, confidence and classification are computed**, never taken from model output | Tests asserting the schema has no such field and the values are derived |
 | 7 | **Slot legality and disjointness are enforced**; an illegal or cross-group assignment is rejected | A test per disjointness pair |
@@ -663,4 +758,4 @@ ADR-0037, spike S2, or Docker.
 ## 20. Status
 
 **PROPOSED — NOT APPROVED. No V5 code exists and none will be written until this boundary, and the
-decisions J1–J8, are explicitly approved.**
+decisions J1–J9, are explicitly approved.**
