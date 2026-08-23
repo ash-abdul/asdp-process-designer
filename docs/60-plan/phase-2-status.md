@@ -19,7 +19,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
 | **Working tree** | **Clean.** V4b-core is committed at `34ca68e`; the review fix and this acceptance record are committed at `3d5dfb6` |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None. Nothing is approved to begin.** A **V5 boundary proposal** — verified `EvidenceItem`s into structured requirement *proposals* / RAF — is presented for review and is **not approved**; V5 must not begin until its boundary is approved. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
+| **Next approved action** | **None. Nothing is approved to begin.** A **V5 boundary proposal** is recorded at [v5-proposal.md](v5-proposal.md) — verified `EvidenceItem`s into structured requirement *proposals* / RAF population, decisions **J1–J8** — and is **PROPOSED, NOT APPROVED**; V5 must not begin until its boundary is approved. **V4b-eval must not begin** — it needs an approved credential and E1-permitted material. V2-PDF stays blocked; **H1/H2** (§5.12) are proposed, not approved |
 
 ### Completed slices
 
@@ -123,7 +123,7 @@ Process IR, no Specification Studio, no graphical designer.
 | | |
 |---|---|
 | Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) — all accepted |
-| Next slice | **None approved.** A **V5 boundary** — verified evidence into structured requirement *proposals* — is proposed and awaiting review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Next slice | **None approved.** A **V5 boundary** — verified evidence into structured requirement *proposals* — is recorded at [v5-proposal.md](v5-proposal.md) and awaiting review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **621 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 620 V4b-core) |
 | Verification | build · `check:arch` (124 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
@@ -1134,7 +1134,7 @@ excluded permanently, because it would reverse
 | **V3 — multimodal and structural intake** | **ACCEPTED / COMPLETE**, 2026-08-23, including the §5.9 corrections. Zero new dependencies |
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
 | **V4b-core — AI evidence extraction** | **ACCEPTED / COMPLETE**, 2026-08-23 — §7, reviewed in §7.10. Discharges the approved V4b-core scope; needed no credential. **Accepted for mechanics and governance, explicitly not model quality** — §7.8 |
-| **V5 — evidence to structured requirement proposals** | **PROPOSED, NOT APPROVED.** A boundary is under review: verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **Must not begin without approval** |
+| **V5 — evidence to structured requirement proposals** | **PROPOSED, NOT APPROVED** — [v5-proposal.md](v5-proposal.md), decisions **J1–J8**. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. Three of the decisions (**J2** conflicts, **J3** coverage, **J6** a new rule family) **re-cut approved artefacts** and need explicit approval. **Must not begin without approval** |
 | **V4b-eval — real-provider evaluation** | **Deferred.** Requires an approved credential and E1-permitted material; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
