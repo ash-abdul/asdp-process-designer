@@ -555,16 +555,37 @@ export interface ReconciliationViewInput {
  *   1. **Absence of a detected conflict is never agreement.** A proposition
  *      nothing contradicted stays `silent` — a detector that found nothing and a
  *      corpus with nothing to find are indistinguishable from outside.
- *   2. **`corroborated` is UNREACHABLE in V6, and that is the correct answer.**
+ *   2. **Corroboration requires a HUMAN-CONFIRMED equivalence** (**U4**). It was
+ *      unreachable in V6, and that was the correct answer *then*.
  *
- * ## Why V6 never claims corroboration
+ * ## Why V6 could not claim corroboration, and why V7 can
  *
  * Corroboration means two sources agree **about the same content**. The only
- * evidence V6 has for that is an `equivalent` classification, and equivalence is
+ * evidence of that is an `equivalent` classification, and in V6 equivalence was
  * **AI-proposed** — deterministic duplicates were already collapsed in V5.
- * **Q6** is explicit: where V7 human confirmation would be needed, the V6 state
- * stays *provisional* rather than manufacturing corroboration. So an `equivalent`
- * candidate sets `provisionalCorroboration` and leaves the agreement value alone.
+ * **Q6** was explicit: where V7 human confirmation would be needed, the V6 state
+ * stayed *provisional* rather than manufacturing corroboration.
+ *
+ * **U4 is the missing half, and confirmation is what discharges the qualifier.**
+ * A person has now looked at the proposed merge and said the two surface forms
+ * denote the same thing. Three conditions must all hold, and each closes a way
+ * this could become agreement manufactured from nothing:
+ *
+ *   - the equivalence candidate is classified `equivalent` — the only evidence
+ *     of agreement about content there is;
+ *   - the propositions it names rest on **more than one source** — a document
+ *     does not corroborate itself;
+ *   - a **human has confirmed** the canonical entity tying them, and confirmation
+ *     is only offered for `ai_proposed` entities, because exact match-form
+ *     equality was never a judgement to confirm (migration 010).
+ *
+ * A contradiction still wins: a proposition named by an undecided contradictory
+ * candidate is `contradicted` however many sources agree elsewhere.
+ *
+ * **Still computed on read.** Nothing here writes. A V5 requirement row's stored
+ * `crossSourceAgreement` and its stored confidence are untouched, because
+ * mutating them would make a recorded score unreproducible; the reconciled value
+ * is derived beside the stored one and both are returned.
  *
  * **An earlier version of this function got that wrong**, and a test caught it: it
  * raised `corroborated` when a *deterministic canonical entity* tied two
@@ -637,10 +658,22 @@ export async function reconciliationView(
     sourcesByRequirement.set(link.requirementId, held);
   }
 
+  // Requirements a HUMAN has confirmed an equivalence over — U4. Confirmation is
+  // only offered for `ai_proposed` entities (migration 010), because exact
+  // match-form equality was never a judgement to confirm.
+  const confirmedEquivalenceRequirements = new Set<string>();
+  for (const entity of entities) {
+    if (entity.origin !== 'ai_proposed' || entity.confirmedBy === undefined) continue;
+    for (const requirementId of entity.requirementIds) {
+      confirmedEquivalenceRequirements.add(requirementId);
+    }
+  }
+
   const equivalentConflictIds = new Set(
     conflicts.filter((c) => c.classification === 'equivalent').map((c) => c.id),
   );
   const provisionallyAgreed = new Set<string>();
+  const corroborated = new Set<string>();
   for (const conflict of conflicts) {
     if (!equivalentConflictIds.has(conflict.id)) continue;
     const named = participants
@@ -652,7 +685,16 @@ export async function reconciliationView(
     }
     // Two propositions from the SAME source saying the same thing is repetition,
     // not corroboration — a document does not corroborate itself.
-    if (sources.size > 1) for (const requirementId of named) provisionallyAgreed.add(requirementId);
+    if (sources.size <= 1) continue;
+
+    // U4: a confirmed equivalence over these propositions discharges the
+    // provisional qualifier and the agreement becomes claimable. Without one it
+    // stays provisional, exactly as V6 left it.
+    const confirmed = named.some((id) => confirmedEquivalenceRequirements.has(id));
+    for (const requirementId of named) {
+      if (confirmed) corroborated.add(requirementId);
+      else provisionallyAgreed.add(requirementId);
+    }
   }
 
   const unconfirmedMergeRequirements = new Set<string>();
@@ -667,6 +709,7 @@ export async function reconciliationView(
     const provisional = unconfirmedMergeRequirements.has(requirement.id);
 
     const agreedProvisionally = provisionallyAgreed.has(requirement.id);
+    const agreed = corroborated.has(requirement.id);
 
     if (contradicted) {
       return {
@@ -679,9 +722,27 @@ export async function reconciliationView(
       };
     }
 
-    // NOTE: there is no `corroborated` branch, and its absence is the decision.
-    // Equivalence is AI-proposed, so raising corroboration here would manufacture
-    // it from an unconfirmed claim — Q6 keeps the state provisional instead.
+    // U4: the ONE way to `corroborated`, and it needs a human's confirmation.
+    // Note what is still refused here — absence of a detected conflict, a shared
+    // canonical entity, and an unconfirmed AI equivalence all leave it `silent`.
+    if (agreed) {
+      return {
+        requirementId: requirement.id,
+        // The STORED value is untouched. V5 rows are insert-only and their
+        // confidence is a function of stored factors; the reconciled value is
+        // derived beside it, never written over it (Q6, computed on read).
+        storedAgreement: 'silent' as const,
+        reconciledAgreement: 'corroborated' as const,
+        // Discharged: it was provisional until a person confirmed the merge.
+        provisionalCorroboration: false,
+        reason:
+          'a HUMAN-CONFIRMED equivalence ties this proposition to a proposition resting on a ' +
+          'different source (U4). Confirmation discharges the provisional qualifier V6 could not ' +
+          'discharge; the stored agreement is unchanged and this value is computed on read',
+        conflictIds: ids,
+      };
+    }
+
     return {
       requirementId: requirement.id,
       storedAgreement: 'silent' as const,
@@ -689,8 +750,8 @@ export async function reconciliationView(
       provisionalCorroboration: agreedProvisionally || provisional,
       reason: agreedProvisionally
         ? 'an AI-proposed EQUIVALENCE ties this proposition to another source. It is unconfirmed, ' +
-          'so it is recorded as provisional and does NOT raise corroboration; V7 confirmation is ' +
-          'required and V6 does not manufacture agreement (Q6)'
+          'so it is recorded as provisional and does NOT raise corroboration; a human confirmation ' +
+          'is required (U4) and nothing here manufactures agreement (Q6)'
         : provisional
           ? 'an AI-proposed entity merge touches this proposition but nothing established ' +
             'agreement about its content; unconfirmed, and not corroboration (Q6)'

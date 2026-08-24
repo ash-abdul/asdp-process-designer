@@ -128,6 +128,10 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   // U1 and U10: approval is a BusinessApprover act, and `approveGate` additionally
   // refuses an approver who authored content in the baseline. The role list here is
   // the first gate; segregation of duties is the second.
+  // Recording a validation run is an analysis act, not an approval — but it is a
+  // WRITE with a consequence (a new run over an approved set reopens G1), so it
+  // is not readable by a Viewer the way readiness is.
+  { name: 'validateRequirementSet', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
   { name: 'approveG1', requiredRoles: ['BusinessApprover'], stage: 'requirements', mutatesArtifact: false },
 ];
 

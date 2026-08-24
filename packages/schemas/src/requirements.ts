@@ -401,6 +401,30 @@ export type OpenQuestion = z.infer<typeof OpenQuestion>;
  * *"the sources do not say"* (data-governance.md §3.1), and G1 requires the
  * difference to be acknowledged rather than silently passed over.
  */
+/**
+ * A RAF slot that data-governance policy prevented the system from analysing.
+ *
+ * The symmetric record to [PolicyAcknowledgement]: one states that analysis was
+ * **denied**, the other that a human **accepted the consequence** at G1.
+ *
+ * It exists because *"we were not permitted to read this"* is a fundamentally
+ * different finding from *"the sources do not say"* (data-governance.md §3.1),
+ * and without a record the first silently becomes the second on the next read.
+ */
+export const SlotPolicyBlock = z.object({
+  id: EntityId,
+  projectId: EntityId,
+  requirementSetId: EntityId,
+  rafSlot: z.string().min(1),
+  /** The classification that could not leave. */
+  classification: z.string().min(1),
+  /** Where it could not go. */
+  provider: z.string().min(1),
+  reason: z.string().min(1),
+  blockedAt: z.string(),
+});
+export type SlotPolicyBlock = z.infer<typeof SlotPolicyBlock>;
+
 export const PolicyAcknowledgement = z.object({
   id: EntityId,
   projectId: EntityId,

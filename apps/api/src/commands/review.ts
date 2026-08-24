@@ -29,20 +29,155 @@ import {
   textContentHash,
 } from '@asdp/domain';
 import { RAF_SLOT_KEYS, computeFrameCoverage } from '@asdp/raf';
-import { evaluateG1Readiness, type G1State } from '@asdp/validation';
+import {
+  evaluateG1Readiness,
+  evaluateL0Ingestion,
+  summariseFindings,
+  type G1State,
+} from '@asdp/validation';
 import type {
+  Finding,
   OpenQuestion,
   PolicyAcknowledgement,
   Requirement,
   RequirementEvidenceLink,
+  ValidationRun,
 } from '@asdp/schemas';
 import type { Actor, CommandContext } from '../commands.ts';
 import { assertRole, ValidationError } from '../commands.ts';
 import type { Repositories, UnitOfWork } from '../ports.ts';
 import { buildObservations } from './requirements.ts';
+import { assembleL0State, ingestSource, type IntakeContext } from './intake.ts';
 
 export interface ReviewContext extends CommandContext {
   readonly uow: UnitOfWork;
+}
+
+/**
+ * The context for answering a clarification question (**U7**).
+ *
+ * Answering ingests the answer as a `transcript` `Source` **through the existing
+ * V1 text path**, so this one command needs the intake capability — the blob
+ * store, the extractor registry and the size ceiling. It is a separate context
+ * rather than a widening of `ReviewContext` so that the rest of the workspace
+ * keeps no route to intake, and so the controllers that do not need those
+ * injections do not acquire them.
+ */
+export type ClarificationContext = IntakeContext;
+
+// ---------------------------------------------------------------------------
+// The transaction wrapper — ADR-0017 reopening, centralised
+// ---------------------------------------------------------------------------
+
+/**
+ * The current values of the two things an approval signs over, for one set.
+ *
+ * `baselineHash` is recomputed from the set exactly as `freezeBaseline` would;
+ * `validationRunId` is the **latest persisted G1 run**. If either differs from
+ * what an approval signed, that approval covers content or evidence that no
+ * longer stands.
+ */
+async function currentSignature(
+  repos: Pick<Repositories, 'requirements' | 'validationRuns'>,
+  requirementSetId: string,
+): Promise<{ readonly baselineHash: string; readonly validationRunId: string }> {
+  const baselineHash = await requirementSetHash(repos, requirementSetId);
+  const latest = await repos.validationRuns.latestForSet(requirementSetId, 'G1');
+  return { baselineHash, validationRunId: latest?.id ?? '' };
+}
+
+/**
+ * Reopen G1 if its signature no longer matches — [ADR-0017](../../../../docs/adr/ADR-0017-approval-as-baseline-signature.md).
+ *
+ * ADR-0017's enforcement clause is *"baseline hash recomputation on **every**
+ * member change"*. V7 as first implemented wired reopening into
+ * `reviseRequirement` alone, so adding a requirement after approval left G1
+ * `approved` over a set whose hash had changed. Reopening is not a thing a
+ * command may remember or forget: it is a property of the workspace.
+ *
+ * Takes the **transaction's** repositories. Reading the ambient handle from
+ * inside an open transaction deadlocks against the rows it has already written,
+ * and the symptom is a hang rather than an error.
+ */
+async function reconcileG1(
+  ctx: ReviewContext,
+  actor: Actor,
+  repos: Repositories,
+  projectId: string,
+  requirementSetId: string,
+): Promise<boolean> {
+  const held = await repos.gates.get(projectId, 'G1');
+  if (held === undefined || held.value.status !== 'approved') return false;
+
+  const approvals = await repos.approvals.listForGate(projectId, 'G1');
+  const signing = approvals.find(
+    (a) => a.decision === 'approve' && a.signedBaselineHash === held.value.approvedBaselineHash,
+  );
+
+  const outcome = reopenIfInvalidated(
+    held.value,
+    signing,
+    await currentSignature(repos, requirementSetId),
+  );
+  if (!outcome.reopened) return false;
+
+  await repos.gates.update(projectId, outcome.gate, held.version);
+  await repos.audit.append({
+    id: ctx.ids.next('aud'),
+    at: ctx.clock.nowIso(),
+    actor: actor.subject,
+    rolesAtTime: [...actor.roles],
+    tokenIssuer: actor.tokenIssuer,
+    correlationId: ctx.correlationId,
+    projectId,
+    action: 'gate.reopened',
+    entityType: 'Gate',
+    entityId: 'G1',
+    before: { status: 'approved' },
+    after: {
+      status: outcome.gate.status,
+      reason: outcome.reason ?? 'the signature no longer matches',
+      // Stated on the record: nobody asked for this.
+      automatic: true,
+    },
+    gateContext: { gate: 'G1' },
+  });
+  return true;
+}
+
+/**
+ * Run a workspace mutation and reconcile G1 in the same transaction.
+ *
+ * **Every mutating command in this module goes through here**, and none calls
+ * `ctx.uow.run` directly — the architecture checker rule `g1-reconciliation`
+ * enforces that, so a future command cannot acquire a write path and forget the
+ * gate. `approveG1` is the single, named exception: it *creates* the signature
+ * that everything else is measured against.
+ */
+async function mutate<T>(
+  ctx: ReviewContext,
+  actor: Actor,
+  scope: { readonly projectId: string; readonly requirementSetId: string },
+  body: (repos: Repositories) => Promise<T>,
+): Promise<T> {
+  return ctx.uow.run(async (repos) => {
+    const result = await body(repos);
+    await reconcileG1(ctx, actor, repos, scope.projectId, scope.requirementSetId);
+    return result;
+  });
+}
+
+/** The set a command acts on when it was not handed one explicitly. */
+async function setIdFor(
+  ctx: ReviewContext,
+  projectId: string,
+  explicit?: string,
+): Promise<string> {
+  if (explicit !== undefined) return explicit;
+  const sets = await ctx.repos.requirements.listSets(projectId);
+  const id = sets[0]?.id;
+  if (id === undefined) throw new ValidationError(`project ${projectId} has no requirement set`);
+  return id;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +226,10 @@ export async function reviewRequirement(
           ? 'deferred'
           : 'needs_clarification';
 
-  return ctx.uow.run(async (repos) => {
+  return mutate(ctx, actor, {
+    projectId: input.projectId,
+    requirementSetId: requirement.requirementSetId,
+  }, async (repos) => {
     await repos.requirements.setReviewStatus(input.requirementId, status);
     await repos.audit.append({
       id: ctx.ids.next('aud'),
@@ -184,29 +322,13 @@ export async function reviseRequirement(
   };
 
   // ADR-0017: the gate REOPENS AUTOMATICALLY when the content it signed changes.
-  // A revision changes that content by construction, so the recomputed hash no
-  // longer matches the signature — and governance §2.3 requires the gate to
-  // reopen rather than be reopened by someone remembering to.
-  const gateHeld = await ctx.repos.gates.get(input.projectId, 'G1');
-  const approvals = await ctx.repos.approvals.listForGate(input.projectId, 'G1');
-  const lastApproval = approvals.filter((a) => a.decision === 'approve').at(-1);
-
-  return ctx.uow.run(async (repos) => {
+  // A revision changes that content by construction — and `mutate` is what makes
+  // that true of every mutation here rather than of the ones someone remembered.
+  return mutate(ctx, actor, {
+    projectId: input.projectId,
+    requirementSetId: current.requirementSetId,
+  }, async (repos) => {
     await repos.requirements.reviseRequirement(next, inherited);
-
-    let reopened = false;
-    if (gateHeld !== undefined && lastApproval !== undefined) {
-      // The hash of the set as it now stands, against the hash that was signed.
-      const currentHash = await requirementSetHash(repos, current.requirementSetId);
-      const outcome = reopenIfInvalidated(gateHeld.value, lastApproval, {
-        baselineHash: currentHash,
-        validationRunId: lastApproval.validationRunId,
-      });
-      if (outcome.reopened) {
-        await repos.gates.update(input.projectId, outcome.gate, gateHeld.version);
-        reopened = true;
-      }
-    }
 
     await repos.audit.append({
       id: ctx.ids.next('aud'),
@@ -226,8 +348,6 @@ export async function reviseRequirement(
         evidenceRetained: inherited.length,
         // Stated on the event so a reader never has to infer it.
         editedInPlace: false,
-        // ADR-0017 in action: a change after approval invalidates the signature.
-        gateReopened: reopened,
       },
     });
     return next;
@@ -329,7 +449,10 @@ export async function addInferredRequirement(
     createdAt: now,
   };
 
-  return ctx.uow.run(async (repos) => {
+  return mutate(ctx, actor, {
+    projectId: input.projectId,
+    requirementSetId: input.requirementSetId,
+  }, async (repos) => {
     // Deliberately NOT `insertProposal`: that requires evidence links, and an
     // inferred requirement has a rationale instead. The two paths are separate so
     // neither can be used to bypass the other's rule.
@@ -377,8 +500,16 @@ export async function resolveFlag(
   if (input.resolution.trim().length === 0) {
     throw new ValidationError('a flag resolution must say what was done about it');
   }
+  // The flag's own requirement names the set, so reconciliation is scoped to the
+  // set the flag actually belongs to rather than to a guess.
+  const flags = await ctx.repos.requirements.flagsForProject(input.projectId);
+  const flag = flags.find((f) => f.id === input.flagId);
+  if (flag === undefined) throw new ValidationError(`unknown flag ${input.flagId}`);
+  const flagged = await ctx.repos.requirements.get(flag.requirementId);
+  const requirementSetId = await setIdFor(ctx, input.projectId, flagged?.requirementSetId);
+
   const now = ctx.clock.nowIso();
-  await ctx.uow.run(async (repos) => {
+  await mutate(ctx, actor, { projectId: input.projectId, requirementSetId }, async (repos) => {
     await repos.requirements.resolveFlag(input.flagId, input.resolution.trim(), actor.subject, now);
     await repos.audit.append({
       id: ctx.ids.next('aud'),
@@ -426,8 +557,9 @@ export async function decideConflict(
         'defensible in audit, and "the analyst chose the SOP" is not an answer to "why?"',
     );
   }
+  const requirementSetId = await setIdFor(ctx, input.projectId);
   const now = ctx.clock.nowIso();
-  await ctx.uow.run(async (repos) => {
+  await mutate(ctx, actor, { projectId: input.projectId, requirementSetId }, async (repos) => {
     await repos.reconciliation.decideConflict(input.conflictId, {
       decision: input.decision,
       decidedBy: actor.subject,
@@ -475,8 +607,9 @@ export async function confirmEquivalence(
   input: ConfirmEquivalenceInput,
 ): Promise<void> {
   assertRole(actor, 'confirmEquivalence');
+  const requirementSetId = await setIdFor(ctx, input.projectId);
   const now = ctx.clock.nowIso();
-  await ctx.uow.run(async (repos) => {
+  await mutate(ctx, actor, { projectId: input.projectId, requirementSetId }, async (repos) => {
     await repos.reconciliation.setEquivalenceVerdict(
       input.canonicalEntityId,
       input.verdict === 'confirm'
@@ -525,7 +658,10 @@ export async function confirmInference(
   }
 
   const now = ctx.clock.nowIso();
-  await ctx.uow.run(async (repos) => {
+  await mutate(ctx, actor, {
+    projectId: input.projectId,
+    requirementSetId: requirement.requirementSetId,
+  }, async (repos) => {
     await repos.requirements.confirmInference(input.requirementId, actor.subject, now);
     await repos.audit.append({
       id: ctx.ids.next('aud'),
@@ -647,7 +783,7 @@ export async function generateQuestions(
   }
 
   const created: OpenQuestion[] = [];
-  await ctx.uow.run(async (repos) => {
+  await mutate(ctx, actor, { projectId: input.projectId, requirementSetId }, async (repos) => {
     for (const candidate of candidates) {
       // One question per cause. Regenerating must not duplicate a question a human
       // may already have answered, and a duplicated blocking question would block
@@ -712,29 +848,42 @@ export interface AnswerQuestionInput {
 /**
  * Answer a clarification question — **U7**.
  *
- * **The answer becomes evidence.** It is ingested as a `SourceUnit` in an interview
- * `transcript` source through the ordinary V1 text path, so it is anchored and
- * verifiable exactly like a document — *"a requirement derived from a human answer
- * has provenance exactly as strong as one derived from a document"*
- * (domain-model.md §4). No new provenance mechanism, and no exception to ADR-0008.
+ * **The answer becomes evidence.** It is ingested as a `SourceUnit` in an
+ * interview `transcript` source through the **ordinary V1 text path** — the same
+ * `ingestSource` a document goes through, with the same guard, the same
+ * extractor, the same NFC normalisation and the same anchor minting — so it is
+ * anchored and verifiable exactly like a document: *"a requirement derived from a
+ * human answer has provenance exactly as strong as one derived from a document"*
+ * (domain-model.md §4). **No new provenance mechanism, and no exception to
+ * ADR-0008.**
  *
- * Answering does **not** change any requirement. It supplies evidence; a human then
- * revises or approves, which is epistemic rule 6 again.
+ * Three details that are decisions rather than mechanics:
+ *
+ *   - The transcript carries an **`effectiveDate`** of the moment it was
+ *     answered. A source without one weakens deterministic precedence
+ *     (`L0-ING-010`, ADR-0012), and an answer's date is exactly known.
+ *   - Its **authority rank** is deliberately low. An interview answer is
+ *     testimony; a signed policy outranks it, and ADR-0012 resolves that by rank.
+ *   - The transcript text **names the question**, so the unit is self-describing
+ *     when a reader meets it in the source viewer with no question in front of
+ *     them — and so two identical answers to different questions do not
+ *     deduplicate onto one source.
+ *
+ * Answering does **not** change any requirement. It supplies evidence; a human
+ * then revises or approves, which is epistemic rule 6 again.
  */
 export async function answerQuestion(
-  ctx: ReviewContext,
+  ctx: ClarificationContext,
   actor: Actor,
   input: AnswerQuestionInput,
-): Promise<{ readonly questionId: string; readonly becameSourceUnitId?: string }> {
+): Promise<{ readonly questionId: string; readonly becameSourceUnitId: string; readonly sourceId: string }> {
   assertRole(actor, 'answerQuestion');
 
   if (input.answer.trim().length === 0) {
     throw new ValidationError('an answer must say something');
   }
 
-  const sets = await ctx.repos.requirements.listSets(input.projectId);
-  const setId = sets[0]?.id;
-  if (setId === undefined) throw new ValidationError(`project ${input.projectId} has no requirement set`);
+  const setId = await setIdFor(ctx, input.projectId);
 
   const questions = await ctx.repos.requirements.questionsForSet(setId);
   const question = questions.find((q) => q.id === input.questionId);
@@ -751,11 +900,55 @@ export async function answerQuestion(
   const now = ctx.clock.nowIso();
   const answer = input.answer.trim();
 
-  return ctx.uow.run(async (repos) => {
+  // Ingested BEFORE the answer transaction opens, because `ingestSource` runs its
+  // own transaction. Nesting them would read the ambient handle from inside an
+  // open transaction, which hangs rather than errors.
+  const transcript = [
+    `# Clarification ${question.id}`,
+    '',
+    `## Question`,
+    '',
+    question.question,
+    '',
+    `## Answer`,
+    '',
+    answer,
+    '',
+    `Answered by ${actor.subject} at ${now}.`,
+    '',
+  ].join('\n');
+
+  const ingested = await ingestSource(ctx, actor, {
+    projectId: input.projectId,
+    filename: `clarification-${question.id}.md`,
+    data: new TextEncoder().encode(transcript),
+    kind: 'transcript',
+    // Testimony, not policy. ADR-0012 breaks ties by authority rank, and an
+    // interview answer must not outrank the documents it clarifies.
+    authorityRank: 1,
+    effectiveDate: now,
+  });
+
+  // The unit holding the answer itself, not the heading above it. A requirement
+  // citing this unit cites the answer, and its anchor resolves to the answer.
+  const unit =
+    ingested.units.find((u) => (u.text ?? '').trim() === answer) ?? ingested.units.at(-1);
+  if (unit === undefined) {
+    // The extractor produced no units from text we just wrote. That is a defect
+    // in extraction, not user input, and swallowing it would leave a question
+    // answered with provenance that silently does not exist.
+    throw new Error(
+      `the clarification transcript for ${question.id} produced no SourceUnit; an answer without ` +
+        'an anchored unit would have no provenance (U7, ADR-0008)',
+    );
+  }
+
+  return mutate(ctx, actor, { projectId: input.projectId, requirementSetId: setId }, async (repos) => {
     await repos.requirements.answerQuestion(input.questionId, {
       answer,
       answeredBy: actor.subject,
       answeredAt: now,
+      becameSourceUnitId: unit.id,
     });
 
     await repos.audit.append({
@@ -769,10 +962,18 @@ export async function answerQuestion(
       action: 'question.answered',
       entityType: 'OpenQuestion',
       entityId: input.questionId,
-      after: { causeKind: question.causeKind, causeId: question.causeId, blocking: question.blocking },
+      after: {
+        causeKind: question.causeKind,
+        causeId: question.causeId,
+        blocking: question.blocking,
+        // U7 on the record: the answer is now citable evidence, not a comment.
+        becameSourceUnitId: unit.id,
+        sourceId: ingested.source.id,
+        sourceKind: 'transcript',
+      },
     });
 
-    return { questionId: input.questionId };
+    return { questionId: input.questionId, becameSourceUnitId: unit.id, sourceId: ingested.source.id };
   });
 }
 
@@ -811,7 +1012,10 @@ export async function acknowledgePolicySlot(
     rationale: input.rationale.trim(),
   };
 
-  return ctx.uow.run(async (repos) => {
+  return mutate(ctx, actor, {
+    projectId: input.projectId,
+    requirementSetId: input.requirementSetId,
+  }, async (repos) => {
     await repos.requirements.acknowledgePolicySlot(ack);
     await repos.audit.append({
       id: ctx.ids.next('aud'),
@@ -845,6 +1049,7 @@ async function coverageFor(
   const evidence = await ctx.repos.evidence.listForProject(projectId);
   const sources = await ctx.repos.sources.list(projectId);
   const set = await ctx.repos.requirements.getSet(requirementSetId);
+  const policyBlocks = await ctx.repos.requirements.slotPolicyBlocksForSet(requirementSetId);
   return computeFrameCoverage(
     buildObservations(
       // A rejected or deferred requirement is out of the baseline, so it must not
@@ -854,10 +1059,24 @@ async function coverageFor(
       links,
       new Map(evidence.map((e) => [e.id, e])),
       new Map(sources.map((s) => [s.id, s])),
+      policyBlocks,
     ),
-    set?.rafVersion ?? 'raf-1.1',
+    set?.rafVersion ?? RAF_VERSION_PIN,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Pinned versions
+// ---------------------------------------------------------------------------
+//
+// One place, because a baseline hash covers them: two call sites that disagreed
+// on the rule-pack version would compute two different hashes for one set, and
+// the gate would reopen against itself forever.
+
+const RAF_VERSION_PIN = 'raf-1.1';
+const RULE_PACK_VERSION = 'rp-1.2';
+const CAMUNDA_TARGET_PROFILE_ID = 'camunda-8x-baseline';
+const STANDARDS_PROFILE_ID = 'standards-default';
 
 /**
  * The content hash of a requirement set as it currently stands.
@@ -887,9 +1106,9 @@ async function requirementSetHash(
         versionId: `${r.id}@${r.version}`,
         contentHash: textContentHash(r.text),
       })),
-      rafVersion: 'raf-1.1',
-      rulePackVersion: 'rp-1.2',
-      camundaTargetProfileId: 'camunda-8x-baseline',
+      rafVersion: RAF_VERSION_PIN,
+      rulePackVersion: RULE_PACK_VERSION,
+      camundaTargetProfileId: CAMUNDA_TARGET_PROFILE_ID,
     },
     '1970-01-01T00:00:00.000Z',
   );
@@ -965,7 +1184,17 @@ export async function g1Readiness(
   };
 }
 
-/** Assemble the state the G1 rules judge. Counts and ids only — never entities. */
+/**
+ * Assemble the state the G1 rules judge. Counts and ids only — never entities.
+ *
+ * `openL0FindingIds` runs the **real `L0-ING-*` pack** over the project's intake
+ * state, through the same assembly `validateIntake` uses. It was once hardcoded
+ * to `[]` with a comment asserting that a clean project has none, which made
+ * `L4-REQ-008` report *met* without checking — so a project whose anchors did not
+ * resolve could be frozen and signed. Only **blocking** findings count: an `info`
+ * like a missing effective date is a weakness, not a bar (`summariseFindings`
+ * resolves severity per gate, and G1 is the gate here).
+ */
 async function g1State(
   ctx: ReviewContext,
   projectId: string,
@@ -1010,9 +1239,129 @@ async function g1State(
       )
       .map((r) => r.id),
     unacknowledgedPolicySlots: coverage.blockedByPolicy.filter((slot) => !acknowledged.has(slot)),
-    // L0 is evaluated by the intake validation command; a clean project has none.
-    openL0FindingIds: [],
+    openL0FindingIds: await openL0Findings(ctx.repos, projectId),
   };
+}
+
+/**
+ * The blocking `L0-ING-*` findings for a project — G1 precondition 8.
+ *
+ * The run id is a fixed label rather than a minted one, because these findings
+ * are read to *decide readiness*, and a readiness read must not consume an
+ * identifier or write anything. The run that gets **persisted and signed** is
+ * minted once, in `validateRequirementSet`.
+ */
+async function openL0Findings(
+  repos: Repositories,
+  projectId: string,
+): Promise<readonly string[]> {
+  const findings = evaluateL0Ingestion(await assembleL0State(repos, projectId), 'g1-readiness');
+  return summariseFindings(findings, 'G1').blocking;
+}
+
+// ---------------------------------------------------------------------------
+// The validation run — the second limb of the ADR-0017 signature
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the validation run for a requirement set, **without persisting it**.
+ *
+ * It carries both packs that bear on G1: `L0-ING-*` over the intake state, and
+ * `L4-REQ-*` over the readiness state. Both, because an approval's evidence is
+ * *"the requirements are complete AND the material under them was read"*, and a
+ * run that held only half of that would answer half the audit question.
+ */
+async function buildValidationRun(
+  ctx: ReviewContext,
+  id: string,
+  projectId: string,
+  requirementSetId: string,
+  baselineHash: string,
+  at: string,
+): Promise<ValidationRun> {
+  const l0 = evaluateL0Ingestion(await assembleL0State(ctx.repos, projectId), id);
+  const l4 = evaluateG1Readiness(await g1State(ctx, projectId, requirementSetId), id);
+  const findings: Finding[] = [...l0, ...l4];
+
+  return {
+    id,
+    projectId,
+    requirementSetId,
+    gate: 'G1',
+    baselineHash,
+    rulePackVersion: RULE_PACK_VERSION,
+    camundaTargetProfileId: CAMUNDA_TARGET_PROFILE_ID,
+    standardsProfileId: STANDARDS_PROFILE_ID,
+    startedAt: at,
+    finishedAt: at,
+    status: 'completed',
+    findings,
+  };
+}
+
+export interface ValidateRequirementSetInput {
+  readonly projectId: string;
+  readonly requirementSetId?: string;
+}
+
+/**
+ * Run and **record** validation over a requirement set — the `validate` step of
+ * freeze → validate → approve.
+ *
+ * **Recording a run is an act, and it has a consequence.** An approval is a
+ * signature over `(baselineContentHash, validationRunId)`
+ * ([ADR-0017](../../../../docs/adr/ADR-0017-approval-as-baseline-signature.md)),
+ * so a *new* run over an approved set means the approval now rests on superseded
+ * evidence, and the gate reopens by itself. ADR-0017 rejected the alternative by
+ * name: *"approval with a grace period for minor edits"* — "minor" is not
+ * definable, and validation evidence is not exempt from that.
+ *
+ * Reading readiness is **not** this. `g1Readiness` persists nothing and consumes
+ * no identifier, so a reviewer may check the panel as often as they like without
+ * touching an approval.
+ */
+export async function validateRequirementSet(
+  ctx: ReviewContext,
+  actor: Actor,
+  input: ValidateRequirementSetInput,
+): Promise<ValidationRun> {
+  assertRole(actor, 'validateRequirementSet');
+
+  const requirementSetId = await setIdFor(ctx, input.projectId, input.requirementSetId);
+  const now = ctx.clock.nowIso();
+  const baselineHash = await requirementSetHash(ctx.repos, requirementSetId);
+  const run = await buildValidationRun(
+    ctx,
+    ctx.ids.next('vr'),
+    input.projectId,
+    requirementSetId,
+    baselineHash,
+    now,
+  );
+
+  return mutate(ctx, actor, { projectId: input.projectId, requirementSetId }, async (repos) => {
+    await repos.validationRuns.insert(run);
+    await repos.audit.append({
+      id: ctx.ids.next('aud'),
+      at: now,
+      actor: actor.subject,
+      rolesAtTime: [...actor.roles],
+      tokenIssuer: actor.tokenIssuer,
+      correlationId: ctx.correlationId,
+      projectId: input.projectId,
+      action: 'validation.run',
+      entityType: 'RequirementSet',
+      entityId: requirementSetId,
+      after: {
+        validationRunId: run.id,
+        baselineHash,
+        findings: run.findings.length,
+        blocking: summariseFindings(run.findings, 'G1').blocking.length,
+      },
+      gateContext: { gate: 'G1' },
+    });
+    return run;
+  });
 }
 
 export interface ApproveG1Input {
@@ -1091,17 +1440,33 @@ export async function approveG1(
         versionId: `${r.id}@${r.version}`,
         contentHash: textContentHash(r.text),
       })),
-      rafVersion: 'raf-1.1',
-      rulePackVersion: 'rp-1.2',
-      camundaTargetProfileId: 'camunda-8x-baseline',
+      rafVersion: RAF_VERSION_PIN,
+      rulePackVersion: RULE_PACK_VERSION,
+      camundaTargetProfileId: CAMUNDA_TARGET_PROFILE_ID,
     },
     now,
   );
 
-  const validationRunId = ctx.ids.next('vr');
+  // VALIDATE, over the frozen baseline, and RECORD the run. The signature's
+  // second limb has to reference something: an approval bound to an identifier
+  // that was minted and thrown away cannot answer "what did the validation this
+  // approval relied on actually say?", and the validation-run reopening path
+  // could never fire because nothing would ever differ from it.
+  const run = await buildValidationRun(
+    ctx,
+    ctx.ids.next('vr'),
+    input.projectId,
+    requirementSetId,
+    baseline.contentHash,
+    now,
+  );
+  const validationRunId = run.id;
 
   const evaluated = evaluateGate(gateHeld.value, {
-    blockingFindingIds: readiness.blockingFindingIds,
+    // The RECORDED run's blocking findings, not the readiness read's. The gate is
+    // closed by the evidence that was signed, never by a separate computation
+    // that happened to agree with it (invariant I6).
+    blockingFindingIds: summariseFindings(run.findings, 'G1').blocking,
     baselineHash: baseline.contentHash,
     validationRunId,
   });
@@ -1125,7 +1490,13 @@ export async function approveG1(
     throw new ValidationError(`G1 approval refused: ${attempt.reason}`);
   }
 
+  // The one command in this module that calls `ctx.uow.run` directly rather than
+  // `mutate`, and the architecture checker names it as the exception: `mutate`
+  // reconciles a signature against current content, and this is the transaction
+  // that CREATES the signature. Reconciling here would compare the gate against
+  // the values it is being given in the same breath.
   return ctx.uow.run(async (repos) => {
+    await repos.validationRuns.insert(run);
     await repos.baselines.insert(baseline);
     await repos.gates.update(input.projectId, attempt.gate, gateHeld.version);
     await repos.approvals.insert({
@@ -1168,6 +1539,9 @@ export async function approveG1(
         // ADR-0017, stated on the record: this signature covers this content and
         // this evidence, and nothing else.
         signatureCovers: '(baselineContentHash, validationRunId)',
+        // The run is a stored record, so the claim is checkable rather than
+        // merely asserted.
+        validationFindings: run.findings.length,
       },
     });
 

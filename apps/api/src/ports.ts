@@ -34,11 +34,13 @@ import type {
   RequirementFlag,
   RequirementRejection,
   RequirementSet,
+  SlotPolicyBlock,
   Source,
   EvidenceExtraction,
   SourceProfile,
   SourceStatus,
   SourceUnit,
+  ValidationRun,
 } from '@asdp/schemas';
 
 /** Optimistic-concurrency token. */
@@ -77,6 +79,30 @@ export interface BaselineRepository {
 export interface ApprovalRepository {
   insert(approval: Approval): Promise<void>;
   listForGate(projectId: string, gate: GateCode): Promise<readonly Approval[]>;
+}
+
+/**
+ * Persisted validation runs — INSERT-ONLY (invariant D8).
+ *
+ * The second limb of the ADR-0017 signature. An approval binds
+ * `(baselineContentHash, validationRunId)`, so the run has to exist as a record:
+ * without one, "what validation evidence did this approval rely on?" is
+ * unanswerable and the validation-run reopening path can never fire.
+ *
+ * No update method, deliberately. Re-running validation produces a **new** run;
+ * editing an old one would rewrite the evidence a signature already covered.
+ */
+export interface ValidationRunRepository {
+  insert(run: ValidationRun): Promise<void>;
+  get(id: string): Promise<ValidationRun | undefined>;
+  /**
+   * The most recent run over a requirement set for a gate.
+   *
+   * This is what `reopenIfInvalidated` compares a signature against: if the
+   * latest run is not the run that was signed, the approval rests on superseded
+   * evidence and the gate reopens by itself.
+   */
+  latestForSet(requirementSetId: string, gate: GateCode): Promise<ValidationRun | undefined>;
 }
 
 /** Append-only (audit-and-compliance.md §1). No update path, no delete path. */
@@ -213,6 +239,7 @@ export interface Repositories {
   readonly aiInteractions: AiInteractionRepository;
   readonly requirements: RequirementRepository;
   readonly reconciliation: ReconciliationRepository;
+  readonly validationRuns: ValidationRunRepository;
 }
 
 /**
@@ -354,6 +381,18 @@ export interface RequirementRepository {
 
   acknowledgePolicySlot(ack: PolicyAcknowledgement): Promise<void>;
   policyAcknowledgementsForSet(requirementSetId: string): Promise<readonly PolicyAcknowledgement[]>;
+
+  /**
+   * Record that data-governance policy prevented a slot from being analysed.
+   *
+   * Written by the populate pass when the egress gate refuses, so that
+   * `blocked_by_policy` survives to the next read. Without it a refused pass came
+   * back as an `empty` slot and *"we were not permitted to read this"* silently
+   * became *"the sources do not say"* — the one distinction data-governance.md
+   * §3.1 exists to preserve, and the reason `L4-REQ-007` could never fire.
+   */
+  recordSlotPolicyBlock(block: SlotPolicyBlock): Promise<void>;
+  slotPolicyBlocksForSet(requirementSetId: string): Promise<readonly SlotPolicyBlock[]>;
 }
 
 /** Blob storage lives in its own module; re-exported so the port set is one import. */
@@ -517,6 +556,20 @@ export type PopulateFrameOutcome =
   | {
       readonly kind: 'refused';
       readonly reason: string;
+      /**
+       * **Why** it was refused, and it is not decoration.
+       *
+       * A `policy` refusal means the egress gate would not let this content
+       * leave — *"we were not permitted to read this"*, which is recorded as a
+       * `blocked_by_policy` slot and must be acknowledged at G1 (`L4-REQ-007`).
+       *
+       * `unavailable` and `malformed` are **not** that. No provider being wired,
+       * or a provider answering with nonsense, says nothing about data
+       * governance, and recording either as a policy block would put a claim on
+       * the record that nobody made — the precise confusion data-governance.md
+       * §3.1 exists to prevent, inverted.
+       */
+      readonly refusalKind: 'policy' | 'unavailable' | 'malformed';
       readonly degradations: readonly string[];
       readonly options: readonly string[];
       readonly interaction?: AiInteraction;

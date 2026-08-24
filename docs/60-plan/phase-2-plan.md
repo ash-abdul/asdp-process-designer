@@ -440,7 +440,27 @@ V4b-eval · live provider evaluation · V2-PDF · spreadsheets · **H1**, **H2**
 letting a requirement exist with no evidence and no inference rationale, letting the model own slot
 assignment unchecked, and creating an approved requirement without a human signature.
 
-**Dependencies added: none.** Runtime dependencies stay at **seven**. V5 needs no credential, no
+**Dependencies added: none.** Runtime dependencies stay at **seven**.
+
+#### The acceptance review, 2026-08-24 — V7 corrected, NOT yet accepted
+
+V7 was implemented at `7bfa440` and **reviewed against this boundary**. It was **not accepted**: four
+of U1–U10 and criteria 2, 6, 9 and 10 had not been delivered, and **three preconditions could not
+fail** — `L4-REQ-007` and `L4-REQ-008` reported *met* on every project regardless of state.
+
+All seven defects are corrected — the full record is
+[phase-2-status.md](phase-2-status.md) §10.8. In summary: **U7** now ingests an answer as a
+`transcript` `Source` through the V1 path; **U4** now raises `corroborated` on a human-confirmed
+equivalence, computed on read; `ValidationRun`s are **persisted** (migration 011) so both limbs of the
+ADR-0017 signature reopen; reopening is **centralised** in a `mutate` wrapper enforced by a new
+`g1-reconciliation` checker rule; the real `L0-ING-*` pack feeds `L4-REQ-008`; and a refused
+`POPULATE_FRAME` pass now **records** a `slot_policy_block` (migration 012) so `L4-REQ-007` can fire.
+
+**Nothing was weakened.** No checker rule was relaxed, no SQL invariant dropped, no U-decision
+re-cut. The `controller-thinness` cap is unchanged at 220 and the surface was split again instead.
+**Two migrations and one checker rule were added; U1–U10 are unchanged.**
+
+**Acceptance remains an explicit decision and has not been given.** V5 needs no credential, no
 corpus and no Docker.
 
 #### H3 is a live-call blocker, not a V5 blocker

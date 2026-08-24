@@ -152,9 +152,17 @@ export function createBrokerFramePopulator(deps: BrokerFramePopulatorDeps): Fram
       );
 
       if (outcome.kind === 'refused') {
+        // A refusal with NO eligible provider and at least one rejected one is
+        // the egress gate speaking: the content may not leave. A refusal for any
+        // other reason — nothing wired, everything failed — is not a statement
+        // about data governance and must not be recorded as one.
+        const gated =
+          outcome.routing.eligibleProviders.length === 0 &&
+          outcome.routing.rejectedProviders.length > 0;
         return {
           kind: 'refused',
           reason: outcome.detail,
+          refusalKind: gated ? 'policy' : 'unavailable',
           degradations: (outcome.routing.plan?.degradations ?? []).map(String),
           options: [...outcome.options],
         };
@@ -165,6 +173,7 @@ export function createBrokerFramePopulator(deps: BrokerFramePopulatorDeps): Fram
         return {
           kind: 'refused',
           reason: `the provider response was not usable structured output: ${decoded.reason}`,
+          refusalKind: 'malformed',
           degradations: ['prompt_repair_loop'],
           options: ['retry this pass', 'record requirements by hand from the evidence list'],
           ...(captured === undefined ? {} : { interaction: captured }),
@@ -178,6 +187,7 @@ export function createBrokerFramePopulator(deps: BrokerFramePopulatorDeps): Fram
           reason:
             'the provider response did not match the required frame-population schema: ' +
             parsed.error.message.slice(0, 300),
+          refusalKind: 'malformed',
           degradations: ['prompt_repair_loop'],
           options: ['retry this pass', 'record requirements by hand from the evidence list'],
           ...(captured === undefined ? {} : { interaction: captured }),
@@ -191,6 +201,7 @@ export function createBrokerFramePopulator(deps: BrokerFramePopulatorDeps): Fram
           reason:
             'the broker produced a proposal without an interaction record; refusing to report an ' +
             'unrecorded AI call as a success (invariant I8)',
+          refusalKind: 'malformed',
           degradations: [],
           options: ['retry this pass'],
         };
@@ -217,6 +228,8 @@ export function unavailableFramePopulator(reason?: string): FramePopulator {
         reason ??
         'no AI provider is configured in this build, so no requirement proposals can be made. ' +
           'This is a configuration gap, not a statement that the evidence supports nothing.',
+      // NOT a policy block: nothing was denied, nothing was wired.
+      refusalKind: 'unavailable',
       degradations: ['no_provider_configured'],
       options: [
         'configure a provider through the AI Provider Abstraction (A8 permits Claude API for permitted material)',

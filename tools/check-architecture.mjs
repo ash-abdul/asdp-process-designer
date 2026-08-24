@@ -300,6 +300,27 @@ const FRAMEWORK_FREE_FILES = ['apps/api/src/commands.ts', 'apps/api/src/ports.ts
 /** N3: a controller parses, delegates, maps. It holds no business logic. */
 const CONTROLLER_MAX_LINES = 220;
 
+// --- ADR-0017: gate reopening is structural, not remembered ----------------
+
+/**
+ * The requirements workspace mutates the content a G1 signature covers, and
+ * ADR-0017 requires the gate to reopen AUTOMATICALLY when that content changes:
+ * *"baseline hash recomputation on every member change; mismatch reopens the
+ * gate."*
+ *
+ * V7 as first implemented wired reopening into `reviseRequirement` alone, so
+ * adding a requirement after approval left G1 approved over a set whose hash had
+ * changed. The fix was a `mutate` wrapper that reconciles inside every write
+ * transaction — and this rule is what stops the next command from opening a raw
+ * transaction and quietly reacquiring the same defect.
+ *
+ * The exemption is named rather than inferred: `approveG1` is the transaction
+ * that CREATES the signature everything else is measured against, so reconciling
+ * inside it would compare the gate against the values it is being handed.
+ */
+const G1_RECONCILED_FILE = 'apps/api/src/commands/review.ts';
+const G1_RECONCILE_EXEMPT = ['approveG1'];
+
 // --- ADR-0035: persistence confinement and SQL safety ----------------------
 
 const PERSISTENCE_PACKAGES = ['@electric-sql/pglite', 'pg'];
@@ -640,6 +661,32 @@ export function evaluateRules(files) {
       }
     }
 
+    // --- ADR-0017: every workspace write reconciles the gate -------------
+    if (normalisedPath === G1_RECONCILED_FILE) {
+      // Exported functions only: `mutate` itself must call `ctx.uow.run`, and it
+      // is the wrapper, not a command.
+      const exported = /^export (?:async )?function ([A-Za-z0-9_]+)\s*\(/gm;
+      const starts = [];
+      let m;
+      while ((m = exported.exec(f.text)) !== null) starts.push({ name: m[1], at: m.index });
+      for (let i = 0; i < starts.length; i++) {
+        const from = starts[i].at;
+        const to = i + 1 < starts.length ? starts[i + 1].at : f.text.length;
+        const body = f.text.slice(from, to);
+        if (!/ctx\.uow\.run\(/.test(body)) continue;
+        if (G1_RECONCILE_EXEMPT.includes(starts[i].name)) continue;
+        violations.push({
+          rule: 'g1-reconciliation',
+          file: f.path,
+          detail:
+            `'${starts[i].name}' opens a transaction with ctx.uow.run directly; a workspace ` +
+            'mutation must go through mutate(), which reconciles the G1 signature in the same ' +
+            'transaction (ADR-0017). Reopening is a property of the workspace, not something a ' +
+            'command may remember',
+        });
+      }
+    }
+
     // --- ADR-0035: persistence confinement ------------------------------
     for (const spec of imports) {
       const bare = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
@@ -850,6 +897,26 @@ const SELF_TEST_CASES = [
     rule: 'controller-thinness',
     file: { path: 'apps/api/src/http/big.controller.ts', pkg: '@asdp/api', cls: 'application',
             text: Array.from({ length: 240 }, (_, i) => `// line ${i}`).join('\n') },
+  },
+  {
+    name: 'a workspace command opening a raw transaction is rejected (ADR-0017)',
+    rule: 'g1-reconciliation',
+    file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
+            text: `export async function rejectRequirement(ctx) {\n  return ctx.uow.run(async (repos) => repos.x());\n}\n` },
+  },
+  {
+    name: 'the named exception approveG1 is PERMITTED to open one (it creates the signature)',
+    rule: 'g1-reconciliation',
+    expectNone: true,
+    file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
+            text: `export async function approveG1(ctx) {\n  return ctx.uow.run(async (repos) => repos.x());\n}\n` },
+  },
+  {
+    name: 'a workspace command going through mutate() is PERMITTED (ADR-0017)',
+    rule: 'g1-reconciliation',
+    expectNone: true,
+    file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
+            text: `export async function rejectRequirement(ctx) {\n  return mutate(ctx, a, s, async (repos) => repos.x());\n}\n` },
   },
   {
     name: 'a test constructing a transport with NO injected fetch is rejected (A7 / D5)',

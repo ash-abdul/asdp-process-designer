@@ -1124,6 +1124,84 @@ describe('batching, replay and refusal', () => {
     }
   });
 
+  test('a REFUSAL WITH NO PROVIDER records NO policy block — it is not a governance finding', async () => {
+    // The distinction data-governance.md §3.1 draws, in the direction that is
+    // easy to get wrong. "No provider is configured" says nothing about whether
+    // anyone was permitted to read anything, and recording it as
+    // `blocked_by_policy` would put a governance claim on the record that nobody
+    // made — then demand a human acknowledge it at G1.
+    const blobRoot = await mkdtemp(join(tmpdir(), 'asdp-v5-nopolicy-'));
+    const database = await createPgliteDatabase({});
+    await migrate(database);
+    const config = loadConfig({ PORT: '0', ASDP_LOG_LEVEL: 'error', ASDP_BLOB_ROOT: blobRoot });
+    const blobStore = await createFilesystemBlobStore({ rootDirectory: blobRoot });
+    const ids = sharedIds();
+    const running = await listen(
+      { config, database, blobStore, clock: systemClock(), ids, evidenceExtractor: extractorOver(ids) },
+      0,
+    );
+    const s: Server = { ...running, database };
+    try {
+      const { projectId } = await projectWithEvidence(s);
+      const result = await populate(s, projectId);
+      assert.equal(result.passes.filter((p: any) => p.refused !== undefined).length, 6);
+
+      const blocks = await database.query(
+        'select * from slot_policy_block where project_id = $1',
+        [projectId],
+      );
+      assert.equal(blocks.rows.length, 0, 'an unavailable provider is not a policy denial');
+    } finally {
+      await running.close();
+      await database.close();
+    }
+  });
+
+  test('an EGRESS refusal DOES record a policy block, per slot the pass would have filled', async () => {
+    // The producing path for `blocked_by_policy`, which had none: `slotStatus`
+    // could always return it and nothing could ever cause it, so `L4-REQ-007`
+    // reported met on every project whatever the egress gate had refused.
+    //
+    // The evidence is reclassified past the command, because the point under test
+    // is what the POPULATE pass does when the gate refuses — not how the evidence
+    // came to be RESTRICTED.
+    const s = await startServer();
+    try {
+      const { projectId } = await projectWithEvidence(s);
+      await s.database.query(
+        'update evidence_item set classification = $1 where project_id = $2',
+        ['PROHIBITED', projectId],
+      );
+
+      const result = await populate(s, projectId);
+      assert.equal(result.accepted.length, 0, 'nothing may be proposed from content that cannot leave');
+      assert.ok(result.passes.every((p: any) => p.refused !== undefined));
+      assert.match(String(result.passes[0].refused), /no provider may receive PROHIBITED content/);
+
+      const blocks = await s.database.query(
+        'select raf_slot, classification, reason from slot_policy_block where project_id = $1',
+        [projectId],
+      );
+      assert.ok(blocks.rows.length > 0, 'a denied analysis must leave a record');
+      assert.equal(String((blocks.rows[0] as any).classification), 'PROHIBITED');
+
+      // And it reads back as BLOCKED, not as a slot the sources are silent on.
+      const coverage = await call(s, 'GET', `/projects/${projectId}/frame-coverage`, undefined, asAnalyst);
+      assert.ok(
+        coverage.json.coverage.blockedByPolicy.length > 0,
+        'the slot must report blocked_by_policy, never empty',
+      );
+      for (const slot of coverage.json.coverage.blockedByPolicy) {
+        assert.ok(
+          !coverage.json.coverage.g1Blockers.includes(slot),
+          'a blocked slot is acknowledged at G1, not filled',
+        );
+      }
+    } finally {
+      await s.close();
+    }
+  });
+
   test('a project with no evidence is refused by name, not answered emptily', async () => {
     const s = await startServer();
     try {

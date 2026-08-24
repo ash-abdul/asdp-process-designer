@@ -1019,6 +1019,158 @@ describe('Q6 reconciliation-aware view', () => {
     }
   });
 
+  test('U4 — a HUMAN-CONFIRMED equivalence raises corroboration, and mutates no V5 row', async () => {
+    // The half of Q6 V6 could not claim, and the criterion-9 proof beside it.
+    //
+    // V6's position was precise rather than timid: equivalence was AI-PROPOSED, so
+    // raising corroboration would have manufactured agreement from an unconfirmed
+    // claim. Confirmation is what discharges that qualifier — and nothing else
+    // does, which is what the assertions before the verdict are for.
+    // A reconciler that raises NO candidates, so the only conflict in the project
+    // is the equivalent one this test records. With a contradictory candidate in
+    // play the answer would be `contradicted` whatever else agreed, and the test
+    // would be measuring precedence rather than corroboration.
+    const s = await startServer({
+      reconciler: (ids) => reconcilerOver(ids, scriptedReconciler({ candidates: [], limitations: [] })),
+    });
+    try {
+      const projectId = await projectWithProposals(s);
+      await reconcile(s, projectId);
+
+      const sets = await s.database.query(
+        'select id from requirement_set where project_id = $1',
+        [projectId],
+      );
+      const setId = String((sets.rows[0] as any).id);
+
+      // Two propositions in ONE slot resting on DIFFERENT sources, and named by no
+      // contradictory candidate — the only shape corroboration could ever apply to.
+      const rows = await s.database.query(
+        `select r.id as rid, r.raf_slot as slot, e.source_id as sid
+           from requirement r
+           join requirement_evidence re on re.requirement_id = r.id
+           join evidence_item e on e.id = re.evidence_item_id
+          where r.requirement_set_id = $1`,
+        [setId],
+      );
+      const contradictory = new Set(
+        (
+          await s.database.query(
+            `select p.entity_id as eid from conflict_participant p
+               join conflict c on c.id = p.conflict_id
+              where c.requirement_set_id = $1 and c.classification = 'potentially_contradictory'`,
+            [setId],
+          )
+        ).rows.map((r: any) => String(r.eid)),
+      );
+
+      const bySlot = new Map<string, Map<string, string>>();
+      for (const row of rows.rows as any[]) {
+        if (contradictory.has(String(row.rid))) continue;
+        const held = bySlot.get(String(row.slot)) ?? new Map<string, string>();
+        // First requirement seen per source, so the pair spans two documents.
+        if (!held.has(String(row.sid))) held.set(String(row.sid), String(row.rid));
+        bySlot.set(String(row.slot), held);
+      }
+      const pair = [...bySlot.entries()].find(([, bySource]) => bySource.size >= 2);
+      assert.ok(pair !== undefined, 'the fixture must offer a two-source pair in one slot');
+      const [slot, bySource] = pair;
+      const [left, right] = [...bySource.values()];
+
+      const interaction = await s.database.query('select id from ai_interaction limit 1');
+      const interactionId = String((interaction.rows[0] as any).id);
+
+      // An EQUIVALENT candidate over the pair, and an AI-PROPOSED merge tying
+      // them. Both are states V6 legitimately produces; V6 simply had no verdict
+      // to record against them.
+      await s.database.query(
+        `insert into conflict (id, project_id, requirement_set_id, topic, raf_slot, classification,
+                               explanation, detected_by, data_classification, created_at)
+         values ($1,$2,$3,'same proposition',$4,'equivalent',
+                 'both documents state the same thing','ai','INTERNAL',now())`,
+        ['cfl-u4', projectId, setId, slot],
+      );
+      for (const requirementId of [left, right]) {
+        await s.database.query(
+          `insert into conflict_participant (conflict_id, role, entity_id)
+           values ('cfl-u4','requirement',$1)`,
+          [requirementId],
+        );
+      }
+      await s.database.query(
+        `insert into canonical_entity (id, project_id, requirement_set_id, kind, label_en, label_ar,
+                                       match_form, origin, classification, requirement_ids,
+                                       ai_interaction_id, created_at)
+         values ($1,$2,$3,'actor','reviewing officer','الموظف المراجع','reviewing officer',
+                 'ai_proposed','INTERNAL',$4,$5,now())`,
+        ['can-u4', projectId, setId, [left, right], interactionId],
+      );
+
+      // BEFORE: unconfirmed, so provisional and NOT corroborated. If this were
+      // already corroborated the verdict below would prove nothing.
+      const before = await call(s, 'GET', `/projects/${projectId}/reconciliation`, undefined, asAnalyst);
+      const beforeLeft = before.json.agreement.find((a: any) => a.requirementId === left);
+      assert.equal(beforeLeft.reconciledAgreement, 'silent');
+      assert.equal(beforeLeft.provisionalCorroboration, true);
+      assert.match(String(beforeLeft.reason), /unconfirmed/);
+
+      // Criterion 9: snapshot every V5 row, byte for byte.
+      const snapshot = async (): Promise<string> =>
+        JSON.stringify(
+          (
+            await s.database.query(
+              `select id, text, original_ai_text, computed_confidence, confidence_band,
+                      confidence_function_version, epistemic_level, derivation, status, version
+                 from requirement where requirement_set_id = $1 order by id`,
+              [setId],
+            )
+          ).rows,
+        );
+      const v5Before = await snapshot();
+
+      const verdict = await call(
+        s, 'POST', `/projects/${projectId}/canonical-entities/can-u4/verdict`,
+        { verdict: 'confirm' }, asAnalyst,
+      );
+      assert.equal(verdict.status, 200, JSON.stringify(verdict.json));
+
+      // AFTER: corroborated, and the provisional qualifier is discharged.
+      const after = await call(s, 'GET', `/projects/${projectId}/reconciliation`, undefined, asAnalyst);
+      for (const requirementId of [left, right]) {
+        const row = after.json.agreement.find((a: any) => a.requirementId === requirementId);
+        assert.equal(row.reconciledAgreement, 'corroborated', `${requirementId} must be corroborated`);
+        assert.equal(row.provisionalCorroboration, false);
+        assert.match(String(row.reason), /HUMAN-CONFIRMED/);
+        // COMPUTED ON READ: the stored value is untouched beside the derived one.
+        assert.equal(row.storedAgreement, 'silent');
+      }
+
+      // CRITERION 9, and the reason confidence stays reproducible: not one V5 row
+      // changed. Corroboration is derived on read, never written back.
+      assert.equal(await snapshot(), v5Before, 'no V5 requirement row may be mutated (Q6)');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('U4 — an equivalence a human REJECTED never corroborates', async () => {
+    const s = await startServer();
+    try {
+      const projectId = await projectWithProposals(s);
+      await reconcile(s, projectId);
+      const view = await call(s, 'GET', `/projects/${projectId}/reconciliation`, undefined, asAnalyst);
+      // Nothing is confirmed in this project, so nothing may be corroborated —
+      // the standing guarantee, restated against a build that CAN corroborate.
+      assert.equal(
+        view.json.agreement.filter((a: any) => a.reconciledAgreement === 'corroborated').length,
+        0,
+        'corroboration requires a confirmation that has not happened here',
+      );
+    } finally {
+      await s.close();
+    }
+  });
+
   test('no raf_coverage table appeared, and coverage still answers (Q9)', async () => {
     const s = await startServer();
     try {

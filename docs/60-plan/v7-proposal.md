@@ -499,3 +499,29 @@ the plan of record ([phase-2-plan.md](phase-2-plan.md) §3.12):
 
 **ADRs required: none. Dependencies added: none** — seven, unchanged. **H3 remains unresolved: V7 is
 replay-only and makes no live provider call.**
+
+---
+
+## 24. Implementation and review status
+
+| | |
+|---|---|
+| **Implemented** | `7bfa440`, 2026-08-24 |
+| **Reviewed** | 2026-08-24, against this boundary. **Not accepted** — seven defects, four of them an approved decision or acceptance criterion that had not been delivered |
+| **Corrected** | All seven. The record is [phase-2-status.md](phase-2-status.md) §10.8 |
+| **Accepted** | **No.** Acceptance is an explicit decision and has not been given |
+
+**The four criteria that were not met at `7bfa440`**, and are met now:
+
+| # | Criterion | What was missing |
+|---|---|---|
+| **2** | Each precondition blocks independently | Demonstrated only over hand-built `G1State` objects. `L4-REQ-007` and `L4-REQ-008` could not fail through the real path at all. Eight **end-to-end adverse tests** now exist, each asserting its rule is the *only* unmet one |
+| **6** | The hash **or** the validation run reopens G1 | Only the hash limb existed. No `ValidationRun` was persisted anywhere, so the run limb could never fire. Migration 011 persists runs; both limbs have a test |
+| **9** | Confirmed equivalence raises corroboration, computed on read | **U4 was not implemented** — the view still carried V6's "no `corroborated` branch" |
+| **10** | An answered question becomes an anchored `SourceUnit` | **U7 was not implemented** — `became_source_unit_id` was written by no code path |
+
+Two further defects were structural rather than missing features: **reopening was wired into
+`reviseRequirement` alone**, against ADR-0017's *"recomputation on every member change"*; and the
+**documentation recorded none of it**, while crediting U7 in a section that did not implement it.
+
+**U1–U10 are unchanged.** Nothing in this boundary was re-cut to accommodate the corrections.

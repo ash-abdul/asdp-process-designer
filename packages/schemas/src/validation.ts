@@ -85,6 +85,14 @@ export type Finding = z.infer<typeof Finding>;
 export const ValidationRun = z.object({
   id: EntityId,
   projectId: EntityId,
+  /**
+   * The requirement set the run covered, when it covered one.
+   *
+   * Set for a G1 run: the signature ADR-0017 requires binds
+   * `(baselineContentHash, validationRunId)`, so "which run was this approval
+   * relying on, and over what?" has to be answerable from the run itself.
+   */
+  requirementSetId: EntityId.optional(),
   baselineHash: Sha256.optional(),
   /** Which gate this run is evidence for. */
   gate: GateCode.optional(),

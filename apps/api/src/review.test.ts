@@ -160,7 +160,21 @@ async function projectWithProposals(s: Server): Promise<{ projectId: string; set
  * preconditions are satisfied by a person doing eight kinds of work, not by a flag
  * somewhere being flipped.
  */
-async function makeReady(s: Server, projectId: string, setId: string): Promise<void> {
+interface ReadyOptions {
+  /** Leave the empty required slots empty — the L4-REQ-005 adverse case. */
+  readonly skipFillSlots?: boolean;
+  /** Leave inferred requirements unconfirmed — the L4-REQ-006 adverse case. */
+  readonly skipConfirmInference?: boolean;
+  /** Derive the question set BEFORE the gaps are filled, so blocking questions exist. */
+  readonly generateQuestionsFirst?: boolean;
+}
+
+async function makeReady(
+  s: Server,
+  projectId: string,
+  setId: string,
+  options: ReadyOptions = {},
+): Promise<void> {
   // 1. Accept every proposal.
   const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
   for (const requirement of listed.json.requirements) {
@@ -175,6 +189,17 @@ async function makeReady(s: Server, projectId: string, setId: string): Promise<v
   //    usually a no-op — asserted rather than assumed.)
   const coverage = await call(s, 'GET', `/projects/${projectId}/frame-coverage`, undefined, asAnalyst);
   assert.equal(coverage.status, 200);
+
+  // 2b. Derive the question set while the gaps are still open, when the case
+  //     under test needs a blocking question to exist.
+  if (options.generateQuestionsFirst === true) {
+    const generated = await call(
+      s, 'POST', `/projects/${projectId}/questions/generate`, {}, asAnalyst,
+    );
+    assert.equal(generated.status, 201, JSON.stringify(generated.json));
+  }
+
+  if (options.skipFillSlots === true) return;
 
   // 3. Fill every empty REQUIRED slot with a human-originated inferred requirement.
   //    This is U8-a doing the work it was approved for: the evidence does not state
@@ -195,6 +220,8 @@ async function makeReady(s: Server, projectId: string, setId: string): Promise<v
     // Every one is L3, and every one needs confirming before G1 (precondition 6).
     assert.equal(r.json.epistemicLevel, 'L3');
   }
+
+  if (options.skipConfirmInference === true) return;
 
   // 4. Confirm every LOW-confidence inference, and accept the new requirements.
   const withInferred = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
@@ -754,6 +781,540 @@ describe('L4-REQ — G1 readiness rules', () => {
       assert.equal(findings.length, 1, `${ruleId}: expected exactly one finding`);
       assert.equal(findings[0]?.ruleId, ruleId);
       assert.equal(findings[0]?.severityAtGate.G1, 'error');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ADVERSE CASES — each of the eight preconditions, blocking on its own
+// ---------------------------------------------------------------------------
+
+/**
+ * Eight tests, each starting from a **G1-ready** project and introducing exactly
+ * one defect.
+ *
+ * The distinction this whole block exists to draw: a happy-path test where a
+ * condition happens to be absent proves nothing about whether the condition
+ * would be *detected*. `L4-REQ-008` passed every V7 test while its input was
+ * hardcoded to `[]` — the panel reported it met on a project nobody had checked.
+ * A precondition that cannot fail is worse than an absent one, because the panel
+ * positively claims it was checked.
+ *
+ * So each case asserts three things: the rule is unmet, **every other rule is
+ * met** (that is what "independently" means), and `g1/approve` refuses by name.
+ */
+async function readinessOf(s: Server, projectId: string): Promise<any> {
+  const r = await call(s, 'GET', `/projects/${projectId}/g1/readiness`, undefined, asAnalyst);
+  assert.equal(r.status, 200, JSON.stringify(r.json));
+  return r.json;
+}
+
+async function assertBlocksAlone(s: Server, projectId: string, ruleId: string): Promise<void> {
+  const readiness = await readinessOf(s, projectId);
+  const unmet = readiness.preconditions.filter((p: any) => !p.met).map((p: any) => p.ruleId);
+  assert.deepEqual(
+    unmet,
+    [ruleId],
+    `${ruleId} must be the ONLY unmet precondition; unmet was ${JSON.stringify(unmet)}`,
+  );
+  assert.equal(readiness.ready, false);
+
+  // And it must actually stop the gate, naming itself.
+  const attempted = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+  assert.equal(attempted.status, 400, JSON.stringify(attempted.json));
+  assert.match(String(attempted.json.error), new RegExp(ruleId));
+}
+
+describe('EACH G1 precondition blocks independently, end to end', () => {
+  test('a ready project is ready — the baseline these eight are measured against', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const readiness = await readinessOf(s, projectId);
+      assert.equal(readiness.ready, true, JSON.stringify(readiness.preconditions));
+      assert.equal(readiness.preconditions.filter((p: any) => !p.met).length, 0);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-001 — an unreviewed draft blocks', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      // Back to `draft` past the command, because the claim is that READINESS
+      // reads the database rather than trusting what the workflow did.
+      await s.database.query('update requirement set status = $1 where id = $2', [
+        'draft',
+        listed.json.requirements[0].id,
+      ]);
+      await assertBlocksAlone(s, projectId, 'L4-REQ-001');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-002 — an unresolved BLOCKING flag blocks, and resolving it clears the gate', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      const requirementId = listed.json.requirements[0].id;
+      // V5 raises warnings and infos only, so a blocking flag is constructed
+      // directly. The rule under test is whether G1 SEES one, not who raised it.
+      await s.database.query(
+        `insert into requirement_flag (id, requirement_id, project_id, kind, severity, detail,
+                                       raised_by, created_at)
+         values ($1,$2,$3,'untestable','blocking','no acceptance criterion is stateable','rule',now())`,
+        ['rfl-adverse-1', requirementId, projectId],
+      );
+      await assertBlocksAlone(s, projectId, 'L4-REQ-002');
+
+      // And the workspace's own resolution path clears it — so the precondition
+      // is satisfiable as well as detectable.
+      const resolved = await call(
+        s, 'POST', `/projects/${projectId}/requirement-flags/rfl-adverse-1/resolve`,
+        { resolution: 'acceptance criterion added to the requirement text' }, asAnalyst,
+      );
+      assert.equal(resolved.status, 200, JSON.stringify(resolved.json));
+      assert.equal((await readinessOf(s, projectId)).ready, true);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-003 — an undecided conflict blocks, and deciding it clears the gate', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      await s.database.query(
+        `insert into conflict (id, project_id, requirement_set_id, topic, raf_slot, classification,
+                               explanation, detected_by, data_classification, created_at)
+         values ($1,$2,$3,'review duration','processSteps','potentially_contradictory',
+                 'three days and ten days cannot both hold','rule','INTERNAL',now())`,
+        ['cfl-adverse-1', projectId, setId],
+      );
+      await assertBlocksAlone(s, projectId, 'L4-REQ-003');
+
+      const decided = await call(
+        s, 'POST', `/projects/${projectId}/conflicts/cfl-adverse-1/decide`,
+        {
+          decision: 'not_a_conflict',
+          rationale: 'the ten-day figure is a service target, not the statutory review period',
+        },
+        asAnalyst,
+      );
+      assert.equal(decided.status, 200, JSON.stringify(decided.json));
+      assert.equal((await readinessOf(s, projectId)).ready, true);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-004 — an unanswered BLOCKING question blocks', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      // Questions derived while the required slots were still empty, so they are
+      // blocking by derivation (U6) rather than by assertion — then the gaps are
+      // filled, leaving the questions outstanding.
+      await makeReady(s, projectId, setId, { generateQuestionsFirst: true });
+
+      const questions = await call(s, 'GET', `/projects/${projectId}/questions`, undefined, asAnalyst);
+      const blocking = questions.json.questions.filter((q: any) => q.blocking);
+      assert.ok(blocking.length > 0, 'the fixture must produce a blocking question');
+      await assertBlocksAlone(s, projectId, 'L4-REQ-004');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-005 — an empty REQUIRED slot blocks', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId, { skipFillSlots: true });
+      await assertBlocksAlone(s, projectId, 'L4-REQ-005');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-006 — an unconfirmed LOW-confidence inference blocks', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId, { skipConfirmInference: true });
+      await assertBlocksAlone(s, projectId, 'L4-REQ-006');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-007 — an unacknowledged POLICY-BLOCKED slot blocks, and is not an empty slot', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+
+      // A slot analysis was DENIED on. Recorded exactly as a refused populate
+      // pass records one — see the `records a slot policy block` test for the
+      // producing path.
+      await s.database.query(
+        `insert into slot_policy_block (id, project_id, requirement_set_id, raf_slot,
+                                        classification, provider, reason, blocked_at)
+         values ($1,$2,$3,'securityAndPrivacy','RESTRICTED','stub',
+                 'RESTRICTED content may not reach an external provider (E1)',now())`,
+        ['spb-adverse-1', projectId, setId],
+      );
+
+      await assertBlocksAlone(s, projectId, 'L4-REQ-007');
+
+      // The distinction data-governance.md §3.1 draws, asserted rather than
+      // assumed: this is NOT reported as a slot the sources are silent on.
+      const coverage = await call(s, 'GET', `/projects/${projectId}/frame-coverage`, undefined, asAnalyst);
+      assert.ok(coverage.json.coverage.blockedByPolicy.includes('securityAndPrivacy'));
+      assert.ok(!coverage.json.coverage.g1Blockers.includes('securityAndPrivacy'));
+
+      // Acknowledging it clears the gate — with a stated reason, never a click.
+      const ack = await call(
+        s, 'POST', `/projects/${projectId}/policy-acknowledgements`,
+        {
+          requirementSetId: setId,
+          rafSlot: 'securityAndPrivacy',
+          rationale: 'the security annex is RESTRICTED; the CISO will supply requirements directly',
+        },
+        asAnalyst,
+      );
+      assert.equal(ack.status, 201, JSON.stringify(ack.json));
+      assert.equal((await readinessOf(s, projectId)).ready, true);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('L4-REQ-008 — a DIRTY L0 blocks: an unresolvable anchor stops the signature', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+
+      // THE case V7 could not detect. The stored text is altered under the units
+      // that were minted from it, so their anchors no longer resolve — ADR-0008's
+      // hard error, and every requirement downstream of it is unfounded.
+      //
+      // Before the fix this project was reported READY and could be signed.
+      await s.database.query(
+        `update source_text set text = $1 where source_id in
+           (select id from source where project_id = $2)`,
+        ['completely different content that no anchor was ever minted against', projectId],
+      );
+
+      const readiness = await readinessOf(s, projectId);
+      const l0 = readiness.preconditions.find((p: any) => p.ruleId === 'L4-REQ-008');
+      assert.equal(l0.met, false, 'a broken anchor must close G1');
+      assert.match(String(l0.detail), /L0 finding/);
+
+      const attempted = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+      assert.equal(attempted.status, 400, JSON.stringify(attempted.json));
+      assert.match(String(attempted.json.error), /L4-REQ-008/);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('an INFO-level L0 finding does NOT block — severity is resolved per gate', async () => {
+    // The converse, and it matters: if every L0 finding blocked, a source with no
+    // effective date (`L0-ING-010`, info) would close the gate, and the response
+    // would be to stop looking at L0 rather than to fix anything.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      await s.database.query(
+        'update source set effective_date = null where project_id = $1',
+        [projectId],
+      );
+      const findings = await call(s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst);
+      assert.ok(
+        findings.json.findings.some((f: any) => f.ruleId === 'L0-ING-010'),
+        'the info finding must actually be raised, or this test proves nothing',
+      );
+      assert.equal((await readinessOf(s, projectId)).ready, true);
+    } finally {
+      await s.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U7 — an answered question becomes anchored evidence
+// ---------------------------------------------------------------------------
+
+describe('U7 an answer becomes an anchored transcript SourceUnit', () => {
+  test('answering ingests a transcript through the V1 path, and the chain resolves', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId, { generateQuestionsFirst: true });
+
+      const listed = await call(s, 'GET', `/projects/${projectId}/questions`, undefined, asAnalyst);
+      const question = listed.json.questions[0];
+      assert.ok(question !== undefined, 'the fixture must produce a question');
+
+      const answered = await call(
+        s, 'POST', `/projects/${projectId}/questions/${question.id}/answer`,
+        { answer: 'The business objective is to renew licences within five working days.' },
+        asAnalyst,
+      );
+      assert.equal(answered.status, 200, JSON.stringify(answered.json));
+
+      // THE claim: the answer is not a comment field, it is a SourceUnit.
+      const unitId = answered.json.becameSourceUnitId;
+      assert.ok(typeof unitId === 'string' && unitId.length > 0, 'the answer must become a unit');
+
+      // 1. It is recorded against the question, so the link survives a restart.
+      const after = await call(s, 'GET', `/projects/${projectId}/questions`, undefined, asAnalyst);
+      const stored = after.json.questions.find((q: any) => q.id === question.id);
+      assert.equal(stored.becameSourceUnitId, unitId);
+      assert.equal(stored.answeredBy, 'u-analyst');
+
+      // 2. The source is a `transcript`, ingested through the ordinary V1 path —
+      //    no new provenance mechanism, so it appears in the source inventory
+      //    like any document.
+      const sources = await call(s, 'GET', `/projects/${projectId}/sources`, undefined, asAnalyst);
+      const transcript = sources.json.sources.find((x: any) => x.id === answered.json.sourceId);
+      assert.equal(transcript.kind, 'transcript');
+      // An effective date is known exactly for an answer, so `L0-ING-010` has
+      // nothing to say about it.
+      assert.ok(String(transcript.effectiveDate).length > 0);
+      // Testimony does not outrank a policy document (ADR-0012).
+      assert.equal(transcript.authorityRank, 1);
+
+      // 3. The unit's anchor RESOLVES, which is what "provenance exactly as strong
+      //    as a document" has to mean (ADR-0008). Proved through the source
+      //    viewer's own resolution path, not by reading a boolean.
+      const viewer = await call(
+        s, 'GET', `/projects/${projectId}/sources/${answered.json.sourceId}/content`,
+        undefined, asAnalyst,
+      );
+      assert.equal(viewer.status, 200, JSON.stringify(viewer.json));
+      assert.match(String(viewer.json.text), /renew licences within five working days/);
+
+      // 4. And the whole project still passes L0 — an unresolvable anchor here
+      //    would close G1 through L4-REQ-008, which is exactly the point of
+      //    routing the answer through intake rather than around it.
+      const validated = await call(
+        s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst,
+      );
+      assert.equal(validated.json.summary.blocking.length, 0, JSON.stringify(validated.json.summary));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('answering a blocking question CLEARS L4-REQ-004 and G1 becomes reachable', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId, { generateQuestionsFirst: true });
+      await assertBlocksAlone(s, projectId, 'L4-REQ-004');
+
+      const listed = await call(s, 'GET', `/projects/${projectId}/questions`, undefined, asAnalyst);
+      for (const q of listed.json.questions.filter((x: any) => x.blocking)) {
+        const r = await call(
+          s, 'POST', `/projects/${projectId}/questions/${q.id}/answer`,
+          { answer: `Recorded from the sponsor interview: ${q.rafSlot ?? 'see minutes'}.` },
+          asAnalyst,
+        );
+        assert.equal(r.status, 200, JSON.stringify(r.json));
+      }
+
+      assert.equal((await readinessOf(s, projectId)).ready, true);
+      const approved = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+      assert.equal(approved.status, 201, JSON.stringify(approved.json));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('answering does NOT approve or alter the requirement it concerns', async () => {
+    // Epistemic rule 6, and the reason U7 stops where it does: an answer supplies
+    // EVIDENCE. A human then revises or approves, as a separate act.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId, { generateQuestionsFirst: true });
+      const before = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+
+      const listed = await call(s, 'GET', `/projects/${projectId}/questions`, undefined, asAnalyst);
+      await call(
+        s, 'POST', `/projects/${projectId}/questions/${listed.json.questions[0].id}/answer`,
+        { answer: 'Five working days.' }, asAnalyst,
+      );
+
+      const after = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      assert.deepEqual(
+        after.json.requirements.map((r: any) => `${r.id}@${r.version}:${r.status}:${r.text}`),
+        before.json.requirements.map((r: any) => `${r.id}@${r.version}:${r.status}:${r.text}`),
+        'answering a question must not change a single requirement',
+      );
+    } finally {
+      await s.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ADR-0017 — the signature, both limbs, and reopening from every path
+// ---------------------------------------------------------------------------
+
+describe('ADR-0017 the signature binds a REAL validation run', () => {
+  test('approval signs over a PERSISTED run whose findings are retrievable', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const approved = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+      assert.equal(approved.status, 201, JSON.stringify(approved.json));
+
+      // The signed run is a ROW, not an identifier that was minted and discarded.
+      // "What did the validation this approval relied on actually say?" is an
+      // audit question, and it now has an answer.
+      const run = await s.database.query('select * from validation_run where id = $1', [
+        approved.json.validationRunId,
+      ]);
+      assert.equal(run.rows.length, 1, 'the signed validation run must exist');
+      const signed = run.rows[0] as Record<string, unknown>;
+      assert.equal(String(signed.gate), 'G1');
+      assert.equal(String(signed.requirement_set_id), setId);
+      assert.equal(String(signed.baseline_hash), approved.json.baselineHash);
+      assert.equal(String(signed.status), 'completed');
+
+      // And the approval binds exactly that run.
+      const approval = await s.database.query(
+        'select validation_run_id, signed_baseline_hash from approval where project_id = $1',
+        [projectId],
+      );
+      const signature = approval.rows[0] as Record<string, unknown>;
+      assert.equal(String(signature.validation_run_id), approved.json.validationRunId);
+      assert.equal(String(signature.signed_baseline_hash), approved.json.baselineHash);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a NEW VALIDATION RUN reopens G1 — the second limb of the signature', async () => {
+    // Criterion 6's other half. ADR-0017 rejected "approval without a
+    // validation-run binding" by name, because an approver could otherwise
+    // approve content whose validation evidence has since changed. Nothing about
+    // the requirements changes here — only the evidence — and the gate still
+    // reopens.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const approved = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+      assert.equal(approved.status, 201);
+
+      const revalidated = await call(s, 'POST', `/projects/${projectId}/g1/validate`, {}, asAnalyst);
+      assert.equal(revalidated.status, 201, JSON.stringify(revalidated.json));
+      assert.notEqual(revalidated.json.id, approved.json.validationRunId);
+
+      const gates = await call(s, 'GET', `/projects/${projectId}/gates`, undefined, asAnalyst);
+      const g1 = gates.json.find((g: any) => g.code === 'G1');
+      assert.equal(g1.status, 'reopened', 'new validation evidence must reopen the gate');
+      assert.equal(g1.approvedBaselineHash, undefined);
+
+      // The content hash never moved — this reopening is entirely about evidence.
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      for (const r of listed.json.requirements.filter((x: any) => x.status !== 'rejected')) {
+        assert.equal(r.version, 1);
+      }
+      void setId;
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('READING readiness does NOT reopen an approved gate', async () => {
+    // The converse, and it is what makes the rule above tolerable: a reviewer may
+    // look at the panel as often as they like. `g1Readiness` persists nothing.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+
+      for (let i = 0; i < 3; i++) await readinessOf(s, projectId);
+
+      const gates = await call(s, 'GET', `/projects/${projectId}/gates`, undefined, asAnalyst);
+      assert.equal(gates.json.find((g: any) => g.code === 'G1').status, 'approved');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('ADDING a requirement after approval reopens G1 — reopening is not per-path', async () => {
+    // The defect the centralised `mutate` wrapper exists to close. Reopening was
+    // once wired into `reviseRequirement` alone, so this path left G1 approved
+    // over a set whose hash had changed. No command may be trusted to remember.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const approved = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+      assert.equal(approved.status, 201, JSON.stringify(approved.json));
+
+      const added = await call(
+        s, 'POST', `/projects/${projectId}/requirements/inferred`,
+        {
+          requirementSetId: setId,
+          text: 'The service desk escalates after two failed renewals.',
+          rafSlot: 'escalations',
+          category: 'constraint',
+          inferenceRationale: 'Agreed with the sponsor after the baseline was signed.',
+        },
+        asAnalyst,
+      );
+      assert.equal(added.status, 201, JSON.stringify(added.json));
+
+      const gates = await call(s, 'GET', `/projects/${projectId}/gates`, undefined, asAnalyst);
+      const g1 = gates.json.find((g: any) => g.code === 'G1');
+      assert.equal(g1.status, 'reopened', 'a new member changes the set; the signature must not survive');
+      assert.equal(g1.approvedBaselineHash, undefined);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('the reopening is AUDITED as automatic, with no actor asking for it', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
+
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      await call(
+        s, 'POST', `/projects/${projectId}/requirements/${listed.json.requirements[0].id}/revise`,
+        { text: 'Amended after approval.', changeReason: 'stakeholder correction' }, asAnalyst,
+      );
+
+      const events = await s.database.query(
+        `select after_json from audit_event
+          where project_id = $1 and action = 'gate.reopened'`,
+        [projectId],
+      );
+      assert.equal(events.rows.length, 1, 'the reopening must be on the audit record');
+      assert.equal(((events.rows[0] as any).after_json as any).automatic, true);
+    } finally {
+      await s.close();
     }
   });
 });

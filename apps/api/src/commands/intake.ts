@@ -43,7 +43,7 @@ import {
   type ResolutionContext,
 } from '@asdp/provenance';
 import { codePointLength, sliceByCodePoints, baseDirection, normalise } from '@asdp/text';
-import { evaluateL0Ingestion, summariseFindings } from '@asdp/validation';
+import { evaluateL0Ingestion, summariseFindings, type IntakeState } from '@asdp/validation';
 import { computeConfidence, type ConfidenceResult } from '@asdp/domain';
 import { modelElementIds } from '@asdp/ingestion';
 import { classificationRank } from '@asdp/schemas';
@@ -1215,19 +1215,29 @@ export interface IntakeValidationResult {
  * hand it over. `blocking` in the summary is the list G1 evaluation consumes
  * (invariant I6): a gate is closed by named findings, never by a count.
  */
-export async function validateIntake(
-  ctx: IntakeContext,
-  actor: Actor,
+/**
+ * Assemble the state the `L0-ING-*` rule pack judges.
+ *
+ * Extracted from `validateIntake` so that **G1 can run the same pack over the
+ * same state** (G1 precondition 8, `L4-REQ-008`). It takes `Repositories` rather
+ * than a context because it is pure assembly: no clock, no id generator, no
+ * actor, and therefore nothing that would make a G1 readiness read behave
+ * differently from an intake validation.
+ *
+ * Sharing the assembly matters more than saving the lines. V7 as first
+ * implemented hardcoded `openL0FindingIds: []` in the G1 path with a comment
+ * asserting that a clean project has none — so precondition 8 always reported
+ * *met*, and a project whose anchors did not resolve could be frozen and signed.
+ * A precondition that cannot fail is worse than an absent one, because the panel
+ * positively claims it was checked.
+ */
+export async function assembleL0State(
+  repos: Repositories,
   projectId: string,
-): Promise<IntakeValidationResult> {
-  assertRole(actor, 'validateIntake');
-
-  const project = await ctx.repos.projects.get(projectId);
-  if (project === undefined) throw new ValidationError(`unknown project ${projectId}`);
-
-  const sources = await ctx.repos.sources.list(projectId);
-  const units = await ctx.repos.sourceUnits.listForProject(projectId);
-  const evidence = await ctx.repos.evidence.listForProject(projectId);
+): Promise<IntakeState> {
+  const sources = await repos.sources.list(projectId);
+  const units = await repos.sourceUnits.listForProject(projectId);
+  const evidence = await repos.evidence.listForProject(projectId);
 
   const textBySourceId = new Map<string, string>();
   const imagesById = new Map<
@@ -1239,7 +1249,7 @@ export async function validateIntake(
     { fileId: string; sha256: string; elementIds: ReadonlySet<string> }
   >();
   for (const source of sources) {
-    const text = await ctx.repos.sources.getText(source.id);
+    const text = await repos.sources.getText(source.id);
     if (text !== undefined) textBySourceId.set(source.id, text);
     // Images are loaded so ADR-0038 target verification can run inside the rule
     // pack: without the checksum and dimensions, an image anchor could not be
@@ -1253,7 +1263,7 @@ export async function validateIntake(
         elementIds: modelElementIds(source.mimeType, text),
       });
     }
-    for (const image of await ctx.repos.pageImages.listForSource(source.id)) {
+    for (const image of await repos.pageImages.listForSource(source.id)) {
       imagesById.set(image.id, {
         imageId: image.id,
         sha256: image.sha256,
@@ -1263,11 +1273,21 @@ export async function validateIntake(
     }
   }
 
+  return { sources, units, evidence, textBySourceId, imagesById, modelsBySourceId };
+}
+
+export async function validateIntake(
+  ctx: IntakeContext,
+  actor: Actor,
+  projectId: string,
+): Promise<IntakeValidationResult> {
+  assertRole(actor, 'validateIntake');
+
+  const project = await ctx.repos.projects.get(projectId);
+  if (project === undefined) throw new ValidationError(`unknown project ${projectId}`);
+
   const runId = ctx.ids.next('vr');
-  const findings = evaluateL0Ingestion(
-    { sources, units, evidence, textBySourceId, imagesById, modelsBySourceId },
-    runId,
-  );
+  const findings = evaluateL0Ingestion(await assembleL0State(ctx.repos, projectId), runId);
 
   return { runId, findings, summary: summariseFindings(findings, 'G1') };
 }

@@ -29,9 +29,11 @@ import type {
   RequirementFlag,
   RequirementRejection,
   RequirementSet,
+  SlotPolicyBlock,
   Source,
   SourceStatus,
   SourceUnit,
+  ValidationRun,
 } from '@asdp/schemas';
 import {
   ConcurrencyError,
@@ -54,6 +56,7 @@ import {
   type SourceRepository,
   type SourceTextRecord,
   type SourceUnitRepository,
+  type ValidationRunRepository,
   type Versioned,
 } from './ports.ts';
 
@@ -148,6 +151,25 @@ class MemoryApprovalRepository implements ApprovalRepository {
   }
   async listForGate(projectId: string, gate: GateCode): Promise<readonly Approval[]> {
     return this.all.filter((a) => a.projectId === projectId && a.gate === gate);
+  }
+}
+
+/** Insert-only (invariant D8). The second limb of the ADR-0017 signature. */
+class MemoryValidationRunRepository implements ValidationRunRepository {
+  private readonly all: ValidationRun[] = [];
+
+  async insert(run: ValidationRun): Promise<void> {
+    if (this.all.some((r) => r.id === run.id)) {
+      throw new Error(`validation run ${run.id} already exists; runs are insert-only`);
+    }
+    this.all.push(run);
+  }
+  async get(id: string): Promise<ValidationRun | undefined> {
+    return this.all.find((r) => r.id === id);
+  }
+  async latestForSet(requirementSetId: string, gate: GateCode): Promise<ValidationRun | undefined> {
+    // Insertion order is the run order here, so the last match is the latest.
+    return this.all.filter((r) => r.requirementSetId === requirementSetId && r.gate === gate).at(-1);
   }
 }
 
@@ -368,6 +390,7 @@ class MemoryRequirementRepository implements RequirementRepository {
   private readonly resolvedFlagIds = new Set<string>();
   private readonly questions: OpenQuestion[] = [];
   private readonly acknowledgements: PolicyAcknowledgement[] = [];
+  private readonly policyBlocks: SlotPolicyBlock[] = [];
 
   async createSet(set: RequirementSet): Promise<void> {
     if (this.sets.has(set.id)) throw new Error(`requirement set ${set.id} already exists`);
@@ -589,6 +612,18 @@ class MemoryRequirementRepository implements RequirementRepository {
   ): Promise<readonly PolicyAcknowledgement[]> {
     return this.acknowledgements.filter((a) => a.requirementSetId === requirementSetId);
   }
+
+  async recordSlotPolicyBlock(block: SlotPolicyBlock): Promise<void> {
+    // One per (set, slot), matching the SQL unique constraint.
+    const held = this.policyBlocks.some(
+      (b) => b.requirementSetId === block.requirementSetId && b.rafSlot === block.rafSlot,
+    );
+    if (!held) this.policyBlocks.push(block);
+  }
+
+  async slotPolicyBlocksForSet(requirementSetId: string): Promise<readonly SlotPolicyBlock[]> {
+    return this.policyBlocks.filter((b) => b.requirementSetId === requirementSetId);
+  }
 }
 
 /**
@@ -702,6 +737,7 @@ export function createMemoryRepositories(): Repositories {
     gates: new MemoryGateRepository(),
     baselines: new MemoryBaselineRepository(),
     approvals: new MemoryApprovalRepository(),
+    validationRuns: new MemoryValidationRunRepository(),
     audit: new MemoryAuditRepository(),
     sources: new MemorySourceRepository(),
     sourceUnits: new MemorySourceUnitRepository(),

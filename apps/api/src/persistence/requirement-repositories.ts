@@ -34,6 +34,7 @@ import type {
   RequirementFlag,
   RequirementRejection,
   RequirementSet,
+  SlotPolicyBlock,
 } from '@asdp/schemas';
 import type { RequirementRepository } from '../ports.ts';
 import { UniqueViolationError, type Db } from './db.ts';
@@ -606,6 +607,42 @@ class SqlRequirementRepository implements RequirementRepository {
       acknowledgedBy: str(row.acknowledged_by),
       acknowledgedAt: iso(row.acknowledged_at),
       rationale: str(row.rationale),
+    }));
+  }
+
+  async recordSlotPolicyBlock(block: SlotPolicyBlock): Promise<void> {
+    try {
+      await this.db.query(
+        `insert into slot_policy_block (id, project_id, requirement_set_id, raf_slot,
+                                        classification, provider, reason, blocked_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          block.id, block.projectId, block.requirementSetId, block.rafSlot,
+          block.classification, block.provider, block.reason, block.blockedAt,
+        ],
+      );
+    } catch (err) {
+      // One block per slot per set. A pass that refuses twice for the same slot
+      // states one fact twice, and the first statement is the one on the record.
+      if (err instanceof UniqueViolationError) return;
+      throw err;
+    }
+  }
+
+  async slotPolicyBlocksForSet(requirementSetId: string): Promise<readonly SlotPolicyBlock[]> {
+    const r = await this.db.query(
+      'select * from slot_policy_block where requirement_set_id = $1 order by raf_slot asc',
+      [requirementSetId],
+    );
+    return r.rows.map((row) => ({
+      id: str(row.id),
+      projectId: str(row.project_id),
+      requirementSetId: str(row.requirement_set_id),
+      rafSlot: str(row.raf_slot),
+      classification: str(row.classification),
+      provider: str(row.provider),
+      reason: str(row.reason),
+      blockedAt: iso(row.blocked_at),
     }));
   }
 }

@@ -31,6 +31,7 @@ import type {
   Requirement,
   RequirementEvidenceLink,
   RequirementFlag,
+  SlotPolicyBlock,
   Source,
 } from '@asdp/schemas';
 import { isCitable, resolveAnchor } from '@asdp/provenance';
@@ -270,6 +271,7 @@ export async function populateFrame(
     rejected: number;
     refused?: string;
   }[] = [];
+  const policyBlocks: SlotPolicyBlock[] = [];
   const held = new Set<string>();
 
   // Requirement numbers come from the project-wide high-water mark and advance
@@ -310,6 +312,28 @@ export async function populateFrame(
       if (outcome.kind === 'refused') {
         for (const d of outcome.degradations) degradations.add(d);
         passSummaries.push({ ...summary, refused: outcome.reason });
+        // RECORD the block, per slot the pass would have populated.
+        //
+        // A refusal that lives only in the response is forgotten by the next
+        // read, and the slot comes back `empty` — which turns "we were not
+        // permitted to read this" into "the sources do not say", the one
+        // distinction data-governance.md §3.1 exists to preserve. It is also why
+        // `L4-REQ-007` could not fire: nothing could ever produce a
+        // `blocked_by_policy` slot for it to find.
+        if (outcome.refusalKind === 'policy') {
+          for (const slot of pass.slots) {
+            policyBlocks.push({
+              id: ctx.ids.next('spb'),
+              projectId: input.projectId,
+              requirementSetId,
+              rafSlot: slot,
+              classification: batchClassification,
+              provider: ctx.populator.id,
+              reason: outcome.reason,
+              blockedAt: ctx.clock.nowIso(),
+            });
+          }
+        }
         continue;
       }
 
@@ -490,6 +514,11 @@ export async function populateFrame(
     }
     for (const rejection of rejectionRecords) {
       await repos.requirements.insertRejection(rejection);
+    }
+    // Recorded in the same transaction as the proposals, so a refused pass and an
+    // accepted one never disagree about what this run saw.
+    for (const block of policyBlocks) {
+      await repos.requirements.recordSlotPolicyBlock(block);
     }
 
     await repos.audit.append({
@@ -673,7 +702,14 @@ export async function frameCoverage(
   const sources = await ctx.repos.sources.list(input.projectId);
   const sourceById = new Map(sources.map((s) => [s.id, s]));
 
-  const observations = buildObservations(requirements, links, evidenceById, sourceById);
+  const policyBlocks = await ctx.repos.requirements.slotPolicyBlocksForSet(setId);
+  const observations = buildObservations(
+    requirements,
+    links,
+    evidenceById,
+    sourceById,
+    policyBlocks,
+  );
 
   return {
     requirementSetId: setId,
@@ -702,7 +738,17 @@ export function buildObservations(
   links: readonly RequirementEvidenceLink[],
   evidenceById: ReadonlyMap<string, EvidenceItem>,
   sourceById: ReadonlyMap<string, Source>,
+  /**
+   * Slots data-governance policy denied analysis of.
+   *
+   * `blocked_by_policy` takes precedence over `empty` in `slotStatus`, so a
+   * blocked slot must produce an observation **even with no requirements in it**
+   * — otherwise it falls through to the default empty observation and the
+   * distinction is lost exactly where it matters (data-governance.md §3.1).
+   */
+  policyBlocks: readonly SlotPolicyBlock[] = [],
 ): readonly SlotObservation[] {
+  const blockBySlot = new Map(policyBlocks.map((b) => [b.rafSlot, b]));
   const linksByRequirement = new Map<string, RequirementEvidenceLink[]>();
   for (const link of links) {
     const list = linksByRequirement.get(link.requirementId) ?? [];
@@ -716,6 +762,9 @@ export function buildObservations(
     list.push(requirement);
     bySlot.set(requirement.rafSlot, list);
   }
+  // A blocked slot is observed even when nothing populated it — that is the case
+  // the record exists for.
+  for (const slot of blockBySlot.keys()) if (!bySlot.has(slot)) bySlot.set(slot, []);
 
   const observations: SlotObservation[] = [];
 
@@ -766,14 +815,23 @@ export function buildObservations(
       sourceInventory,
       confidenceBand,
       // V5 writes L2 only: L3 is refused (J1) and L4 is a human act (ADR-0007).
-      // The other counters are zero because nothing can produce them, not because
-      // they were forgotten.
+      // L3 became producible in V7 (**U8-a**, human-originated only), and L4 is
+      // the consequence of approval rather than a stored level — so it is counted
+      // from `status`, which is where it actually lives (migration 010).
       epistemicMix: {
         l1: items.filter((i) => i.epistemicLevel === 'L1').length,
         l2: items.filter((i) => i.epistemicLevel === 'L2').length,
-        l3: 0,
-        l4: 0,
+        l3: items.filter((i) => i.epistemicLevel === 'L3').length,
+        l4: items.filter((i) => i.status === 'approved').length,
       },
+      ...(blockBySlot.has(slot)
+        ? {
+            blockedByPolicy: {
+              classification: blockBySlot.get(slot)?.classification ?? 'UNKNOWN',
+              provider: blockBySlot.get(slot)?.provider ?? 'unknown',
+            },
+          }
+        : {}),
     });
   }
 

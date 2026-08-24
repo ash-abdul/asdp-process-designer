@@ -45,6 +45,7 @@ import { AnalysisController } from './analysis.controller.ts';
 import { RequirementsController } from './requirements.controller.ts';
 import { ReviewController } from './review.controller.ts';
 import { G1Controller } from './g1.controller.ts';
+import { ClarificationController } from './clarification.controller.ts';
 import { ReconciliationController } from './reconciliation.controller.ts';
 import { unavailableSourceProfiler } from '../ai/broker-profiler.ts';
 import { unavailableEvidenceExtractor } from '../ai/broker-extractor.ts';
@@ -167,6 +168,7 @@ export class AppModule {
         AnalysisController,
         RequirementsController,
         ReviewController,
+        ClarificationController,
         G1Controller,
         ReconciliationController,
         SourcesController,

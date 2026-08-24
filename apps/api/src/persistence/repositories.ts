@@ -19,6 +19,7 @@ import type {
   Project,
   Role,
   Stage,
+  ValidationRun,
 } from '@asdp/schemas';
 import {
   ConcurrencyError,
@@ -29,6 +30,7 @@ import {
   type GateRepository,
   type ProjectRepository,
   type Repositories,
+  type ValidationRunRepository,
   type Versioned,
 } from '../ports.ts';
 import { UniqueViolationError, type Database, type Db } from './db.ts';
@@ -340,6 +342,82 @@ class SqlApprovalRepository implements ApprovalRepository {
   }
 }
 
+/**
+ * INSERT-ONLY (D8). The second limb of the ADR-0017 signature.
+ *
+ * Findings travel with the run, so a signed run stays answerable forever: "what
+ * did the validation this approval relied on actually say?" is a question the
+ * audit asks years later, and a run that stored only a count could not answer it.
+ */
+class SqlValidationRunRepository implements ValidationRunRepository {
+  constructor(private readonly db: Db) {}
+
+  async insert(run: ValidationRun): Promise<void> {
+    try {
+      await this.db.query(
+        `insert into validation_run (id, project_id, requirement_set_id, gate, baseline_hash,
+                                     rule_pack_version, camunda_target_profile_id,
+                                     standards_profile_id, started_at, finished_at, status,
+                                     findings)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)`,
+        [
+          run.id, run.projectId, run.requirementSetId ?? null, run.gate ?? null,
+          run.baselineHash ?? null, run.rulePackVersion, run.camundaTargetProfileId,
+          run.standardsProfileId, run.startedAt, run.finishedAt ?? null, run.status,
+          JSON.stringify(run.findings),
+        ],
+      );
+    } catch (err) {
+      if (err instanceof UniqueViolationError) {
+        throw new Error(`validation run ${run.id} already exists; runs are insert-only`);
+      }
+      throw err;
+    }
+  }
+
+  async get(id: string): Promise<ValidationRun | undefined> {
+    const r = await this.db.query('select * from validation_run where id = $1', [id]);
+    const row = r.rows[0];
+    return row === undefined ? undefined : mapValidationRun(row);
+  }
+
+  async latestForSet(requirementSetId: string, gate: GateCode): Promise<ValidationRun | undefined> {
+    const r = await this.db.query(
+      `select * from validation_run
+        where requirement_set_id = $1 and gate = $2
+        order by started_at desc, id desc
+        limit 1`,
+      [requirementSetId, gate],
+    );
+    const row = r.rows[0];
+    return row === undefined ? undefined : mapValidationRun(row);
+  }
+}
+
+function mapValidationRun(row: Record<string, unknown>): ValidationRun {
+  const finishedAt = row.finished_at;
+  return {
+    id: String(row.id),
+    projectId: String(row.project_id),
+    ...(row.requirement_set_id === null || row.requirement_set_id === undefined
+      ? {}
+      : { requirementSetId: String(row.requirement_set_id) }),
+    ...(row.gate === null || row.gate === undefined ? {} : { gate: row.gate as GateCode }),
+    ...(row.baseline_hash === null || row.baseline_hash === undefined
+      ? {}
+      : { baselineHash: String(row.baseline_hash) }),
+    rulePackVersion: String(row.rule_pack_version),
+    camundaTargetProfileId: String(row.camunda_target_profile_id),
+    standardsProfileId: String(row.standards_profile_id),
+    startedAt: row.started_at instanceof Date ? row.started_at.toISOString() : String(row.started_at),
+    ...(finishedAt === null || finishedAt === undefined
+      ? {}
+      : { finishedAt: finishedAt instanceof Date ? finishedAt.toISOString() : String(finishedAt) }),
+    status: row.status as ValidationRun['status'],
+    findings: (row.findings ?? []) as ValidationRun['findings'],
+  };
+}
+
 /** APPEND-ONLY (ADR-0032): no update, no delete, no purge. */
 class SqlAuditRepository implements AuditRepository {
   constructor(private readonly db: Db) {}
@@ -390,6 +468,7 @@ export function createSqlRepositories(db: Db): Repositories {
     gates: new SqlGateRepository(db),
     baselines: new SqlBaselineRepository(db),
     approvals: new SqlApprovalRepository(db),
+    validationRuns: new SqlValidationRunRepository(db),
     audit: new SqlAuditRepository(db),
     // Intake repositories live in their own module but share this handle, so a
     // transaction spans governance and intake writes alike.
