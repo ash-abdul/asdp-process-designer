@@ -424,6 +424,9 @@ export async function populateFrame(
           // J4. There is no other value anywhere in this file, and migration 008
           // refuses one anyway.
           status: 'draft',
+          // V7 (U2-a): every proposal starts at version 1. A human edit creates
+          // version 2 and supersedes this row, which stays in the history.
+          version: 1,
           generatedBy: 'ai',
           aiInteractionId: outcome.interaction.id,
           promptVersion: ctx.populator.id,

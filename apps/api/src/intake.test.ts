@@ -802,9 +802,13 @@ describe('L0 ingestion validation', () => {
       const projectId = await createProjectVia(s);
       const r = await call(s, 'GET', `/projects/${projectId}/intake/rules`, undefined, asViewer);
       assert.equal(r.status, 200);
-      assert.equal(r.json.total, 22);
+      assert.equal(r.json.total, 30);
       assert.equal(r.json.rules.filter((rule: any) => rule.layer === 'L0').length, 10);
       assert.equal(r.json.rules.filter((rule: any) => rule.layer === 'L1').length, 12);
+      // V7's eight G1 preconditions (U9). Governance §1 requires every blocking
+      // precondition to be a rule with a stable id that appears in the report —
+      // so a catalogue that omitted them would omit the reasons G1 stays shut.
+      assert.equal(r.json.rules.filter((rule: any) => rule.layer === 'L4').length, 8);
     } finally {
       await s.close();
     }

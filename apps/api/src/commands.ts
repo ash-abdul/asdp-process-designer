@@ -111,6 +111,24 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   // as much as an analyst one, so reading is wide — the same reasoning as the
   // AI-disclosure log.
   { name: 'reconciliationView', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
+  // V7 — the human workspace. Analysis acts, recorded with the actor who made them.
+  { name: 'reviewRequirement', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'reviseRequirement', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'addInferredRequirement', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'confirmInference', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'resolveFlag', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'decideConflict', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'confirmEquivalence', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'generateQuestions', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'answerQuestion', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  { name: 'acknowledgePolicySlot', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'requirements', mutatesArtifact: false },
+  // Readiness is a compliance question as much as an analyst one: "can this be
+  // approved, and if not why not?" should be answerable by anyone who may read.
+  { name: 'g1Readiness', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
+  // U1 and U10: approval is a BusinessApprover act, and `approveGate` additionally
+  // refuses an approver who authored content in the baseline. The role list here is
+  // the first gate; segregation of duties is the second.
+  { name: 'approveG1', requiredRoles: ['BusinessApprover'], stage: 'requirements', mutatesArtifact: false },
 ];
 
 export function commandDescriptor(name: string): CommandDescriptor {

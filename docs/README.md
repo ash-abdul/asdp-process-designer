@@ -103,7 +103,7 @@ for the module you are building.
 | [v4b-proposal.md](60-plan/v4b-proposal.md) | V4b boundary — **V4b-core approved, implemented and ACCEPTED**, **V4b-eval deferred** pending a credential and permitted material. Decisions **F1–F5** |
 | [v5-proposal.md](60-plan/v5-proposal.md) | V5 boundary — verified evidence into structured requirement **proposals** / RAF population. **APPROVED, implemented and ACCEPTED 2026-08-23.** Decisions **J1–J9** |
 | [v6-proposal.md](60-plan/v6-proposal.md) | V6 boundary — canonicalisation, conflict **candidates**, deterministic precedence, reconciliation. **APPROVED, implemented and ACCEPTED 2026-08-23.** Decisions **Q1–Q9** |
-| [v7-proposal.md](60-plan/v7-proposal.md) | V7 boundary — the human requirements workspace and **G1**. **APPROVED 2026-08-23.** Decisions **U1–U10** |
+| [v7-proposal.md](60-plan/v7-proposal.md) | V7 boundary — the human requirements workspace and **G1**. **APPROVED 2026-08-23; implemented, awaiting review.** Decisions **U1–U10** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 

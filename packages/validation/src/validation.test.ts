@@ -175,17 +175,22 @@ describe('L0 rule definitions match the catalogue', () => {
   });
 
   test('allRules exposes every implemented pack, not only L0', () => {
-    // REWRITTEN IN V5 and EXTENDED IN V6, and the reason matters both times: the
-    // count tracks what this build implements, so it changes when a slice adds a
-    // pack. V5 added five L1-REQ rules (J6); V6 adds seven L1-CONF rules. Twelve
-    // L1 rules across two families, and STILL ONLY TWO LAYERS — no eighth layer
-    // was introduced.
+    // REWRITTEN IN V5, EXTENDED IN V6 AND AGAIN IN V7, and the reason is the same
+    // each time: the count tracks what this build implements, so it moves when a
+    // slice adds a pack. V5 added five L1-REQ rules (J6); V6 added seven L1-CONF
+    // (Q8); V7 adds eight L4-REQ — the G1 preconditions (U9).
+    //
+    // THREE LAYERS NOW, AND STILL SEVEN IN THE ARCHITECTURE: L4 is an existing
+    // layer being populated, not a new one. No slice has invented a layer yet, and
+    // this assertion is where that would first show up.
     const rules = allRules();
-    assert.equal(rules.length, 22);
+    assert.equal(rules.length, 30);
     assert.equal(rules.filter((r) => r.layer === 'L0').length, 10);
     assert.equal(rules.filter((r) => r.layer === 'L1').length, 12);
+    assert.equal(rules.filter((r) => r.layer === 'L4').length, 8);
     assert.equal(rules.filter((r) => r.id.startsWith('L1-REQ')).length, 5);
     assert.equal(rules.filter((r) => r.id.startsWith('L1-CONF')).length, 7);
+    assert.equal(rules.filter((r) => r.id.startsWith('L4-REQ')).length, 8);
     // Ids are never reused or renumbered, so a duplicate here is a defect that
     // would make historical findings and waivers ambiguous.
     assert.equal(new Set(rules.map((r) => r.id)).size, rules.length);

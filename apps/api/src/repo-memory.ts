@@ -14,7 +14,9 @@ import type {
   EvidenceItem,
   Gate,
   GateCode,
+  OpenQuestion,
   PageImage,
+  PolicyAcknowledgement,
   Project,
   CanonicalEntity,
   CanonicalEntityAlias,
@@ -357,6 +359,15 @@ class MemoryRequirementRepository implements RequirementRepository {
   private readonly links: RequirementEvidenceLink[] = [];
   private readonly flags: RequirementFlag[] = [];
   private readonly rejections: RequirementRejection[] = [];
+  private readonly history: {
+    requirementId: string;
+    version: number;
+    text: string;
+    changeReason?: string;
+  }[] = [];
+  private readonly resolvedFlagIds = new Set<string>();
+  private readonly questions: OpenQuestion[] = [];
+  private readonly acknowledgements: PolicyAcknowledgement[] = [];
 
   async createSet(set: RequirementSet): Promise<void> {
     if (this.sets.has(set.id)) throw new Error(`requirement set ${set.id} already exists`);
@@ -427,6 +438,157 @@ class MemoryRequirementRepository implements RequirementRepository {
   async rejectionsForSet(requirementSetId: string): Promise<readonly RequirementRejection[]> {
     return this.rejections.filter((r) => r.requirementSetId === requirementSetId);
   }
+
+  // --- the human workspace (V7) --------------------------------------------
+
+  async reviseRequirement(
+    next: Requirement,
+    evidence: readonly RequirementEvidenceLink[],
+  ): Promise<void> {
+    if (evidence.length === 0) {
+      throw new Error(`requirement ${next.id} version ${next.version} cites no evidence`);
+    }
+    const current = this.requirements.get(next.id);
+    if (current !== undefined) {
+      this.history.push({
+        version: current.version,
+        text: current.text,
+        ...(current.changeReason === undefined ? {} : { changeReason: current.changeReason }),
+        requirementId: current.id,
+      });
+    }
+    // A new version is not approved — the previous signature covered the previous
+    // content (ADR-0017), so the approval columns are cleared with the revision.
+    const { approvedBy: _a, approvedAt: _b, approvalBaselineId: _c, ...unapproved } = next;
+    this.requirements.set(next.id, unapproved as Requirement);
+    for (let i = this.links.length - 1; i >= 0; i--) {
+      if (this.links[i]?.requirementId === next.id) this.links.splice(i, 1);
+    }
+    this.links.push(...evidence);
+  }
+
+  async insertInferred(requirement: Requirement): Promise<void> {
+    if (requirement.derivation !== 'inferred' || requirement.generatedBy !== 'human') {
+      throw new Error('insertInferred accepts only human-originated inferred requirements (U8-a)');
+    }
+    if (requirement.inferenceRationale === undefined || requirement.inferenceRationale === '') {
+      throw new Error(`requirement ${requirement.id} is inferred with no rationale (D2)`);
+    }
+    this.requirements.set(requirement.id, requirement);
+  }
+
+  async setReviewStatus(requirementId: string, status: Requirement['status']): Promise<void> {
+    if (status === 'approved') {
+      // U1, matching SQL: an adapter more permissive than the database would let a
+      // test prove a behaviour production cannot have.
+      throw new Error(
+        `status 'approved' is reachable only through the G1 approval transaction (U1)`,
+      );
+    }
+    const held = this.requirements.get(requirementId);
+    if (held !== undefined) this.requirements.set(requirementId, { ...held, status });
+  }
+
+  async approveRequirements(
+    requirementIds: readonly string[],
+    approval: { approvedBy: string; approvedAt: string; baselineId: string },
+  ): Promise<void> {
+    for (const id of requirementIds) {
+      const held = this.requirements.get(id);
+      if (held === undefined) continue;
+      this.requirements.set(id, {
+        ...held,
+        status: 'approved',
+        approvedBy: approval.approvedBy,
+        approvedAt: approval.approvedAt,
+        approvalBaselineId: approval.baselineId,
+      });
+    }
+  }
+
+  async confirmInference(requirementId: string, by: string, at: string): Promise<void> {
+    const held = this.requirements.get(requirementId);
+    if (held !== undefined) {
+      this.requirements.set(requirementId, {
+        ...held,
+        inferenceConfirmedBy: by,
+        inferenceConfirmedAt: at,
+      });
+    }
+  }
+
+  async versionsFor(
+    requirementId: string,
+  ): Promise<readonly { version: number; text: string; changeReason?: string }[]> {
+    return this.history
+      .filter((h) => h.requirementId === requirementId)
+      .map(({ requirementId: _id, ...rest }) => rest);
+  }
+
+  async resolveFlag(flagId: string, resolution: string, by: string, at: string): Promise<void> {
+    const index = this.flags.findIndex((f) => f.id === flagId);
+    const held = this.flags[index];
+    if (held !== undefined) {
+      this.resolvedFlagIds.add(flagId);
+      void resolution;
+      void by;
+      void at;
+    }
+  }
+
+  async flagsForProject(projectId: string): Promise<readonly RequirementFlag[]> {
+    return this.flags.filter((f) => f.projectId === projectId);
+  }
+
+  async insertQuestion(question: OpenQuestion): Promise<void> {
+    this.questions.push(question);
+  }
+
+  async answerQuestion(
+    id: string,
+    answer: { answer: string; answeredBy: string; answeredAt: string; becameSourceUnitId?: string },
+  ): Promise<void> {
+    const index = this.questions.findIndex((q) => q.id === id);
+    const held = this.questions[index];
+    if (held !== undefined) {
+      this.questions[index] = {
+        ...held,
+        answer: answer.answer,
+        answeredBy: answer.answeredBy,
+        answeredAt: answer.answeredAt,
+        ...(answer.becameSourceUnitId === undefined
+          ? {}
+          : { becameSourceUnitId: answer.becameSourceUnitId }),
+      };
+    }
+  }
+
+  async questionsForSet(requirementSetId: string): Promise<readonly OpenQuestion[]> {
+    return this.questions.filter((q) => q.requirementSetId === requirementSetId);
+  }
+
+  async questionForCause(
+    requirementSetId: string,
+    causeKind: string,
+    causeId: string,
+  ): Promise<OpenQuestion | undefined> {
+    return this.questions.find(
+      (q) =>
+        q.requirementSetId === requirementSetId &&
+        q.causeKind === causeKind &&
+        q.causeId === causeId,
+    );
+  }
+
+  async acknowledgePolicySlot(ack: PolicyAcknowledgement): Promise<void> {
+    this.acknowledgements.push(ack);
+  }
+
+  async policyAcknowledgementsForSet(
+    requirementSetId: string,
+  ): Promise<readonly PolicyAcknowledgement[]> {
+    return this.acknowledgements.filter((a) => a.requirementSetId === requirementSetId);
+  }
 }
 
 /**
@@ -483,6 +645,37 @@ class MemoryReconciliationRepository implements ReconciliationRepository {
       this.conflicts.filter((c) => c.requirementSetId === requirementSetId).map((c) => c.id),
     );
     return this.participants.filter((p) => ids.has(p.conflictId));
+  }
+
+  async decideConflict(
+    conflictId: string,
+    decision: { decision: string; decidedBy: string; decidedAt: string; rationale: string },
+  ): Promise<void> {
+    const index = this.conflicts.findIndex((c) => c.id === conflictId);
+    const held = this.conflicts[index];
+    if (held !== undefined) {
+      this.conflicts[index] = {
+        ...held,
+        decision: decision.decision,
+        decidedBy: decision.decidedBy,
+        decidedAt: decision.decidedAt,
+      };
+    }
+  }
+
+  async setEquivalenceVerdict(
+    canonicalEntityId: string,
+    verdict: { confirmedBy?: string; confirmedAt?: string; rejectedBy?: string; rejectedAt?: string },
+  ): Promise<void> {
+    const index = this.entities.findIndex((e) => e.id === canonicalEntityId);
+    const held = this.entities[index];
+    if (held !== undefined) {
+      this.entities[index] = {
+        ...held,
+        ...(verdict.confirmedBy === undefined ? {} : { confirmedBy: verdict.confirmedBy }),
+        ...(verdict.confirmedAt === undefined ? {} : { confirmedAt: verdict.confirmedAt }),
+      };
+    }
   }
 
   async insertRelation(relation: RequirementRelation): Promise<void> {

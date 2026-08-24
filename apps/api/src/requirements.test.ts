@@ -439,7 +439,14 @@ describe('J4 draft only, enforced in SQL', () => {
     }
   });
 
-  test('THERE IS NO APPROVAL ROUTE — approval and G1 are V7', async () => {
+  test('THERE IS STILL NO DIRECT APPROVAL ROUTE — approval is G1 alone (U1)', async () => {
+    // REWRITTEN IN V7. This asserted 404 on eight paths because at V5 nothing
+    // human-facing existed; V7 legitimately adds `review` and the G1 gate, so
+    // asserting their absence would assert that V7 was not built.
+    //
+    // What must STILL 404 is a route that approves a REQUIREMENT directly.
+    // Approval is a signature over a BASELINE (ADR-0017), and promotion to L4 is
+    // its consequence — never a per-requirement action, however convenient.
     const s = await startServer();
     try {
       const { projectId } = await projectWithEvidence(s);
@@ -448,15 +455,12 @@ describe('J4 draft only, enforced in SQL', () => {
 
       for (const path of [
         `/projects/${projectId}/requirements/${id}/approve`,
+        `/projects/${projectId}/requirements/${id}/promote`,
         `/projects/${projectId}/requirements/${id}/status`,
-        `/projects/${projectId}/requirements/${id}/review`,
-        `/projects/${projectId}/requirements/${id}`,
-        `/projects/${projectId}/requirement-sets/baseline`,
-        `/projects/${projectId}/clarifications`,
-        `/projects/${projectId}/conflicts`,
+        `/projects/${projectId}/requirements/approve-all`,
         `/projects/${projectId}/requirement-rejections/resolve`,
       ]) {
-        const r = await call(s, 'POST', path, {}, asAnalyst);
+        const r = await call(s, 'POST', path, { status: 'approved' }, asAnalyst);
         assert.equal(r.status, 404, path);
       }
     } finally {

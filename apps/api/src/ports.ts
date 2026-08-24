@@ -26,6 +26,8 @@ import type {
   Gate,
   GateCode,
   PageImage,
+  OpenQuestion,
+  PolicyAcknowledgement,
   Project,
   Requirement,
   RequirementEvidenceLink,
@@ -234,6 +236,17 @@ export interface ReconciliationRepository {
   conflictsForSet(requirementSetId: string): Promise<readonly Conflict[]>;
   participantsForSet(requirementSetId: string): Promise<readonly ConflictParticipant[]>;
 
+  /** V7: a human decides a conflict. The **only** path to a non-null `decision`. */
+  decideConflict(
+    conflictId: string,
+    decision: { decision: string; decidedBy: string; decidedAt: string; rationale: string },
+  ): Promise<void>;
+  /** V7: a human confirms or rejects an AI-proposed equivalence (**U4**). */
+  setEquivalenceVerdict(
+    canonicalEntityId: string,
+    verdict: { confirmedBy?: string; confirmedAt?: string; rejectedBy?: string; rejectedAt?: string },
+  ): Promise<void>;
+
   insertRelation(relation: RequirementRelation): Promise<void>;
   relationsForProject(projectId: string): Promise<readonly RequirementRelation[]>;
 
@@ -278,6 +291,69 @@ export interface RequirementRepository {
   /** **J9:** rejected proposals are retained in full, never summarised away. */
   insertRejection(rejection: RequirementRejection): Promise<void>;
   rejectionsForSet(requirementSetId: string): Promise<readonly RequirementRejection[]>;
+
+  // --- the human workspace (V7) -------------------------------------------
+
+  /**
+   * Replace the current version of a requirement with a new one (**U2-a**).
+   *
+   * Not an update: the superseded version is **copied to history first**, and the
+   * row that remains is a new version of the same id. An in-place edit would
+   * silently change what a signed baseline hash covered, which is the one thing
+   * [ADR-0017](../../../docs/adr/ADR-0017-approval-as-baseline-signature.md) exists
+   * to prevent.
+   *
+   * Evidence links are **inherited** by the caller and passed in, so a revision
+   * cannot sever provenance by omission.
+   */
+  reviseRequirement(
+    next: Requirement,
+    evidence: readonly RequirementEvidenceLink[],
+  ): Promise<void>;
+
+  /**
+   * Insert a **human-originated inferred** requirement (**U8-a**).
+   *
+   * Deliberately separate from `insertProposal`, which requires evidence links: an
+   * inferred requirement carries an `inferenceRationale` instead. Two paths so
+   * neither can be used to bypass the other's rule — a proposal cannot arrive
+   * without evidence, and an inference cannot arrive without a reason.
+   */
+  insertInferred(requirement: Requirement): Promise<void>;
+
+  /** Move a requirement between review states. **Never to `approved`** — that is `approveRequirements`. */
+  setReviewStatus(requirementId: string, status: Requirement['status']): Promise<void>;
+
+  /**
+   * The G1 approval transaction, and **the only path to `approved`** (**U1**).
+   *
+   * Takes the whole set at once because a baseline is approved as a set, never
+   * requirement by requirement — a set of individually approved requirements may
+   * be jointly invalid (ADR-0017's rejected alternative).
+   */
+  approveRequirements(
+    requirementIds: readonly string[],
+    approval: { approvedBy: string; approvedAt: string; baselineId: string },
+  ): Promise<void>;
+
+  /** Confirm a LOW-confidence inferred requirement — G1 precondition 6. */
+  confirmInference(requirementId: string, by: string, at: string): Promise<void>;
+
+  versionsFor(requirementId: string): Promise<readonly { version: number; text: string; changeReason?: string }[]>;
+
+  resolveFlag(flagId: string, resolution: string, by: string, at: string): Promise<void>;
+  flagsForProject(projectId: string): Promise<readonly RequirementFlag[]>;
+
+  insertQuestion(question: OpenQuestion): Promise<void>;
+  answerQuestion(
+    id: string,
+    answer: { answer: string; answeredBy: string; answeredAt: string; becameSourceUnitId?: string },
+  ): Promise<void>;
+  questionsForSet(requirementSetId: string): Promise<readonly OpenQuestion[]>;
+  questionForCause(requirementSetId: string, causeKind: string, causeId: string): Promise<OpenQuestion | undefined>;
+
+  acknowledgePolicySlot(ack: PolicyAcknowledgement): Promise<void>;
+  policyAcknowledgementsForSet(requirementSetId: string): Promise<readonly PolicyAcknowledgement[]>;
 }
 
 /** Blob storage lives in its own module; re-exported so the port set is one import. */

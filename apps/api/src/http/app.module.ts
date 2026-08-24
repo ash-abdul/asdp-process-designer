@@ -43,6 +43,8 @@ import { SourceViewerController } from './source-viewer.controller.ts';
 import { EvidenceController } from './evidence.controller.ts';
 import { AnalysisController } from './analysis.controller.ts';
 import { RequirementsController } from './requirements.controller.ts';
+import { ReviewController } from './review.controller.ts';
+import { G1Controller } from './g1.controller.ts';
 import { ReconciliationController } from './reconciliation.controller.ts';
 import { unavailableSourceProfiler } from '../ai/broker-profiler.ts';
 import { unavailableEvidenceExtractor } from '../ai/broker-extractor.ts';
@@ -164,6 +166,8 @@ export class AppModule {
         // More specific than SourcesController's `:sourceId`, so registered first.
         AnalysisController,
         RequirementsController,
+        ReviewController,
+        G1Controller,
         ReconciliationController,
         SourcesController,
         EvidenceController,

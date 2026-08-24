@@ -734,7 +734,17 @@ describe('RECONCILE end to end', () => {
     }
   });
 
-  test('THERE IS NO DECIDE, RESOLVE, CONFIRM OR APPLY ROUTE — all V7', async () => {
+  test('THERE IS STILL NO APPLY OR AUTO-RESOLVE ROUTE — V7 added deciding, not applying', async () => {
+    // REWRITTEN IN V7, and the reason matters. This asserted 404 on SEVEN paths,
+    // because at V6 none of them existed and a human had no way to act at all.
+    // V7 legitimately adds `decide` and the equivalence verdict — that is the
+    // slice's entire purpose — so asserting their absence now would assert that
+    // V7 was not built.
+    //
+    // What must STILL 404 is the thing no slice may ever add: a route that
+    // APPLIES a precedence recommendation, or resolves a conflict without a human
+    // deciding it. Q5 and ADR-0012 forbid both, and that is what this test now
+    // guards.
     const s = await startServer();
     try {
       const projectId = await projectWithProposals(s);
@@ -742,17 +752,39 @@ describe('RECONCILE end to end', () => {
       const conflictId = result.conflicts[0].id;
 
       for (const path of [
-        `/projects/${projectId}/conflicts/${conflictId}/decide`,
-        `/projects/${projectId}/conflicts/${conflictId}/resolve`,
-        `/projects/${projectId}/conflicts/${conflictId}/accept`,
+        // Applying precedence automatically — the failure Q5 exists to prevent.
         `/projects/${projectId}/conflicts/${conflictId}/apply`,
-        `/projects/${projectId}/canonical-entities/confirm`,
-        `/projects/${projectId}/clarifications`,
-        `/projects/${projectId}/questions`,
+        `/projects/${projectId}/conflicts/${conflictId}/apply-precedence`,
+        `/projects/${projectId}/conflicts/${conflictId}/auto-resolve`,
+        // Bulk-resolving without a per-conflict rationale.
+        `/projects/${projectId}/conflicts/resolve-all`,
       ]) {
         const r = await call(s, 'POST', path, {}, asAnalyst);
         assert.equal(r.status, 404, path);
       }
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a V6 conflict is STILL undecided until a human decides it in V7', async () => {
+    // The V6 guarantee, restated against a build that CAN decide: reconciliation
+    // writes candidates, and deciding is a separate human act with a rationale.
+    const s = await startServer();
+    try {
+      const projectId = await projectWithProposals(s);
+      const result = await reconcile(s, projectId);
+      for (const conflict of result.conflicts) {
+        assert.equal(conflict.decision, undefined);
+        assert.equal(conflict.decidedBy, undefined);
+      }
+
+      // And a decision without a rationale is refused, at the command and in SQL.
+      const noRationale = await call(
+        s, 'POST', `/projects/${projectId}/conflicts/${result.conflicts[0].id}/decide`,
+        { decision: 'accepted_recommendation', rationale: '' }, asAnalyst,
+      );
+      assert.equal(noRationale.status >= 400, true, 'ADR-0012 requires a defensible decision');
     } finally {
       await s.close();
     }
@@ -1037,8 +1069,15 @@ describe('L1-CONF validation', () => {
       assert.deepEqual(rule.gates, ['G1']);
       assert.match(rule.id, /^L1-CONF-00[1-7]$/);
     }
-    // No eighth validation layer was introduced.
-    assert.deepEqual([...new Set(allRules().map((r) => r.layer))].sort(), ['L0', 'L1']);
+    // No NEW validation layer was introduced. V7 populates L4, which
+    // validation-architecture.md §3 has always defined — the assertion that
+    // matters is that every layer in use is one of the SEVEN, not that the set
+    // never grows. It was ['L0','L1'] before V7 and is correct to change here.
+    const layers = [...new Set(allRules().map((r) => r.layer))].sort();
+    assert.deepEqual(layers, ['L0', 'L1', 'L4']);
+    for (const layer of layers) {
+      assert.ok(['L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6'].includes(layer), layer);
+    }
     // Ids are never reused: a duplicate would make findings and waivers ambiguous.
     assert.equal(new Set(allRules().map((r) => r.id)).size, allRules().length);
   });

@@ -77,10 +77,10 @@ export type RequirementCategory = z.infer<typeof RequirementCategory>;
 /**
  * Lifecycle status.
  *
- * **V5 writes `draft` and nothing else** (**J4**). The remaining values are the
- * domain model's, listed so the column's domain is complete — and migration 008
- * carries a check constraint that refuses every one of them on insert, so the
- * restriction survives a direct connection.
+ * V5 wrote `draft` and nothing else (**J4**). **V7 opens the review states** —
+ * `in_review`, `needs_clarification`, `rejected`, `deferred` — and opens
+ * `approved` **only to the G1 approval transaction** (**U1**), which migration 010
+ * enforces by requiring an approver, a timestamp and a baseline alongside it.
  */
 export const RequirementStatus = z.enum([
   'draft',
@@ -96,12 +96,17 @@ export type RequirementStatus = z.infer<typeof RequirementStatus>;
 /**
  * How the proposition relates to the evidence beneath it.
  *
- * `inferred` is **absent from this enum by decision J1**, not by omission. An
- * inferred proposition has no direct source; the epistemic model permits it with a
- * rationale, and V5 refuses it because its only correct disposition — explicit
- * human confirmation — does not exist until V7.
+ * `inferred` was **absent by decision J1** in V5, for a precise reason: an inferred
+ * proposition has no direct source, and its only correct disposition — explicit
+ * human confirmation — did not exist yet.
+ *
+ * **V7 is that slice, so `inferred` is admitted — for a HUMAN author carrying an
+ * `inferenceRationale`, and for nobody else** (**U8-a**). An AI-authored inference
+ * is refused by migration 010, not merely discouraged by a prompt: admitting one
+ * would reopen exactly what J1 closed — a fluent, unfounded proposition that reads
+ * like a finding.
  */
-export const RequirementDerivation = z.enum(['extracted', 'interpreted']);
+export const RequirementDerivation = z.enum(['extracted', 'interpreted', 'inferred']);
 export type RequirementDerivation = z.infer<typeof RequirementDerivation>;
 
 export const Requirement = z.object({
@@ -135,8 +140,48 @@ export const Requirement = z.object({
    */
   humanConfirmationRequired: z.boolean(),
 
+  // --- versioning (V7, U2-a) ----------------------------------------------
+  /**
+   * Which version of this requirement this row is.
+   *
+   * The **id never changes** (invariant D15): `REQ-0007` is `REQ-0007` forever.
+   * An edit creates a new version, and `(id, version)` is what a baseline member
+   * names — because a signature over content that can change afterwards is not a
+   * signature ([ADR-0017](../../../docs/adr/ADR-0017-approval-as-baseline-signature.md)).
+   */
+  version: z.number().int().positive().default(1),
+  supersedesId: z.string().optional(),
+  supersededById: z.string().optional(),
+  /** Mandatory on every version after the first (governance §2.3). */
+  changeReason: z.string().optional(),
+  /**
+   * **Required when `derivation` is `inferred`** (invariant D2, **U8-a**).
+   *
+   * A recommendation with no stated reasoning cannot be persisted, and this is the
+   * field that makes a human-originated L3 answerable rather than merely asserted.
+   */
+  inferenceRationale: z.string().optional(),
+
   // --- lifecycle ----------------------------------------------------------
   status: RequirementStatus,
+  /**
+   * Written **only** by the G1 approval transaction (**U1**).
+   *
+   * Migration 010 refuses `status: 'approved'` without all three, and refuses all
+   * three without `approved`. No edit, accept or status route can reach them.
+   */
+  approvedBy: EntityId.optional(),
+  approvedAt: z.string().optional(),
+  approvalBaselineId: EntityId.optional(),
+  /**
+   * Explicit confirmation of a LOW-confidence inferred requirement.
+   *
+   * G1 precondition 6 has always named this — *"every LOW-confidence inferred
+   * requirement explicitly confirmed"* — and until V7 nothing could satisfy it,
+   * because nothing could be inferred.
+   */
+  inferenceConfirmedBy: EntityId.optional(),
+  inferenceConfirmedAt: z.string().optional(),
 
   // --- AI work provenance -------------------------------------------------
   generatedBy: z.enum(['ai', 'human', 'parser']),
@@ -218,6 +263,17 @@ export const RequirementFlag = z.object({
   /** `rule` in V5. `ai` and `human` exist for later slices; neither is written here. */
   raisedBy: z.enum(['ai', 'human', 'rule']),
   createdAt: z.string(),
+
+  /**
+   * Resolution — written by a human in **V7**.
+   *
+   * The columns existed from migration 008 and were unwritten; migration 010 adds
+   * the rule that makes them meaningful: all three together, or none. An
+   * unresolved blocking flag is a G1 blocker (`L4-REQ-002`).
+   */
+  resolution: z.string().optional(),
+  resolvedBy: EntityId.optional(),
+  resolvedAt: z.string().optional(),
 });
 export type RequirementFlag = z.infer<typeof RequirementFlag>;
 
@@ -283,3 +339,86 @@ export const RequirementRejection = z.object({
   createdAt: z.string(),
 });
 export type RequirementRejection = z.infer<typeof RequirementRejection>;
+
+// ---------------------------------------------------------------------------
+// The human workspace — V7
+// ---------------------------------------------------------------------------
+
+/**
+ * What caused a clarification question to exist — **U6**.
+ *
+ * **A question with no cause is refused.** The question *set* is derived
+ * deterministically from flags, coverage gaps and conflicts, because a model that
+ * forgot a gap could otherwise hide it — which is ADR-0010's whole argument,
+ * applied to questions. Only the *wording* may be AI-proposed.
+ */
+export const QuestionCauseKind = z.enum([
+  'flag',
+  'empty_required_slot',
+  'weak_required_slot',
+  'blocked_by_policy_slot',
+  'unresolved_conflict',
+]);
+export type QuestionCauseKind = z.infer<typeof QuestionCauseKind>;
+
+export const OpenQuestion = z.object({
+  id: EntityId,
+  projectId: EntityId,
+  requirementSetId: EntityId,
+  /** The deterministic cause, and the id of the thing that caused it. Both required. */
+  causeKind: QuestionCauseKind,
+  causeId: z.string().min(1),
+  rafSlot: z.string().optional(),
+  question: z.string().min(1),
+  whyItMatters: z.string().min(1),
+  /**
+   * **Derived, never chosen:** a question is blocking when its cause blocks G1 —
+   * an empty required slot, a blocking flag, an unresolved conflict. Letting a
+   * model or a user set this would make G1's precondition negotiable.
+   */
+  blocking: z.boolean(),
+  /** Present when a model worded it. The wording is advisory; the cause is not. */
+  aiInteractionId: EntityId.optional(),
+  answer: z.string().optional(),
+  answeredBy: EntityId.optional(),
+  answeredAt: z.string().optional(),
+  /**
+   * **U7:** the answer becomes a `SourceUnit` in an interview transcript, so a
+   * requirement derived from a human answer is anchored exactly as strongly as one
+   * derived from a document. The domain model's own mechanism; no new provenance
+   * path and no exception to ADR-0008.
+   */
+  becameSourceUnitId: EntityId.optional(),
+  createdAt: z.string(),
+});
+export type OpenQuestion = z.infer<typeof OpenQuestion>;
+
+/**
+ * A human acknowledgement that a RAF slot could not be populated **because policy
+ * forbade reading the material** — G1 precondition 7.
+ *
+ * *"We were not permitted to read this"* is a fundamentally different finding from
+ * *"the sources do not say"* (data-governance.md §3.1), and G1 requires the
+ * difference to be acknowledged rather than silently passed over.
+ */
+export const PolicyAcknowledgement = z.object({
+  id: EntityId,
+  projectId: EntityId,
+  requirementSetId: EntityId,
+  rafSlot: z.string().min(1),
+  acknowledgedBy: EntityId,
+  acknowledgedAt: z.string(),
+  rationale: z.string().min(1),
+});
+export type PolicyAcknowledgement = z.infer<typeof PolicyAcknowledgement>;
+
+/** How a human decided a conflict — **U3**. Closed set, so decisions are countable. */
+export const ConflictDecision = z.enum([
+  /** Precedence was followed. */
+  'accepted_recommendation',
+  /** The other participant was chosen. The rationale is what a future reader needs. */
+  'chose_alternative',
+  /** Not a conflict at all — a labelled false positive, and V6's missing ground truth. */
+  'not_a_conflict',
+]);
+export type ConflictDecision = z.infer<typeof ConflictDecision>;

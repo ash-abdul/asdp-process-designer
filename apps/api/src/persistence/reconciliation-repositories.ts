@@ -268,6 +268,47 @@ class SqlReconciliationRepository implements ReconciliationRepository {
     return r.rows.map(mapParticipant);
   }
 
+  /**
+   * A human decides a conflict — V7, and **the only path to a non-null decision**.
+   *
+   * Migration 010 requires a decider, a timestamp **and a rationale** together, so
+   * a decision cannot be recorded without the answer to "why?". ADR-0012 needs the
+   * decision to be defensible in audit, and "the analyst chose the SOP" is not one.
+   */
+  async decideConflict(
+    conflictId: string,
+    decision: { decision: string; decidedBy: string; decidedAt: string; rationale: string },
+  ): Promise<void> {
+    await this.db.query(
+      `update conflict
+          set decision = $2, decided_by = $3, decided_at = $4, decision_rationale = $5
+        where id = $1`,
+      [conflictId, decision.decision, decision.decidedBy, decision.decidedAt, decision.rationale],
+    );
+  }
+
+  /**
+   * A human confirms or rejects an AI-proposed equivalence — **U4**.
+   *
+   * Migration 010 refuses confirmation of a `deterministic` entity: exact
+   * match-form equality is a fact about text, so there is nothing to confirm, and
+   * offering it would invite confirmation of something that was never a judgement.
+   */
+  async setEquivalenceVerdict(
+    canonicalEntityId: string,
+    verdict: { confirmedBy?: string; confirmedAt?: string; rejectedBy?: string; rejectedAt?: string },
+  ): Promise<void> {
+    await this.db.query(
+      `update canonical_entity
+          set confirmed_by = $2, confirmed_at = $3, rejected_by = $4, rejected_at = $5
+        where id = $1`,
+      [
+        canonicalEntityId, verdict.confirmedBy ?? null, verdict.confirmedAt ?? null,
+        verdict.rejectedBy ?? null, verdict.rejectedAt ?? null,
+      ],
+    );
+  }
+
   async insertRelation(relation: RequirementRelation): Promise<void> {
     try {
       await this.db.query(

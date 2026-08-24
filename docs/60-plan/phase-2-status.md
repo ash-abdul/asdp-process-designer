@@ -15,12 +15,13 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **None in progress.** **V6 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against decisions **Q1–Q9**, with the two acceptance-time decisions approved and one latent defect fixed, §9.10 |
+| **Current slice** | **V7 — the human requirements workspace and G1.** Boundary **APPROVED 2026-08-23** (U1–U10) at `31a3531`; implementation **complete, awaiting review** — §10. **G1 is reachable end to end.**
+| **Previously** | **V6 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against decisions **Q1–Q9**, with the two acceptance-time decisions approved and one latent defect fixed, §9.10 |
 | **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6.** V6 accepted at `a653333`; V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
 | **Commit** | V6 `eebabe0` + `a653333`. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
 | **Working tree** | **Clean.** V6 is committed at `eebabe0` and accepted |
 | **Work in progress** | **None.** V6 is accepted. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None. Nothing is approved to begin.** **Implement V7.** Its boundary was **APPROVED 2026-08-23** with decisions **U1–U10** — [v7-proposal.md](v7-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.12. **V7 is replay-only: H3 still blocks every live provider call.** **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 has not started** |
+| **Next approved action** | **Review V7** (§10) — implemented, **not accepted**, and it must not be marked accepted without review. Its boundary was **APPROVED 2026-08-23** with decisions **U1–U10** — [v7-proposal.md](v7-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.12. **V7 is replay-only: H3 still blocks every live provider call.** **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 is implemented and awaits review** |
 
 ### Completed slices
 
@@ -41,13 +42,13 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **714 pass · 0 fail · 0 skipped · 0 todo** · 140 suites |
-| `check:arch` | passed — 146 source files |
+| Tests | **739 pass · 0 fail · 0 skipped · 0 todo** · 146 suites |
+| `check:arch` | passed — 151 source files |
 | `check:arch:selftest` | passed — **36 cases** |
 | `check:docs` | passed — 89 files, 801 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
-| Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` · `007_evidence_confidence` · **`008_requirements`** |
+| Migrations | `001_governance` … `007_evidence_confidence` · `008_requirements` · `009_reconciliation` · **`010_requirement_review`** |
 | `eval:baseline` | `PROFILE_SOURCE`, **synthetic** corpus: schema 100%, reproducibility 100%, label agreement 100%, **not usable for a routing decision** |
 | `eval:extract` | `EXTRACT_EVIDENCE`, **synthetic** gold set: precision **100%**, recall **100%**, F1 **100%**, unsupported-accepted **0%**, hallucination **0%**, ambiguity rejections **2**, traps 2 rejected / 1 **not exercised**. **Mechanics, not model quality** |
 | `eval:reconcile` | `CANONICALISE_ENTITIES` + `RECONCILE_SOURCES`, **synthetic** gold set: conflict precision **100%**, recall **50%**, false-conflict **0%**, canonicalisation P/R **50%**, over-merge **0%**, precedence **reproducible**, traps 2 held / 1 **not exercised**. **Mechanics, not model quality** |
@@ -128,9 +129,9 @@ Process IR, no Specification Studio, no graphical designer.
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) — all accepted |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) — all accepted. **V7** (§10) implemented, awaiting review |
 | Next slice | **None approved.** A **V7 boundary** is recorded at [v7-proposal.md](v7-proposal.md) — the human requirements workspace and **G1**, decisions **U1–U10** — and awaits review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **714 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · **714 V6**) |
+| Tests | **739 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · 714 V6 · **739 V7**) |
 | Verification | build · `check:arch` (135 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
@@ -1288,7 +1289,91 @@ the same business concept — both reported as `notMeasured`, §9.8.
 
 ---
 
-## 10. Accepted HTTP status posture
+## 10. V7 capabilities delivered — the human requirements workspace and G1
+
+**Complete, awaiting review.** Boundary: [v7-proposal.md](v7-proposal.md), plan of record
+[phase-2-plan.md](phase-2-plan.md) §3.12, decisions **U1–U10**. **No new dependency** — seven.
+
+**G1 is reachable end to end**, proved by one test that carries a project from draft proposals to a
+signed baseline: accept every proposal → fill every empty required slot with a human-originated
+inferred requirement → confirm each one → freeze → validate → sign. Every requirement in the baseline
+ends `approved` carrying an approver, a timestamp and a baseline id.
+
+### 10.1 The eight G1 preconditions, computable for the first time
+
+`L4-REQ-001…008` (**U9**), each a rule with a stable id, so a closed gate is *explicable* rather than
+merely closed — which is what [governance-and-gates.md](../50-governance/governance-and-gates.md) §1
+requires of every blocking precondition. The readiness panel reports **all eight, met or not**, never
+just the first failure: a reviewer working towards a gate needs the whole list, not one blocker per
+attempt.
+
+**A defect the end-to-end test caught immediately.** `L4-REQ-001` was written as *"all requirements
+approved"*, copying the gate's own wording — which made G1 **unreachable by construction**, because
+G1 approval *is* what promotes them. The precondition is *"all requirements reviewed"*; *"all at L4"*
+is the gate's **post**-condition. Corrected, and the rule now records the distinction in its own
+documentation so it is not re-introduced.
+
+### 10.2 Approval is a signature, and it reopens by itself
+
+`freezeBaseline`, `evaluateGate` and `approveGate` are V0's, unchanged. V7 supplies the members —
+`(id, version)` pairs — and the preconditions.
+
+**Automatic reopening was missing and is now wired.** A revision after approval recomputes the set's
+hash and compares it against the signed one; when they differ the gate moves to `reopened` and the
+stale `approvedBaselineHash` is dropped. **Nobody asks it to** — that is what
+[ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) means by automatic, and a test asserts
+it. The revised requirement also loses its approval columns, because the signature that covered it
+covered different content.
+
+### 10.3 An edit is never an edit — **U2-a**
+
+A revision copies the current version to `requirement_version` and writes a new one under the same
+`REQ-####` (D15). `originalAiText` stays on version 1 **forever**, so *"what did the model actually
+say?"* survives any amount of human editing. A revision that would cite no evidence is refused: a
+revision may not sever provenance.
+
+### 10.4 Human-originated L3 — **U8-a**
+
+V5 refused L3 because *"its only correct disposition — explicit human confirmation — does not exist
+until V7"*. It exists now. A person may record an assumption the documents do not state, with a
+**mandatory** `inferenceRationale`, and owns it by name; a LOW-confidence one must be explicitly
+confirmed before G1 — the precondition the gate has always named and nothing could satisfy.
+
+**AI-authored inference stays refused in SQL** — `derivation = 'inferred'` requires
+`generated_by = 'human'` **and** a rationale. A test drives that constraint directly against the
+database, because it is the line **J1** drew and V7 must not quietly erase it.
+
+### 10.5 Questions come from causes — **U6**, **U7**
+
+Every `OpenQuestion` names the deterministic cause that created it, and **blocking is derived**: a
+question blocks when its cause blocks G1. Regenerating never duplicates a question for a cause that
+already has one — a duplicated blocking question would block G1 twice for one gap. **No provider is
+reachable from this path**: V7 ships the half that decides *which* questions exist, and a model may
+only reword them later.
+
+### 10.6 Enforcement added
+
+- Migration **010**: `approved` requires an approver, a timestamp **and** a baseline, with the
+  converse refused too · `inferred` requires a human author with a rationale · **L4 is not a storable
+  level**, because approval is a status and L4 is its consequence · a conflict decision requires a
+  decider, a timestamp **and a rationale** · a canonical entity may be confirmed only if it was
+  AI-proposed.
+- `setReviewStatus` **refuses `approved`** in both adapters, matching SQL.
+- The `controller-thinness` rule **fired during implementation**, and the surface was split into
+  `review.controller.ts` and `g1.controller.ts` rather than the cap being raised.
+
+### 10.7 What V7 does NOT establish
+
+> **That anyone reviewed carefully.** V7 makes approval *possible* and *attributable*; it cannot make
+> it *considered*. Approval theatre — the risk named in the proposal — is real, unmeasured here, and
+> mitigated only by requiring a per-requirement act and by making the edit rate observable.
+
+Nothing here measures whether a requirement is *right*. Limitations 63 and 65 stand unchanged.
+
+---
+
+
+## 11. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
 
@@ -1333,7 +1418,7 @@ behaviour as correct.
 
 ---
 
-## 11. Known limitations
+## 12. Known limitations
 
 | # | Limitation | Consequence |
 |---|---|---|
@@ -1451,7 +1536,7 @@ behaviour as correct.
 
 ---
 
-## 12. Docker-deferred infrastructure
+## 13. Docker-deferred infrastructure
 
 Docker remains unavailable. Each item below is deferred **with a named trigger**, not dropped
 ([infra/README.md](../../infra/README.md)).
@@ -1473,7 +1558,7 @@ is **untested** until Docker exists.
 
 ---
 
-## 13. Not started, by instruction
+## 14. Not started, by instruction
 
 BPMN generation, DMN generation, form generation, Process IR compilation, layout, the
 requirements-analysis passes, the Specification Studio, and any graphical process designer.
@@ -1484,7 +1569,7 @@ excluded permanently, because it would reverse
 
 ---
 
-## 14. Next step
+## 15. Next step
 
 ### V3, V4a, V4b-core, V5 and V6 are ACCEPTED. V4b-eval, V2-PDF, V7 and H1/H2/H3 have not started.
 
