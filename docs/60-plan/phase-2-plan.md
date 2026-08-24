@@ -263,21 +263,22 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 
 
-> **PROVISIONAL for V7.** The current *planned* capability sequence, not a record of approved
+> **No slice remains provisional.** The current *planned* capability sequence, not a record of approved
 > slice boundaries. Each requires **refinement and explicit approval before it begins**, and the
 > boundaries may be re-cut. No implementation commitment is made here.
 >
 > **V4 is no longer provisional:** its boundary was approved on 2026-08-23 and is recorded in §3.8.
 > **V5 is no longer provisional either:** its boundary was approved on 2026-08-23 with decisions
 > **J1–J9** and is recorded in §3.10. **Nor is V6:** its boundary was approved on 2026-08-23 with
-> decisions **Q1–Q9** and is recorded in §3.11.
+> decisions **Q1–Q9** and is recorded in §3.11. **Nor is V7:** its boundary was approved on
+> 2026-08-23 with decisions **U1–U10** and is recorded in §3.12.
 
 | Slice | Capability |
 |---|---|
 | **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core accepted / V4b-eval deferred** (§3.9) |
 | **V5** | Structured requirement model and epistemic handling — **boundary APPROVED 2026-08-23**, §3.10 |
 | **V6** | Conflicts, precedence and coverage — ✅ **ACCEPTED 2026-08-23**, §3.11. **J2** confirmed conflict detection, `Conflict` records, `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES` and deterministic precedence here |
-| **V7** | Human requirements workspace and G1 approval — **and it keeps them**: **J4** confirmed no approval route exists before V7 |
+| **V7** | Human requirements workspace and G1 approval — **boundary APPROVED 2026-08-23**, §3.12. **J4** confirmed no approval route exists before it, and **J1** deferred L3 to it |
 
 **Two re-cuts of this sequence were approved with V5** and are recorded so the sequence is not read
 as untouched: **J3-a** moves *deterministic RAF coverage arithmetic* from V6 into V5 (assessment of
@@ -527,6 +528,73 @@ becoming mutable.
 
 V6 is **replay-only** — implementation, tests and evaluation alike. Limitation **62** / **H3** is
 unresolved, so **no live provider call is permitted**, and V6 does not depend on resolving it.
+
+### 3.12 V7 — approved boundary ✅ **APPROVED 2026-08-23**
+
+**Approved 2026-08-23** with decisions **U1–U10**. Full boundary, workflow, data model, G1 criteria,
+evaluation and risks: [v7-proposal.md](v7-proposal.md) v1.0.
+
+V5 and V6 built everything **up to** the human. V7 is the human — the first slice whose primary
+output is produced by a person, and the first that can move anything to **L4**, which
+[epistemic-model.md](../20-domain/epistemic-model.md) §2 rule 1 says *"is ALWAYS an explicit human
+act, recorded with actor, timestamp, and baseline"*.
+
+**Phase 2 ends when G1 can be reached.**
+
+```
+draft proposals + flags + undecided conflicts + unconfirmed merges
+  → REVIEW → CLARIFY → DECIDE → APPROVE (L4) → G1 signature over (baselineHash, validationRunId)
+```
+
+**The gate machinery already exists and has been unused since V0.** `Baseline`, `BaselineMember`,
+`Approval`, `freezeBaseline`, `evaluateGate` and `approveGate` landed with real SQL constraints,
+optimistic concurrency, quorum and **segregation of duties**. V7 does not build G1 — it makes the
+eight preconditions computable and gives the human a surface to satisfy them.
+
+| V7 in scope |
+|---|
+| Requirement review: accept · **revise as a new immutable version** · reject · defer (**U2-a**) |
+| Flag resolution, with a stated resolution |
+| **Conflict decisions** — accept, choose the alternative, or reject as a false positive, always with a decider, a timestamp and a rationale (**U3**) |
+| **Equivalence confirmation**, which may then enable corroboration **computed on read** (**U4**) |
+| **`OpenQuestion`s from deterministic causes** (**U6**), answered, the answer becoming an interview `SourceUnit` (**U7**) |
+| **Human-originated L3** with a mandatory `inferenceRationale` (**U8-a**) |
+| `blocked_by_policy` slot acknowledgement |
+| **`L4-REQ-*`** — the eight G1 preconditions, each a rule with a stable id (**U9**) |
+| **G1**: freeze → validate → evaluate → approve, reusing V0's machinery unchanged (**U1**, **U10**) |
+
+**Out of scope for V7:** BPS · DecisionSpec · FormSpec · ServiceInterface · Process IR ·
+BPMN/DMN/Form generation · the viewer framework · the **P3** Specification Studio and Domain Model
+Registry · graphical editing · **V4b-eval** · live provider work · **V2-PDF** · spreadsheets ·
+**H1**, **H2**, **H3**.
+
+#### Approved decisions U1–U10
+
+| # | Decision | Outcome |
+|---|---|---|
+| **U1** | Approval and L4 | **Only through the G1 approval transaction**, enforced in SQL. No edit, accept or status route may set `approved` |
+| **U2** | Editing model | **New immutable version** (U2-a): same `REQ-####`, new version, supersession chain, mandatory `changeReason`. In-place editing is **refused** — a signature over content that can change afterwards is not a signature (ADR-0017) |
+| **U3** | Conflict decisions | **Never rewrite a requirement.** A decision records which proposition the business chose; changing text is an edit, and an edit is a new version |
+| **U4** | Corroboration | A **human-confirmed** equivalence may raise `crossSourceAgreement` to `corroborated` — the half of **Q6** V6 could not claim. **Still computed on read**; no V5 row is mutated |
+| **U5** | Source-declared undecided issues | **Deferred.** Three of the four question inputs are enough to make G1 reachable |
+| **U6** | Clarification questions | **A deterministic cause is required**; AI may word a question, never choose one. A question with no cause is refused |
+| **U7** | Answered questions | Become a `SourceUnit` in an **interview `Source`** through the existing V1 text path. `transcript` is an existing `SourceKind`; no new kind, no new provenance mechanism |
+| **U8** | L3 inferred requirements | **Permitted, human-originated only**, with a mandatory `inferenceRationale` (U8-a). **No AI-authored L3** — that would reopen what **J1** closed. A LOW-confidence L3 must be explicitly confirmed before G1 |
+| **U9** | G1 readiness rules | **`L4-REQ-*`**, one stable id per precondition, so every blocking precondition is nameable in a report — which governance §1 requires |
+| **U10** | Self-approval | **Disabled**, and not per-project configurable in V7. Already enforced by `approveGate` |
+
+**ADRs required for V7: none.** U1, U8 and U10 implement ADR-0007, ADR-0017 and the epistemic model
+as written; U2-a implements ADR-0016; U4 completes Q6 in its own terms. Three things would need one
+and all three are refused: an AI-signed approval, an approval that survives a content change, and an
+in-place edit of an approved requirement.
+
+**Dependencies added: none.** Runtime dependencies stay at **seven**.
+
+#### H3 still blocks every live call
+
+V7 is **replay-only**. Its one AI touchpoint — question *wording* — replays, and the deterministic
+question **set** needs no provider at all. Limitation **62** / **H3** is unresolved, so **no live
+provider call is permitted**.
 
 ### Sequencing constraints that are structural, not planning choices
 

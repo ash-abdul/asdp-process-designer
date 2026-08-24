@@ -1,9 +1,12 @@
-# V7 — The Human Requirements Workspace and G1 · PROPOSED BOUNDARY
+# V7 — The Human Requirements Workspace and G1 · APPROVED BOUNDARY
 
-> **Status: PROPOSED — NOT APPROVED. Nothing is implemented.** A boundary proposal for review under
-> [CLAUDE.md](../../CLAUDE.md) §11. **V7 must not begin until this boundary is approved**, and approval
-> of the capability name is not approval of this scope.
-> **Version:** 0.1 · **Written:** 2026-08-23
+> **Status: ✅ APPROVED 2026-08-23 — decisions U1–U10 all approved.** The boundary below is binding;
+> the plan of record is [phase-2-plan.md](phase-2-plan.md) **§3.12**.
+>
+> **Two of the ten were already implemented and needed only to be used.** `transcript` is an existing
+> `SourceKind`, so **U7** adds no kind; and `approveGate` in `@asdp/domain` already enforces
+> `allowSelfApproval: false` by excluding content authors, so **U10** is wiring rather than building.
+> **Version:** 1.0 · **Written:** 2026-08-23 · **Approved:** 2026-08-23
 > **Related:** [phase-2-plan.md](phase-2-plan.md) §3.7, [v5-proposal.md](v5-proposal.md),
 > [v6-proposal.md](v6-proposal.md), [phase-2-status.md](phase-2-status.md) §0,
 > [governance-and-gates.md](../50-governance/governance-and-gates.md) §1–§3,
@@ -479,5 +482,20 @@ criterion 6 is not optional.
 
 ## 23. Status
 
-**PROPOSED — NOT APPROVED. No V7 code exists and none will be written until this boundary, and the
-decisions U1–U10, are explicitly approved.**
+**✅ APPROVED 2026-08-23. Decisions U1–U10 all approved**, with the approver's conditions carried into
+the plan of record ([phase-2-plan.md](phase-2-plan.md) §3.12):
+
+1. **Approval and L4 only through G1** (**U1**), enforced in SQL.
+2. **Human edits create immutable new versions** (**U2-a**) — an in-place edit would break ADR-0017.
+3. **A conflict decision never rewrites a requirement** (**U3**).
+4. **Human-confirmed equivalence may enable corroboration, computed on read** (**U4**).
+5. **Source-declared undecided-issue detection stays deferred** (**U5**).
+6. **A clarification question requires a deterministic cause; AI may only word it** (**U6**).
+7. **An answered question becomes an interview `SourceUnit`** through the existing intake and
+   provenance path (**U7**).
+8. **L3 only when human-originated, with a mandatory inference rationale** (**U8-a**).
+9. **`L4-REQ-*`** for the G1 readiness rules (**U9**).
+10. **Self-approval stays disabled** (**U10**).
+
+**ADRs required: none. Dependencies added: none** — seven, unchanged. **H3 remains unresolved: V7 is
+replay-only and makes no live provider call.**
