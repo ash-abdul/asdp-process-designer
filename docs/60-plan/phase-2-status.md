@@ -16,8 +16,8 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
 | **Current slice** | **None in progress.** **V6 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against decisions **Q1–Q9**, with the two acceptance-time decisions approved and one latent defect fixed, §9.10 |
-| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6.** V6 accepted at the acceptance commit recorded here; V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
-| **Commit** | V6 `eebabe0` + the acceptance commit. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6.** V6 accepted at `a653333`; V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | V6 `eebabe0` + `a653333`. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
 | **Working tree** | **Clean.** V6 is committed at `eebabe0` and accepted |
 | **Work in progress** | **None.** V6 is accepted. Spike S2's probe scripts lived outside the repo and were never committed |
 | **Next approved action** | **None. Nothing is approved to begin.** A **V7 boundary proposal** — the human requirements workspace and G1 — is prepared for review and is **NOT APPROVED**. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 has not started** |
@@ -32,7 +32,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
-| **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` + the acceptance commit | **Accepted** — 2026-08-23, §9. Accepted for **mechanics and governance, explicitly not semantic correctness** — §9.8 |
+| **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` + `a653333` | **Accepted** — 2026-08-23, §9. Accepted for **mechanics and governance, explicitly not semantic correctness** — §9.8 |
 | **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
@@ -150,7 +150,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
 | V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
 | V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at `43ab748` |
-| V6 | `eebabe0` — *canonicalisation, conflict candidates, deterministic precedence* · **accepted** at the acceptance commit |
+| V6 | `eebabe0` — *canonicalisation, conflict candidates, deterministic precedence* · **accepted** at `a653333` |
 
 ---
 
