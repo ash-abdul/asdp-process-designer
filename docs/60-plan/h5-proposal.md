@@ -1,6 +1,10 @@
-# H5 — Durable Identity Generation · ✅ BOUNDARY APPROVED
+# H5 — Durable Identity Generation · ✅ ACCEPTED
 
-> **Status: BOUNDARY APPROVED 2026-08-24. NOT YET IMPLEMENTED, NOT YET ACCEPTED.**
+> **Status: ACCEPTED 2026-08-24.** Boundary approved `2d04ab1`, implemented `0ba13b7`, accepted after
+> an independent review with mutation testing. **Limitation 78 is closed.** What the acceptance
+> claims and does not claim is [phase-2-status.md](phase-2-status.md) **§5.14.1**.
+> *(Historic status line follows.)*
+> **Status: BOUNDARY APPROVED 2026-08-24.**
 > **M1–M9 approved**, including the revised **M1** and **M9** of version 0.2. The approved boundary
 > below is binding: only what M1–M9 authorise may be built, per §11 of
 > [CLAUDE.md](../../CLAUDE.md). Implementation does not confer acceptance — acceptance is a separate
