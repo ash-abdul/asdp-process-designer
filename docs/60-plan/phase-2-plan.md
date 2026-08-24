@@ -263,19 +263,20 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 
 
 
-> **PROVISIONAL for V6–V7.** The current *planned* capability sequence, not a record of approved
+> **PROVISIONAL for V7.** The current *planned* capability sequence, not a record of approved
 > slice boundaries. Each requires **refinement and explicit approval before it begins**, and the
 > boundaries may be re-cut. No implementation commitment is made here.
 >
 > **V4 is no longer provisional:** its boundary was approved on 2026-08-23 and is recorded in §3.8.
 > **V5 is no longer provisional either:** its boundary was approved on 2026-08-23 with decisions
-> **J1–J9** and is recorded in §3.10.
+> **J1–J9** and is recorded in §3.10. **Nor is V6:** its boundary was approved on 2026-08-23 with
+> decisions **Q1–Q9** and is recorded in §3.11.
 
 | Slice | Capability |
 |---|---|
 | **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core accepted / V4b-eval deferred** (§3.9) |
 | **V5** | Structured requirement model and epistemic handling — **boundary APPROVED 2026-08-23**, §3.10 |
-| **V6** | Conflicts, precedence and coverage — **and it keeps them**: **J2** confirmed conflict detection, `Conflict` records, `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES` and deterministic precedence in V6 |
+| **V6** | Conflicts, precedence and coverage — **boundary APPROVED 2026-08-23**, §3.11. **J2** confirmed conflict detection, `Conflict` records, `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES` and deterministic precedence here |
 | **V7** | Human requirements workspace and G1 approval — **and it keeps them**: **J4** confirmed no approval route exists before V7 |
 
 **Two re-cuts of this sequence were approved with V5** and are recorded so the sequence is not read
@@ -454,6 +455,78 @@ architectural compliance gap**, pre-existing from V4a.
 | **Scope** | **H3 is not V5 work.** If resolving it becomes technically necessary to preserve an approved invariant, **stop and raise it** rather than expanding scope silently |
 
 **No live provider call is permitted while this gap remains unresolved.**
+
+### 3.11 V6 — approved boundary ✅ **APPROVED 2026-08-23**
+
+**Approved 2026-08-23** with decisions **Q1–Q9**. Full boundary, taxonomy, data model, AI task design,
+evaluation and risks: [v6-proposal.md](v6-proposal.md) v1.0.
+
+V5 writes `crossSourceAgreement: 'silent'` on every proposal — an honest record that **nothing has
+been compared**. Two documents can therefore say opposite things and the system holds both without
+noticing. That is correct for V5 and unacceptable at G1, which requires **0 unresolved conflicts**.
+
+```
+Requirement proposals (V5, uncompared)
+  → CANONICALISE_ENTITIES   who/what is the same thing across sources?
+    → cross-source comparison and conflict CANDIDATES
+      → deterministic PRECEDENCE recommendation (ADR-0012 ordering)
+        → reconciliation view — every Conflict UNDECIDED
+```
+
+> **AI may detect and explain contradiction candidates. Deterministic code computes precedence. A
+> human decides every true conflict.** — [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md),
+> quoted rather than paraphrased. **V6 must not silently decide business truth.**
+
+| V6 in scope |
+|---|
+| `CANONICALISE_ENTITIES` per entity kind, through the V4a broker, replay-only |
+| Deterministic match-form merging; AI merge **candidates** that stay candidates (**Q3**) |
+| Cross-source comparison and the five-way classification (**Q8**) |
+| `RECONCILE_SOURCES` per candidate group — explains, never settles |
+| Deterministic **precedence engine**: authority → effective date → specificity → epistemic level |
+| `Conflict` + participants + `requirement_relation`, **all with `decision = null`** (**Q1**) |
+| Reconciliation-aware **compute-on-read** agreement and confidence view (**Q6**) |
+| The RAF `conflicts` derived slot, and a conflict view **alongside** unchanged coverage (**Q9**) |
+| `L1-CONF-*` validation, rejection retention, read-only routes |
+| Human-controlled **synthetic** gold set and offline evaluation harness |
+
+**Out of scope for V6:** human conflict decisions · human requirement approval · the clarification
+queue and `SYNTHESISE_QUESTIONS` (**Q7**) · **G1** · baselines and signatures · the **P3 Domain Model
+Registry** (**Q2**) · BPS · Process IR · BPMN/DMN/Form generation · graphical editing · **V4b-eval** ·
+live provider evaluation · **V2-PDF** · spreadsheets · **H1**, **H2**, **H3**.
+
+#### Approved decisions Q1–Q9
+
+Recorded in full in [v6-proposal.md](v6-proposal.md) §17. In brief:
+
+| # | Decision | Outcome |
+|---|---|---|
+| **Q1** | Conflict decision state | **Candidates only.** `decision = null` always, **enforced in SQL**, no route that resolves one. Human decisions are **V7** |
+| **Q2** | Canonicalisation scope | **Reconciliation only.** Not the P3 Domain Model Registry; promotion into one is a future explicit architecture decision |
+| **Q3** | Merge safety | **Conservative.** Exact match-form equality may auto-merge; semantic equivalence stays an **AI candidate**; no irreversible merge; `mergedFromIds[]` and traceability preserved; over-merge and missed-equivalence **measured** |
+| **Q4** | Specificity | **Deterministic or `undetermined`.** No heuristic fallback, no arbitrary tie-break |
+| **Q5** | Precedence | **A recommendation.** May persist the recommended participant, `proposedResolution`, `precedenceRationale` and the deciding step. **Must not** apply it, suppress a requirement, rewrite the set, resolve a conflict, or decide |
+| **Q6** | Reconciliation-aware confidence | **Compute-on-read.** V5 rows and their stored confidence are never mutated. **Absence of detected conflict is not agreement**; where human confirmation would be needed the state stays **provisional** |
+| **Q7** | Clarification questions | **V7.** V6 supplies the structural inputs only — no queue, assignment, resolution or interaction workflow |
+| **Q8** | Classification | **Five outcomes:** `duplicate` · `equivalent` · `complementary` · `potentially_contradictory` · `true_conflict`. AI may propose the middle three; **AI must never establish `true_conflict`**. Canonicalisation runs **before** classification |
+| **Q9** | Coverage | **V5's implementation unchanged.** Conflict views sit alongside it; `computeFrameCoverage`, `slotStatus` and `RafGroup` are not touched — **proved by diff** at acceptance |
+
+**Two items the approved list does not cover**, recorded as implementation choices rather than
+approved decisions, and both raised at acceptance: **comparison scope** (confined to a RAF slot and
+its disjointness partner) and the **`L1-CONF-*` validation namespace** (on the **J6** precedent, since
+rule IDs are permanent).
+
+**ADRs required for V6: none.** Q1, Q4 and Q5 implement ADR-0012 as written; Q3 and Q6 implement
+ADR-0016 and ADR-0023; Q2 stays inside the existing module map. Three things would need one and all
+three are refused: AI resolving a conflict, precedence applying itself, and a stored confidence input
+becoming mutable.
+
+**Dependencies added: none.** Runtime dependencies stay at **seven**.
+
+#### H3 still blocks every live call
+
+V6 is **replay-only** — implementation, tests and evaluation alike. Limitation **62** / **H3** is
+unresolved, so **no live provider call is permitted**, and V6 does not depend on resolving it.
 
 ### Sequencing constraints that are structural, not planning choices
 

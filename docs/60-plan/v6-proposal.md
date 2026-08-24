@@ -1,9 +1,15 @@
-# V6 — Canonicalisation, Conflict Candidates and Deterministic Precedence · PROPOSED BOUNDARY
+# V6 — Canonicalisation, Conflict Candidates and Deterministic Precedence · APPROVED BOUNDARY
 
-> **Status: PROPOSED — NOT APPROVED. Nothing is implemented.** A boundary proposal for review under
-> [CLAUDE.md](../../CLAUDE.md) §11. **V6 must not begin until this boundary is approved**, and approval
-> of the capability name is not approval of this scope.
-> **Version:** 0.1 · **Written:** 2026-08-23
+> **Status: ✅ APPROVED 2026-08-23 — decisions Q1–Q9 all approved.** The boundary below is binding;
+> the plan of record is [phase-2-plan.md](phase-2-plan.md) **§3.11**.
+>
+> **The approved Q1–Q9 are lettered as the approver stated them**, and that differs from the
+> numbering this document proposed: the approver's **Q1** absorbs "candidates only" *and* the SQL
+> enforcement this document had split into Q5; the approver's **Q5** is *precedence is a
+> recommendation*; the approver's **Q8** is the five-way classification this document set out in §3;
+> the approver's **Q9** is coverage. §17 below is rewritten to the approved lettering so there is one
+> numbering, not two.
+> **Version:** 1.0 · **Written:** 2026-08-23 · **Approved:** 2026-08-23
 > **Related:** [phase-2-plan.md](phase-2-plan.md) §3.7, [v5-proposal.md](v5-proposal.md),
 > [phase-2-status.md](phase-2-status.md) §0 and §8,
 > [ADR-0012](../adr/ADR-0012-deterministic-conflict-precedence.md),
@@ -374,27 +380,39 @@ generation · graphical editing · **V4b-eval** · live AI · **V2-PDF** · spre
 
 ---
 
-## 17. Material decisions requiring approval
+## 17. Approved decisions Q1–Q9
 
-| | Decision | Recommendation |
+All nine **approved 2026-08-23**, in the approver's lettering.
+
+| # | Decision | Outcome |
 |---|---|---|
-| **Q1** | **V6 writes conflict candidates only; `decision` is always null** | **Approve.** ADR-0012 requires a human decision; this makes it structural |
-| **Q2** | **Canonical entities are scoped to reconciliation, not the P3 Domain Model Registry** | **Approve.** Making them the Registry is a P3 re-cut needing its own decision |
-| **Q3** | **Deterministic merging only on exact match-form equality; everything else is an AI candidate needing human confirmation** | **Approve.** Over-merge is silent and destructive — §19 |
-| **Q4** | **The definition of "specificity"** for ADR-0012 step 3 — anchor containment or a qualifying condition, otherwise `undetermined` with no heuristic fallback | **Approve.** The ADR fixes the ordering, not this term |
-| **Q5** | **`decision` refused on insert in SQL** | **Approve.** The V5 `draft`-only pattern, applied where it matters here |
-| **Q6** | **How reconciliation reaches confidence** — (a) computed on read, (b) new requirement version, (c) mutable field | **Q6-a.** Nothing is mutated and the original stays auditable; (c) is refused outright |
-| **Q7** | **Clarification questions: V6 or V7?** | **Q7-a — V7**, on the reasoning in §10, with the tension in that section named rather than hidden |
-| **Q8** | **`L1-CONF-*` as the rule namespace, no new validation layer** | **Approve.** Consistent with J6; IDs are permanent |
-| **Q9** | **Comparison scope is within a RAF slot (and its disjointness partner), not across the frame** | **Approve.** Cross-slot comparison is a noisier problem and would inflate the false-conflict rate the slice most needs to keep low |
+| **Q1** | Conflict decision state | **Approved: candidates only.** Every V6-created `Conflict` has `decision = null`, there is **no V6 route** that marks one decided or resolved, and it is **enforced in SQL** — the V5 `draft`-only pattern applied where it matters here. Human decisions remain **V7** |
+| **Q2** | Canonicalisation scope | **Approved: reconciliation only.** V6's canonical entities are **not** the P3 Domain Model Registry. Existing structures — `BusinessTerm`, `synonyms[]`, `mergedFromIds[]`, `requirementIds[]` — are used where appropriate. Promotion into a Registry is a **future explicit architecture decision** |
+| **Q3** | Canonical merge safety | **Approved: conservative.** Exact deterministic match-form equality **may auto-merge**; non-exact semantic equivalence is an **AI candidate only**; no irreversible semantic merge; `mergedFromIds[]` preserved; traceability back to every original term preserved; **over-merge and missed-equivalence rates measured**. An AI suggestion must never silently eliminate a distinct business concept |
+| **Q4** | Specificity | **Approved: deterministic or `undetermined`.** Permitted only where objectively testable structure supports it — narrower source/anchor scope, an explicit qualifying condition, other existing deterministic structure. **No heuristic fallback. No arbitrary tie-break** |
+| **Q5** | Precedence is a **recommendation** | **Approved.** Code computes the ADR-0012 order (authority → effective date → specificity → epistemic level) and may persist the recommended participant, `proposedResolution`, `precedenceRationale` and **which step produced it**. It **must not** apply it, delete or suppress a requirement, rewrite the set, mark a conflict resolved, or make a human decision |
+| **Q6** | Reconciliation-aware confidence | **Approved: compute-on-read.** Accepted V5 rows and their stored confidence are **never mutated**. Both views are preserved — the original stored confidence and a reconciliation-aware derived view. `crossSourceAgreement` **must not** become `corroborated` merely because no conflict was found: **absence of detected conflict is not agreement.** Where V7 human confirmation would be needed, the V6 state stays **provisional** rather than manufacturing corroboration |
+| **Q7** | Clarification questions | **Approved: `SYNTHESISE_QUESTIONS` and the human workflow stay V7.** V6 provides the structural inputs — unresolved conflict candidates, V5 ambiguity flags, missing RAF information, source-declared undecided issues where already represented. **No queue, assignment, resolution or interaction workflow in V6** |
+| **Q8** | Cross-source classification | **Approved: five distinct outcomes** — `duplicate`, `equivalent`, `complementary`, `potentially_contradictory`, `true_conflict`. **AI may propose** `equivalent`, `complementary` and `potentially_contradictory`. **AI must never establish `true_conflict` as human-settled truth.** Textual difference alone is not conflict, and canonicalisation/context analysis runs **before** classification |
+| **Q9** | Coverage | **Approved: V5's implementation is unchanged.** V6 may add reconciliation/conflict views **alongside** coverage. `computeFrameCoverage`, `slotStatus`, `RafGroup` and V5 coverage semantics are **not** reimplemented or redefined, **proved by diff** at acceptance |
 
-**ADR implications.** On this reading **no new ADR is required**: Q1, Q4 and Q5 implement ADR-0012 as
-written; Q3 and Q6 implement ADR-0016 and ADR-0023; Q2 stays inside the existing module map. **Three
-things would need one, and all three are refused above:** letting AI resolve a conflict; letting
-precedence apply itself; and making a stored confidence input mutable.
+### 17.1 One implementation choice the approved list does not cover
 
-**Q2 and Q7 are re-cuts of the provisional sequence** and need explicit approval even though neither
-is an ADR.
+**Comparison scope.** This document proposed confining candidate detection to **within a RAF slot**
+(and its disjointness partner). That did not appear in the approved Q-list, so it is recorded here as
+an **implementation choice, not an approved decision**, and it is reversible: cross-slot comparison
+would widen recall at a direct cost to the false-conflict rate, which is the metric this slice can
+least afford to inflate (§19, R-V6-1). Raised at acceptance rather than left implicit.
+
+**The validation namespace is in the same position.** This document proposed **`L1-CONF-*`** with no
+new validation layer, following the reasoning the approver accepted for **J6** in V5. It is not in the
+approved Q-list either. It is implemented on the J6 precedent and **flagged for confirmation at
+acceptance**, because rule IDs are permanent and are never renumbered.
+
+**ADR implications.** **No new ADR is required**: Q1, Q4 and Q5 implement ADR-0012 as written; Q3 and
+Q6 implement ADR-0016 and ADR-0023; Q2 stays inside the existing module map. **Three things would need
+one, and all three are refused:** letting AI resolve a conflict; letting precedence apply itself; and
+making a stored confidence input mutable.
 
 ---
 
@@ -480,5 +498,14 @@ any live provider call**, so V6 is replay-only for the same reason V5 was.
 
 ## 21. Status
 
-**PROPOSED — NOT APPROVED. No V6 code exists and none will be written until this boundary, and the
-decisions Q1–Q9, are explicitly approved.**
+**✅ APPROVED 2026-08-23. Decisions Q1–Q9 all approved**, with the approver's conditions carried into
+the plan of record ([phase-2-plan.md](phase-2-plan.md) §3.11):
+
+1. **`decision = null` on every V6 conflict**, enforced in SQL, with no route that resolves one (Q1).
+2. **Absence of detected conflict is not agreement** (Q6). Where human confirmation would be needed,
+   the state stays **provisional** rather than manufacturing corroboration.
+3. **Precedence recommends; it never applies** (Q5).
+4. **H3 remains a hard blocker on any live provider call**, so V6 is **replay-only** — implementation,
+   tests and evaluation alike.
+
+**ADRs required: none. Dependencies added: none** — seven, unchanged.
