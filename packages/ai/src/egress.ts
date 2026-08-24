@@ -63,6 +63,34 @@ export interface ProjectEgressSettings {
   readonly classificationCeiling: Classification;
 }
 
+/**
+ * Why the egress gate said no.
+ *
+ * A closed set, and **exported because a caller has to be able to tell an egress
+ * refusal from any other kind**. Recording "no provider is configured" as
+ * *"we were not permitted to read this"* would put a governance claim on the
+ * record that nobody made — and then demand a human acknowledge it at G1.
+ */
+export const EGRESS_REFUSAL_REASONS = [
+  'prohibited_content',
+  'project_forbids_external',
+  'deployment_class_not_permitted',
+  'task_not_permitted',
+  'retention_exceeds_policy',
+  'training_opt_out_required',
+] as const;
+export type EgressRefusalReason = (typeof EGRESS_REFUSAL_REASONS)[number];
+
+/**
+ * Whether a routing rejection was the EGRESS GATE speaking.
+ *
+ * `route` records a rejection as `` `${reason}: ${detail}` ``, and non-egress
+ * rejections — a disabled provider, for one — carry no reason from this set.
+ */
+export function isEgressRefusal(rejectionReason: string): boolean {
+  return EGRESS_REFUSAL_REASONS.some((r) => rejectionReason.startsWith(`${r}:`));
+}
+
 export type EgressDecision =
   | {
       readonly allowed: true;

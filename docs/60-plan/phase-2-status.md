@@ -42,7 +42,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **761 pass · 0 fail · 0 skipped · 0 todo** · 149 suites |
+| Tests | **765 pass · 0 fail · 0 skipped · 0 todo** · 150 suites |
 | `check:arch` | passed — 152 source files |
 | `check:arch:selftest` | passed — **39 cases** (36 before V7's corrections; the new `g1-reconciliation` rule carries three) |
 | `check:docs` | passed — 91 files, 875 links |
@@ -139,7 +139,7 @@ Studio, no graphical designer. **P3 has not started.**
 |---|---|
 | Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) — all accepted. **V7** (§10) implemented, awaiting review |
 | Next slice | **None approved.** A **V7 boundary** is recorded at [v7-proposal.md](v7-proposal.md) — the human requirements workspace and **G1**, decisions **U1–U10** — and awaits review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **761 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · 714 V6 · 739 V7 · **761 V7-corrected**) |
+| Tests | **765 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · 714 V6 · 739 V7 · **765 V7-corrected**) |
 | Verification | build · `check:arch` (152 files) · checker self-test (**39 cases**) · `check:docs` (91 files, 875 links) — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
@@ -1411,6 +1411,14 @@ checked.
 **Defect 7 was not in the approved correction list.** It was raised because the verification bar
 required an adverse test per precondition and this one could not have failed either — the same
 defect as 1, in a different limb.
+
+**One defect in the corrections themselves, caught on re-review.** The first cut of defect 7's
+discriminator read *"no eligible provider and at least one rejected one"* as a policy refusal — which
+would have classified a **disabled provider** as a governance denial, recording every slot as
+`blocked_by_policy` and demanding a human acknowledge a denial nobody made. That is
+data-governance.md §3.1's confusion **inverted**, and inverted is worse: it manufactures a governance
+finding rather than losing one. `isEgressRefusal` now tests the rejection reason against the closed
+egress set by prefix, and four tests cover it — including the disabled-provider case.
 
 **Nothing was weakened to make any of this pass.** The `controller-thinness` cap is still 220 and
 still untouched since V0; the V7 surface was split a **second** time, into `clarification.controller.ts`

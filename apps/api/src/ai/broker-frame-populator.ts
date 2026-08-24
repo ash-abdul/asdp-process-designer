@@ -22,7 +22,7 @@
  * composition root's decision, recorded on the interaction as `mode`.
  */
 
-import { invoke, type BrokerDeps } from '@asdp/ai';
+import { invoke, isEgressRefusal, type BrokerDeps } from '@asdp/ai';
 import { FramePopulation, type AiInteraction } from '@asdp/schemas';
 import type { FramePopulator, PopulateFrameOutcome, PopulateFrameRequest } from '../ports.ts';
 import { decodeStructured } from './broker-profiler.ts';
@@ -152,13 +152,17 @@ export function createBrokerFramePopulator(deps: BrokerFramePopulatorDeps): Fram
       );
 
       if (outcome.kind === 'refused') {
-        // A refusal with NO eligible provider and at least one rejected one is
-        // the egress gate speaking: the content may not leave. A refusal for any
-        // other reason — nothing wired, everything failed — is not a statement
-        // about data governance and must not be recorded as one.
+        // A `policy` refusal is the EGRESS GATE speaking: no provider was
+        // eligible, and every rejection was an egress decision. A refusal for any
+        // other reason — nothing wired, a provider disabled, everything failed —
+        // is not a statement about data governance and must not be recorded as
+        // one, because a `blocked_by_policy` slot then demands that a human
+        // acknowledge a denial nobody made (`L4-REQ-007`).
+        const rejections = outcome.routing.rejectedProviders;
         const gated =
           outcome.routing.eligibleProviders.length === 0 &&
-          outcome.routing.rejectedProviders.length > 0;
+          rejections.length > 0 &&
+          rejections.every((r) => isEgressRefusal(r.reason));
         return {
           kind: 'refused',
           reason: outcome.detail,

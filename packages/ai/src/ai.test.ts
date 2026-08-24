@@ -24,6 +24,8 @@ import {
   createNullProvider,
   createPrivateEndpointProvider,
   evaluateEgress,
+  isEgressRefusal,
+  EGRESS_REFUSAL_REASONS,
   invoke,
   planDegradation,
   requiredCapabilitiesFor,
@@ -255,6 +257,36 @@ describe('egress policy gate (ADR-0021)', () => {
 // ---------------------------------------------------------------------------
 // SPIKE S6 — the transport-boundary assertion
 // ---------------------------------------------------------------------------
+
+describe('isEgressRefusal — a governance denial, told apart from every other kind', () => {
+  test('recognises every reason in the closed set', () => {
+    for (const reason of EGRESS_REFUSAL_REASONS) {
+      assert.equal(isEgressRefusal(`${reason}: some detail`), true, reason);
+    }
+  });
+
+  test('a DISABLED PROVIDER is not a governance denial', () => {
+    // The false positive this function exists to prevent. `route` rejects a
+    // disabled provider with a bare reason; if that counted as egress, a build
+    // with its only provider switched off would record every RAF slot as
+    // `blocked_by_policy` and then demand a human acknowledge, at G1, a denial
+    // that nobody made. That is data-governance.md §3.1's confusion inverted —
+    // and inverted is worse, because it MANUFACTURES a governance finding rather
+    // than losing one.
+    assert.equal(isEgressRefusal('provider disabled'), false);
+  });
+
+  test('an unrelated failure is not a governance denial either', () => {
+    assert.equal(isEgressRefusal("provider 'x' failed: timeout"), false);
+    assert.equal(isEgressRefusal('no model met the capability requirement'), false);
+  });
+
+  test('a reason that merely CONTAINS an egress word does not count', () => {
+    // Prefix, not substring: the format is `${reason}: ${detail}`, and a detail
+    // mentioning a reason must not promote an unrelated refusal.
+    assert.equal(isEgressRefusal('provider failed: prohibited_content was mentioned'), false);
+  });
+});
 
 describe('SPIKE S6: transport-boundary enforcement', () => {
   test('assertTransportPermitted throws for RESTRICTED → external', () => {
