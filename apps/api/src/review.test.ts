@@ -131,8 +131,16 @@ const asApprover = { 'x-asdp-subject': 'u-approver', 'x-asdp-roles': 'BusinessAp
 const asViewer = { 'x-asdp-subject': 'u-viewer', 'x-asdp-roles': 'Viewer' };
 
 /** Ingest → extract → populate: a project holding draft proposals, as V5 leaves it. */
+let projectSequence = 0;
+
 async function projectWithProposals(s: Server): Promise<{ projectId: string; setId: string }> {
-  const created = await call(s, 'POST', '/projects', { key: `v7-${Date.now()}`, name: 'V7' }, asAdmin);
+  // A sequence as well as a clock: two projects created inside one millisecond
+  // would otherwise collide on the project key, and the unique violation surfaces
+  // as a 503 that looks like an infrastructure failure rather than a fixture bug.
+  projectSequence += 1;
+  const created = await call(
+    s, 'POST', '/projects', { key: `v7-${Date.now()}-${projectSequence}`, name: 'V7' }, asAdmin,
+  );
   assert.equal(created.status, 201, JSON.stringify(created.json));
   const projectId = created.json.id;
 
@@ -160,6 +168,27 @@ async function projectWithProposals(s: Server): Promise<{ projectId: string; set
  * preconditions are satisfied by a person doing eight kinds of work, not by a flag
  * somewhere being flipped.
  */
+/** A second project carrying anchored evidence, and no requirements. */
+async function projectWithEvidenceOnly(s: Server): Promise<string> {
+  projectSequence += 1;
+  const created = await call(
+    s, 'POST', '/projects', { key: `v7-other-${Date.now()}-${projectSequence}`, name: 'Other' }, asAdmin,
+  );
+  assert.equal(created.status, 201, JSON.stringify(created.json));
+  const projectId = created.json.id;
+
+  const ingested = await call(
+    s, 'POST', `/projects/${projectId}/sources`, { filename: 'other.md', text: DOC }, asAnalyst,
+  );
+  assert.equal(ingested.status, 201, JSON.stringify(ingested.json));
+  const extracted = await call(
+    s, 'POST', `/projects/${projectId}/sources/${ingested.json.source.id}/extract-evidence`,
+    undefined, asAnalyst,
+  );
+  assert.equal(extracted.status, 201, JSON.stringify(extracted.json));
+  return projectId;
+}
+
 interface ReadyOptions {
   /** Leave the empty required slots empty — the L4-REQ-005 adverse case. */
   readonly skipFillSlots?: boolean;
@@ -550,6 +579,109 @@ describe('U2-a revision creates a new immutable version', () => {
         asAnalyst,
       );
       assert.equal(severed.status >= 400, true, 'invariant D2 forbids a citation-free requirement');
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a revision may ADD a citation, not only narrow one', async () => {
+    // The defect the criterion-10 walk found: an earlier cut FILTERED the
+    // inherited links, so `evidenceItemIds` could only ever remove. Evidence
+    // recorded after a requirement existed — an answered clarification, most of
+    // all — was uncitable by anything, forever.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      const target = listed.json.requirements.find((r: any) => r.derivation !== 'inferred');
+      const sources = await call(s, 'GET', `/projects/${projectId}/sources`, undefined, asAnalyst);
+
+      // Fresh evidence over a span the requirement does not yet cite.
+      const added = await call(
+        s, 'POST', `/projects/${projectId}/evidence`,
+        { sourceId: sources.json.sources[0].id, charStart: 0, charEnd: 20 },
+        asAnalyst,
+      );
+      assert.equal(added.status, 201, JSON.stringify(added.json));
+
+      const before = target.evidence.length;
+      const revised = await call(
+        s, 'POST', `/projects/${projectId}/requirements/${target.id}/revise`,
+        {
+          text: 'A renewal request must be submitted within ninety days of expiry.',
+          changeReason: 'cite the eligibility clause directly',
+          evidenceItemIds: [...target.evidence.map((e: any) => e.evidenceItemId), added.json.id],
+        },
+        asAnalyst,
+      );
+      assert.equal(revised.status, 201, JSON.stringify(revised.json));
+
+      const after = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      const row = after.json.requirements.find((r: any) => r.id === target.id);
+      assert.equal(row.evidence.length, before + 1, 'the added citation must be retained');
+      assert.ok(row.evidence.some((e: any) => e.evidenceItemId === added.json.id));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a revision may NOT cite evidence from another project', async () => {
+    // The hole opening "add" could have left. A citation across a project
+    // boundary is a traceability break wearing a revision as cover.
+    const s = await startServer();
+    try {
+      const first = await projectWithProposals(s);
+      await makeReady(s, first.projectId, first.setId);
+
+      // The second project holds EVIDENCE and stops there — deliberately not
+      // populated. Requirement ids are allocated per project against a GLOBAL
+      // primary key, so a second project's `REQ-0001` collides with the first's;
+      // that is a V5 defect (migration 008, `4b148b4`), it is outside the V7
+      // boundary, and it is raised rather than fixed here. Evidence is all this
+      // test needs, and it needs it to be genuinely foreign.
+      const second = await projectWithEvidenceOnly(s);
+      const foreign = await call(
+        s, 'GET', `/projects/${second}/evidence`, undefined, asAnalyst,
+      );
+      assert.ok(foreign.json.evidence.length > 0, 'the second project must hold evidence');
+
+      const listed = await call(
+        s, 'GET', `/projects/${first.projectId}/requirements`, undefined, asAnalyst,
+      );
+      const target = listed.json.requirements.find((r: any) => r.derivation !== 'inferred');
+
+      const attempted = await call(
+        s, 'POST', `/projects/${first.projectId}/requirements/${target.id}/revise`,
+        {
+          text: 'Borrowed from elsewhere.',
+          changeReason: 'attempting a cross-project citation',
+          evidenceItemIds: [foreign.json.evidence[0].id],
+        },
+        asAnalyst,
+      );
+      assert.equal(attempted.status, 400, JSON.stringify(attempted.json));
+      assert.match(String(attempted.json.error), /not in project/);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('a revision citing NOTHING is still refused — adding did not open a way out', async () => {
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId);
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      const target = listed.json.requirements.find((r: any) => r.derivation !== 'inferred');
+
+      const attempted = await call(
+        s, 'POST', `/projects/${projectId}/requirements/${target.id}/revise`,
+        { text: 'Unfounded.', changeReason: 'dropping every citation', evidenceItemIds: [] },
+        asAnalyst,
+      );
+      assert.equal(attempted.status, 400, JSON.stringify(attempted.json));
+      assert.match(String(attempted.json.error), /may not sever provenance/);
     } finally {
       await s.close();
     }
@@ -1017,12 +1149,10 @@ describe('EACH G1 precondition blocks independently, end to end', () => {
 
       const readiness = await readinessOf(s, projectId);
       const l0 = readiness.preconditions.find((p: any) => p.ruleId === 'L4-REQ-008');
-      assert.equal(l0.met, false, 'a broken anchor must close G1');
       assert.match(String(l0.detail), /L0 finding/);
 
-      const attempted = await call(s, 'POST', `/projects/${projectId}/g1/approve`, {}, asApprover);
-      assert.equal(attempted.status, 400, JSON.stringify(attempted.json));
-      assert.match(String(attempted.json.error), /L4-REQ-008/);
+      // Independently, like the other seven: a broken anchor closes G1 by itself.
+      await assertBlocksAlone(s, projectId, 'L4-REQ-008');
     } finally {
       await s.close();
     }
@@ -1109,6 +1239,99 @@ describe('U7 an answer becomes an anchored transcript SourceUnit', () => {
       // 4. And the whole project still passes L0 — an unresolvable anchor here
       //    would close G1 through L4-REQ-008, which is exactly the point of
       //    routing the answer through intake rather than around it.
+      const validated = await call(
+        s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst,
+      );
+      assert.equal(validated.json.summary.blocking.length, 0, JSON.stringify(validated.json.summary));
+    } finally {
+      await s.close();
+    }
+  });
+
+  test('CRITERION 10 — a requirement CITING the answer resolves, end to end', async () => {
+    // The chain criterion 10 actually names, walked in full:
+    //
+    //   Requirement(id, version) → RequirementEvidenceLink → EvidenceItem
+    //                            → verified Anchor → Source(kind: transcript)
+    //
+    // Note what answering does NOT do: it does not attach the answer to a
+    // requirement by itself. An answer supplies EVIDENCE; a human then revises
+    // the requirement to cite it, and that revision is a new version. Epistemic
+    // rule 6 — editing is not approving — is the reason this is two acts.
+    const s = await startServer();
+    try {
+      const { projectId, setId } = await projectWithProposals(s);
+      await makeReady(s, projectId, setId, { generateQuestionsFirst: true });
+
+      const listed = await call(s, 'GET', `/projects/${projectId}/questions`, undefined, asAnalyst);
+      const question = listed.json.questions[0];
+      const answered = await call(
+        s, 'POST', `/projects/${projectId}/questions/${question.id}/answer`,
+        { answer: 'Renewals must complete within five working days of submission.' },
+        asAnalyst,
+      );
+      assert.equal(answered.status, 200, JSON.stringify(answered.json));
+
+      // 1. Evidence over the answer's unit, through the ORDINARY V1 evidence
+      //    path. No special case: the transcript is a source like any other.
+      const evidence = await call(
+        s, 'POST', `/projects/${projectId}/evidence`,
+        { sourceId: answered.json.sourceId, sourceUnitId: answered.json.becameSourceUnitId },
+        asAnalyst,
+      );
+      assert.equal(evidence.status, 201, JSON.stringify(evidence.json));
+      // D1: an anchor is verified BEFORE persistence, so a stored item is anchored.
+      assert.equal(evidence.json.anchorVerified, true);
+      // The answer was read by a parser, not a model — attribution follows the
+      // cited content, and nobody may later mistake this for an AI reading.
+      assert.equal(evidence.json.extractedBy, 'parser');
+
+      // 2. A requirement revised to cite it — a new version, with a reason.
+      const requirements = await call(
+        s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst,
+      );
+      const target = requirements.json.requirements.find((r: any) => r.derivation !== 'inferred');
+      assert.ok(target !== undefined, 'the fixture must offer an evidenced requirement');
+
+      const citedIds = [
+        ...target.evidence.map((e: any) => e.evidenceItemId),
+        evidence.json.id,
+      ];
+
+      const revised = await call(
+        s, 'POST', `/projects/${projectId}/requirements/${target.id}/revise`,
+        {
+          text: 'A renewal must complete within five working days of submission.',
+          changeReason: 'the sponsor answered the clarification; the period is five days',
+          evidenceItemIds: citedIds,
+        },
+        asAnalyst,
+      );
+      assert.equal(revised.status, 201, JSON.stringify(revised.json));
+      assert.equal(revised.json.version, target.version + 1);
+
+      // 3. THE ASSERTION: the requirement now cites the answer, and the citation
+      //    RESOLVES all the way back to the transcript.
+      const after = await call(
+        s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst,
+      );
+      const revisedRow = after.json.requirements.find((r: any) => r.id === target.id);
+      const cited = revisedRow.evidence.find((e: any) => e.evidenceItemId === evidence.json.id);
+      assert.ok(cited !== undefined, 'the revision must retain the citation to the answer');
+      // The pre-existing citations survive too: a revision narrows deliberately
+      // or not at all, and never by accident.
+      assert.equal(revisedRow.evidence.length, citedIds.length);
+
+      const item = await call(
+        s, 'GET', `/projects/${projectId}/evidence/${evidence.json.id}`, undefined, asAnalyst,
+      );
+      assert.equal(item.status, 200, JSON.stringify(item.json));
+      assert.equal(item.json.sourceId, answered.json.sourceId);
+      assert.match(String(item.json.verbatimText), /five working days/);
+
+      // And L0 still passes, which is what makes "provenance exactly as strong as
+      // a document" a checkable claim rather than a slogan: an unresolvable
+      // anchor here would close G1 through L4-REQ-008.
       const validated = await call(
         s, 'POST', `/projects/${projectId}/intake/validate`, undefined, asAnalyst,
       );

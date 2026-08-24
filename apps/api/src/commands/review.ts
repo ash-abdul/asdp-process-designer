@@ -258,7 +258,14 @@ export interface ReviseRequirementInput {
   readonly text: string;
   /** Mandatory. Governance §2.3: every new version states why it exists. */
   readonly changeReason: string;
-  /** Optional narrowing of the evidence set. Omitted means inherit unchanged. */
+  /**
+   * The evidence the new version cites, in full. Omitted means inherit unchanged.
+   *
+   * The reviewer may **add** as well as remove: a revision prompted by an
+   * answered clarification has to be able to cite the answer (**U7**, proposal
+   * §13). Every id must name evidence in this project, and a version citing
+   * nothing is refused unless the requirement is `inferred`.
+   */
   readonly evidenceItemIds?: readonly string[];
 }
 
@@ -296,10 +303,43 @@ export async function reviseRequirement(
   }
 
   const existing = await ctx.repos.requirements.evidenceFor(input.requirementId);
-  const inherited: RequirementEvidenceLink[] =
-    input.evidenceItemIds === undefined
-      ? [...existing]
-      : existing.filter((l) => input.evidenceItemIds?.includes(l.evidenceItemId));
+
+  // The reviewer may ADD or REMOVE citations, not merely narrow the inherited set
+  // — a revision prompted by a clarification answer has to be able to cite the
+  // answer, and an earlier cut of this filtered the inherited links instead,
+  // which made the evidence an answer produces impossible for any requirement to
+  // ever cite (proposal §13, criterion 10).
+  let inherited: RequirementEvidenceLink[];
+  if (input.evidenceItemIds === undefined) {
+    inherited = [...existing];
+  } else {
+    const held = new Map(existing.map((l) => [l.evidenceItemId, l]));
+    // Cited evidence must exist IN THIS PROJECT. Every stored EvidenceItem has a
+    // verified anchor by invariant D1, enforced in SQL, so existence is the whole
+    // check — but a citation across a project boundary would be a traceability
+    // break dressed as a revision.
+    const citable = new Map(
+      (await ctx.repos.evidence.listForProject(input.projectId)).map((e) => [e.id, e]),
+    );
+    inherited = input.evidenceItemIds.map((id) => {
+      const kept = held.get(id);
+      if (kept !== undefined) return kept;
+      if (!citable.has(id)) {
+        throw new ValidationError(
+          `evidence ${id} is not in project ${input.projectId}; a revision may cite this project's ` +
+            'verified evidence and nothing else (invariant D2, ADR-0008)',
+        );
+      }
+      // A newly cited item is `supporting`. Calling it `primary` would be the
+      // command deciding which evidence carries a proposition, which is a
+      // judgement the reviewer makes, not a default.
+      return {
+        requirementId: input.requirementId,
+        evidenceItemId: id,
+        contribution: 'supporting' as const,
+      };
+    });
+  }
 
   if (inherited.length === 0 && current.derivation !== 'inferred') {
     throw new ValidationError(
