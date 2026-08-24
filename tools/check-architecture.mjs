@@ -321,6 +321,50 @@ const CONTROLLER_MAX_LINES = 220;
 const G1_RECONCILED_FILE = 'apps/api/src/commands/review.ts';
 const G1_RECONCILE_EXEMPT = ['approveG1'];
 
+// --- H5 / M8: the counting id generator may not reach production ----------
+
+/**
+ * `counterIdGenerator` counts from zero in process memory.
+ *
+ * That is correct for a test, which wants deterministic `prj-0001` identifiers,
+ * and catastrophic in production, where a restart resets the counter while the
+ * database keeps every row — so the first write of any kind collides
+ * (limitation 78). The defect was not the generator; it was the generator
+ * reaching `composition.ts`.
+ *
+ * Production composition must use `durableIdGenerator`. Tests, and the in-memory
+ * adapter that defines it, may use either.
+ *
+ * The rule matches a CALL — `counterIdGenerator(` — not the bare name, so a
+ * re-export from the package barrel and a comment naming it are both fine. What
+ * is refused is production code actually constructing one.
+ */
+const COUNTER_GENERATOR = 'counterIdGenerator';
+const COUNTER_GENERATOR_HOME = 'apps/api/src/repo-memory.ts';
+
+/**
+ * The offline evaluation harnesses, exempt for a stated reason.
+ *
+ * Each builds an in-memory broker context and **writes no state at all** — their
+ * `recordInteraction` is a no-op, and none of them opens a database. A restart
+ * collision is therefore not merely unlikely there, it is unrepresentable: there
+ * is nothing persisted for a re-minted identifier to collide with.
+ *
+ * Determinism is also a property these runs are measured on — `eval:baseline`
+ * reports reproducibility — so a counting generator is the correct choice here
+ * and a time-ordered one would be the wrong one.
+ *
+ * This list is deliberately explicit. A new file may not join it by being in a
+ * directory; someone has to add it here and say why.
+ */
+const COUNTER_GENERATOR_EXEMPT = [
+  'apps/api/src/ai/baseline.ts',
+  'apps/api/src/ai/extract-baseline.ts',
+  'apps/api/src/ai/frame-baseline.ts',
+  'apps/api/src/ai/live-capture.ts',
+  'apps/api/src/ai/reconcile-baseline.ts',
+];
+
 // --- D15 / H4: there is exactly ONE requirement-id allocator ---------------
 
 /**
@@ -709,6 +753,23 @@ export function evaluateRules(files) {
       }
     }
 
+    // --- H5 / M8: no counting generator in production ---------------------
+    if (
+      normalisedPath !== COUNTER_GENERATOR_HOME &&
+      !COUNTER_GENERATOR_EXEMPT.includes(normalisedPath) &&
+      !/\.test\.ts$/.test(normalisedPath) &&
+      new RegExp(`\\b${COUNTER_GENERATOR}\\s*\\(`).test(f.text)
+    ) {
+      violations.push({
+        rule: 'durable-id-generator',
+        file: f.path,
+        detail:
+          `${COUNTER_GENERATOR} counts from zero in process memory, so a restart re-mints ` +
+          'identifiers the database already holds (limitation 78). Production must use ' +
+          `durableIdGenerator; ${COUNTER_GENERATOR} belongs to tests and ${COUNTER_GENERATOR_HOME}`,
+      });
+    }
+
     // --- D15 / H4: one allocator -----------------------------------------
     if (
       normalisedPath !== REQUIREMENT_ID_ALLOCATOR_FILE &&
@@ -958,6 +1019,53 @@ const SELF_TEST_CASES = [
     expectNone: true,
     file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
             text: `export async function rejectRequirement(ctx) {\n  return mutate(ctx, a, s, async (repos) => repos.x());\n}\n` },
+  },
+  {
+    name: 'production wiring using counterIdGenerator is rejected (H5 / M8)',
+    rule: 'durable-id-generator',
+    file: { path: 'apps/api/src/composition.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const ids = counterIdGenerator();\n' },
+  },
+  {
+    name: 're-exporting it from the package barrel is permitted (H5 / M8)',
+    rule: 'durable-id-generator',
+    expectNone: true,
+    file: { path: 'apps/api/src/index.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'export { counterIdGenerator } from "./repo-memory.ts";\n' },
+  },
+  {
+    name: 'the in-memory adapter that DEFINES it is permitted (H5 / M8)',
+    rule: 'durable-id-generator',
+    expectNone: true,
+    file: { path: 'apps/api/src/repo-memory.ts', pkg: '@asdp/api', cls: 'adapter',
+            text: 'export function counterIdGenerator() { return { next: () => "x" }; }\n' },
+  },
+  {
+    name: 'a test using counterIdGenerator is permitted (H5 / M8)',
+    rule: 'durable-id-generator',
+    expectNone: true,
+    file: { path: 'apps/api/src/review.test.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const ids = counterIdGenerator();\n' },
+  },
+  {
+    name: 'a stateless evaluation harness is PERMITTED to count (H5 / M8)',
+    rule: 'durable-id-generator',
+    expectNone: true,
+    file: { path: 'apps/api/src/ai/baseline.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const ids = counterIdGenerator();\n' },
+  },
+  {
+    name: 'an UNLISTED file under ai/ is still rejected (H5 / M8)',
+    rule: 'durable-id-generator',
+    file: { path: 'apps/api/src/ai/new-harness.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const ids = counterIdGenerator();\n' },
+  },
+  {
+    name: 'production wiring using durableIdGenerator is PERMITTED (H5 / M8)',
+    rule: 'durable-id-generator',
+    expectNone: true,
+    file: { path: 'apps/api/src/composition.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const ids = durableIdGenerator(clock, randomBytes);\n' },
   },
   {
     name: 'an inline REQ-#### template literal is rejected (D15 / H4)',

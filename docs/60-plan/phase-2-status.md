@@ -57,14 +57,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **H5 — boundary APPROVED 2026-08-24 (M1–M9), NOT YET IMPLEMENTED.** [h5-proposal.md](h5-proposal.md) v0.2. **H4 ACCEPTED / COMPLETE** — 2026-08-24, §5.13. **V7 ACCEPTED** — 2026-08-24, §10.10 |
+| **Current slice** | **H5 — implemented and verified, AWAITING ACCEPTANCE** (§5.14). Boundary approved 2026-08-24 (M1–M9), [h5-proposal.md](h5-proposal.md) v0.2. **H4 ACCEPTED** — §5.13. **V7 ACCEPTED** — §10.10 |
 | **Previously** | **V6 ACCEPTED / COMPLETE** — 2026-08-23 against decisions **Q1–Q9**, §9.10 |
 | **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 — the whole approved Phase 2 slice sequence, plus the H4 hardening.** H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
 | **Commit** | **H4 `ce15d9d` + `193d295` + `5a5504b`.** V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
 | **Phase 2 closure** | **NOT CLOSED. Exactly ONE blocker remains: H5 / limitation 78.** Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*. **H4 / limitation 77 is CLOSED and ACCEPTED** (§5.13) — G1 is reachable by any number of projects **within one process lifetime**. **H5 blocks closure**: every surrogate id comes from a per-process counter, so after a restart against a durable database the first write of any kind collides and durable multi-project G1 does not survive a restart (K8's approval clarification). **H5's boundary is APPROVED (M1–M9), not yet implemented** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Implement H5 to the APPROVED boundary — [h5-proposal.md](h5-proposal.md), decisions M1–M9 — then run full verification and an independent acceptance review. Acceptance is NOT automatic.** **H6 (limitation 79), H7 (limitation 80) and H8 (limitation 81) must NOT be addressed inside H5.** **Phase 2 must not close automatically** on H5's acceptance. **P3 must not start** — no proposed boundary. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **DECIDE H5's ACCEPTANCE.** H5 is **implemented and verified** (§5.14) and **NOT accepted** — acceptance is a separate act and is explicitly not automatic. **Nothing else may begin until that decision.** **H6 (limitation 79), H7 (limitation 80) and H8 (limitation 81) remain out of scope.** **Phase 2 must not close automatically** on H5's acceptance — closure is a separate decision. **P3 must not start.** **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -83,14 +83,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
-### Verification of the current working tree — H4 implemented, green
+### Verification of the current working tree — H5 implemented, green
 
 | | |
 |---|---|
 | Verified | **2026-08-24**, `npm run verify` **green end to end, exit 0**, with H4 implemented |
-| Tests | **782 pass · 0 fail · 0 skipped · 0 todo** · 155 suites. **+13 tests, +5 suites — the H4 acceptance suite** (`h4-multi-project.test.ts`) |
-| `check:arch` | passed — **153 source files** |
-| `check:arch:selftest` | passed — **43 cases** (39 before H4; the new `requirement-id-allocation` rule carries four — two rejecting, two permitting) |
+| Tests | **794 pass · 0 fail · 0 skipped · 0 todo** · 158 suites. **+12 tests, +3 suites — the H5 acceptance suite** (`h5-durable-identity.test.ts`); H4's suite added 13 before it |
+| `check:arch` | passed — **155 source files** |
+| `check:arch:selftest` | passed — **50 cases** (43 before H5; the new `durable-id-generator` rule carries **six** — two rejecting, four permitting) |
 | `check:docs` | passed — 91 files, **882 links** |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
@@ -168,7 +168,7 @@ traces to a numbered limitation or an approved decision.
 
 | Item | State | Why it matters now |
 |---|---|---|
-| **H5** — every surrogate id comes from a **per-process** counter | **BOUNDARY APPROVED 2026-08-24 — [h5-proposal.md](h5-proposal.md) v0.2, decisions M1–M9. NOT YET IMPLEMENTED, NOT YET ACCEPTED. A PHASE 2 CLOSURE BLOCKER** (K8's approval clarification). Limitation **78** | After a restart against a durable database the first write of any kind collides, so **durable multi-project G1 does not survive a restart**. Latent only because the default database is in-memory. **Deliberately outside the H4 boundary** and **must not be implemented inside it**. Needs its own analysis, boundary approval, implementation and acceptance |
+| **H5** — every surrogate id comes from a **per-process** counter | **IMPLEMENTED AND VERIFIED 2026-08-24, NOT ACCEPTED** (§5.14). Boundary approved the same day (M1–M9). **Still the Phase 2 closure blocker until accepted.** Limitation **78** | After a restart against a durable database the first write of any kind collides, so **durable multi-project G1 does not survive a restart**. Latent only because the default database is in-memory. **Deliberately outside the H4 boundary** and **must not be implemented inside it**. Needs its own analysis, boundary approval, implementation and acceptance |
 | **H6** — a domain error thrown inside a transaction is flattened to `503` | **Confirmed and reproduced 2026-08-24 while analysing H4. Recorded, not started.** Limitation **79** | `PgliteDatabase.transaction` re-maps every escaping error through `mapDriverError`, so a modelling defect reads as an infrastructure outage. Proposed as **K7** and **NOT APPROVED for H4** — a separate concern, not required to fix limitation 77. **Must not be implemented in the H4 boundary** |
 | **H7** — `order by at, id` mis-orders past 9 999 | **Found and verified 2026-08-24 while analysing H5. Recorded, not started.** Limitation **80** | `id` is `text`, so the four-digit pad overflows and `aud-10000` sorts before `aud-9999`. A V0 defect, latent because no prefix has reached 10 000. **Outside the H5 boundary. NOT a Phase 2 closure blocker** |
 | **H8** — ordering inferred from the identifier | **Found 2026-08-24 while analysing H5. Recorded, not started.** Limitation **81** | Four tables order by `(timestamp, id)`, using the id as a proxy for insertion order. The fix is a monotonic insertion column, which would decouple ordering from identifier design. **Outside the H5 boundary. NOT a Phase 2 closure blocker** |
@@ -800,6 +800,41 @@ were corrected and one expectation was replaced by a comparison against observed
 - **NOT a fix for the `503` flattening.** A domain error thrown inside a transaction still reads as
   an infrastructure outage (**K7 refused; limitation 79 / H6**). H4's D15 non-reuse guard is
   therefore asserted at the repository boundary rather than over HTTP.
+
+---
+
+### 5.14 H5 implemented — AWAITING ACCEPTANCE, **NOT ACCEPTED**
+
+**Implemented 2026-08-24 to the approved boundary** ([h5-proposal.md](h5-proposal.md) v0.2,
+decisions **M1–M9**). **H6, H7 and H8 are untouched.** **Acceptance is a separate act and has not
+happened. Phase 2 does not close automatically.**
+
+Surrogate ids are now `${prefix}-${ULID}` — fixed-width Crockford base32, 48-bit millisecond
+timestamp, 80-bit component **incremented** within a millisecond, timestamp **clamped** so it cannot
+appear to move backwards inside a process. The fix is not a better counter; it is **not counting**,
+so a restart has nothing to forget.
+
+| | |
+|---|---|
+| **Generator** | `durableIdGenerator(clock, random)` in **`@asdp/domain`** (**M3**). **Both the clock and the entropy source are injected**, so the package's stated purity — *no clock, no randomness* — holds, and the generator is deterministic under test |
+| **Port** | **Unchanged** (**M2**). `IdGenerator.next(prefix): string` is still synchronous, so **all 49 call sites, every command and every repository are untouched** |
+| **Wiring** | [composition.ts](../../apps/api/src/composition.ts) constructs the durable generator; `counterIdGenerator` is retained for tests (**M4**) |
+| **Migration** | **None** (**M7**). Migration count stays at **13**. No schema change, no backfill, **no id renumbered** |
+| **Dependency** | **None** (**M3**, decision **A4**). About 150 lines over `node:crypto`, injected |
+| **Enforcement** | New checker rule **`durable-id-generator`** (**M8**) — production may not *call* `counterIdGenerator`. **Six self-test cases**; the five stateless evaluation harnesses are exempt **by name**, with the reason recorded in the rule |
+| **Verification** | `npm run verify` **green end to end, exit 0**: **794 pass · 0 fail · 0 skipped · 0 todo · 158 suites**; `check:arch` 155 files; `check:arch:selftest` **50 cases**; `check:docs` 93 files / 990 links |
+
+**Two things implementation found that the proposal did not predict**, both recorded rather than
+smoothed over:
+
+| # | Found | Disposition |
+|---|---|---|
+| **1** | **`@asdp/domain` declares itself free of *randomness*, not merely of clocks.** M3 placed the generator there, and the architecture checker would have permitted `node:crypto` — but the package's own contract would have been broken quietly | **Resolved within M3 by injecting the entropy source**, exactly as the clock already is. The generator is pure; composition supplies `randomBytes`. No rule was weakened, and the boundary did not move |
+| **2** | **Five production files legitimately count.** The rule fired on the offline evaluation harnesses, which write **no state at all** — `recordInteraction` is a no-op and none opens a database — and whose reproducibility is a *measured* property | **Exempted by name**, with the reason in the rule and a self-test proving an **unlisted** file under the same directory is still rejected |
+
+**Nothing was weakened.** No assertion loosened, no test skipped or deleted. One fixture error of
+mine was corrected: the multi-entity restart test re-ingested identical bytes, which **deduplicate to
+one source by design**, so it was measuring deduplication rather than durability.
 
 ---
 

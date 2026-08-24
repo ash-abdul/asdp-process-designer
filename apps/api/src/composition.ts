@@ -26,7 +26,9 @@ import {
   type VisionExtractor,
 } from '@asdp/ingestion';
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
-import { counterIdGenerator, createMemoryRepositories, systemClock } from './repo-memory.ts';
+import { createMemoryRepositories, systemClock } from './repo-memory.ts';
+import { durableIdGenerator } from '@asdp/domain';
+import { randomBytes } from 'node:crypto';
 
 export interface Adapters {
   readonly database?: Database;
@@ -75,7 +77,18 @@ export async function createAdapters(
   options: { readonly runMigrations?: boolean } = {},
 ): Promise<Adapters> {
   const clock = systemClock();
-  const ids = counterIdGenerator();
+  // H5 / M4: the durable generator, NOT `counterIdGenerator`.
+  //
+  // A counter in process memory restarts at zero while the database keeps every
+  // row, so the first write after a restart re-mints an identifier that already
+  // exists — any write, not just a duplicate one (limitation 78). Two instances
+  // collide for the same reason. This generator remembers nothing across
+  // processes, so there is nothing for a restart to forget.
+  //
+  // `counterIdGenerator` survives for tests, where deterministic `prj-0001`
+  // identifiers are worth having; the architecture-checker rule
+  // `durable-id-generator` is what keeps it from reaching production wiring again.
+  const ids = durableIdGenerator(clock, randomBytes);
 
   const blobStore =
     config.blobStore === 'filesystem'

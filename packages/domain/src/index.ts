@@ -11,6 +11,14 @@ export * from './types.ts';
 export { canonicalJson, contentHash, canonicalText, textContentHash } from './canonical.ts';
 
 export {
+  type IdentityClock,
+  type RandomSource,
+  type DurableIdGenerator,
+  MAX_ULID_TIMESTAMP,
+  durableIdGenerator,
+} from './identity.ts';
+
+export {
   type BaselineInput,
   computeBaselineHash,
   freezeBaseline,
