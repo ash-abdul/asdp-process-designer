@@ -1079,6 +1079,31 @@ describe('L1-CONF validation', () => {
     assert.equal(finding.severityAtGate.G1, 'warning');
   });
 
+  test('L1-CONF-005 STOPS firing once a human has decided — no waiver factory', () => {
+    // Found in the V6 acceptance review. A WARNING requires a waiver to pass a
+    // gate (validation-architecture.md §1), so a rule that keeps firing after the
+    // human has decided would ask them to justify a condition they already
+    // handled — every G1, forever. Latent in V6, which writes no decided
+    // conflicts, and live the moment V7 exists.
+    const undecided = evaluateL1Conflicts(
+      { conflicts: [{ ...base, precedenceUndecidable: true }], ...known },
+      'run-1',
+    );
+    assert.ok(undecided.some((f) => f.ruleId === 'L1-CONF-005'));
+
+    const decided = evaluateL1Conflicts(
+      {
+        conflicts: [{ ...base, precedenceUndecidable: true, decision: 'keep REQ-0001', decidedBy: 'u-analyst' }],
+        ...known,
+      },
+      'run-1',
+    );
+    assert.ok(!decided.some((f) => f.ruleId === 'L1-CONF-005'));
+    // L1-CONF-004 still fires, because a decision written by anything other than
+    // V7's human path is exactly what it exists to catch.
+    assert.ok(decided.some((f) => f.ruleId === 'L1-CONF-004'));
+  });
+
   test('a clean conflict produces no findings', () => {
     const findings = evaluateL1Conflicts({ conflicts: [base], ...known }, 'run-1');
     assert.deepEqual(findings, []);

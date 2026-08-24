@@ -15,12 +15,12 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V6 — canonicalisation, conflict candidates and deterministic precedence.** Boundary **APPROVED 2026-08-23** with decisions **Q1–Q9** ([v6-proposal.md](v6-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.11); implementation **complete, awaiting review** — §9 |
-| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5.** V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
-| **Commit** | V6 at **`eebabe0`**, awaiting review. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
-| **Working tree** | **Clean.** V6 is committed and awaits review |
-| **Work in progress** | **None.** V6 is complete. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Review V6** (§9) — implemented, **not accepted**, and it must not be marked accepted without review. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 has not started** |
+| **Current slice** | **None in progress.** **V6 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against decisions **Q1–Q9**, with the two acceptance-time decisions approved and one latent defect fixed, §9.10 |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6.** V6 accepted at the acceptance commit recorded here; V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | V6 `eebabe0` + the acceptance commit. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Working tree** | **Clean.** V6 is committed at `eebabe0` and accepted |
+| **Work in progress** | **None.** V6 is accepted. Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **None. Nothing is approved to begin.** A **V7 boundary proposal** — the human requirements workspace and G1 — is prepared for review and is **NOT APPROVED**. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 has not started** |
 
 ### Completed slices
 
@@ -32,7 +32,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
-| **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` | **Complete, awaiting review** — §9 |
+| **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` + the acceptance commit | **Accepted** — 2026-08-23, §9. Accepted for **mechanics and governance, explicitly not semantic correctness** — §9.8 |
 | **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
@@ -41,7 +41,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **713 pass · 0 fail · 0 skipped · 0 todo** · 140 suites |
+| Tests | **714 pass · 0 fail · 0 skipped · 0 todo** · 140 suites |
 | `check:arch` | passed — 146 source files |
 | `check:arch:selftest` | passed — **36 cases** |
 | `check:docs` | passed — 89 files, 801 links |
@@ -128,9 +128,9 @@ Process IR, no Specification Studio, no graphical designer.
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) — all accepted. **V6** (§9) implemented, awaiting review |
-| Next slice | **V6 — canonicalisation, conflict candidates, deterministic precedence.** Boundary **APPROVED 2026-08-23**, decisions **Q1–Q9**. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **713 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · **713 V6**) |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) — all accepted |
+| Next slice | **None approved.** A **V7 boundary** — the human requirements workspace and G1 — is prepared for review and is not approved. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Tests | **714 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · **714 V6**) |
 | Verification | build · `check:arch` (135 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
@@ -150,7 +150,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
 | V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
 | V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at `43ab748` |
-| V6 | `eebabe0` — *canonicalisation, conflict candidates, deterministic precedence* · **awaiting review** |
+| V6 | `eebabe0` — *canonicalisation, conflict candidates, deterministic precedence* · **accepted** at the acceptance commit |
 
 ---
 
@@ -1253,6 +1253,39 @@ place aggressive folding (Teh Marbuta, Alef, diacritics) can do damage.
 - The **shared reconciliation gate**, used identically by the command and the harness (**J5**).
 - **Rejected candidates retained in full** — **J9** applied to merges and conflict candidates alike.
 
+### 9.10 Accepted after independent review — and the two decisions it settled
+
+Reviewed against [v6-proposal.md](v6-proposal.md), decisions **Q1–Q9**, ADR-0012/0016/0023, the
+domain model, the RAF, the epistemic model and the accepted V5 implementation on 2026-08-23, and
+**accepted**.
+
+**Four claims were checked by diff or execution rather than by reading:**
+
+| Claim | How |
+|---|---|
+| **Q9** — V5 coverage untouched | `packages/raf` is **byte-identical** to the V5 acceptance commit `43ab748` |
+| **Q6** — V5 rows immutable | `commands/requirements.ts` and `ai/proposal-gate.ts` are byte-identical, and **there is no `UPDATE` statement anywhere in non-test code** |
+| **Q8** — `true_conflict` unreachable | Executed: the output schema **refuses** it, the gate rejects it by name, and migration 009 omits it from the permitted values |
+| **J5** — one shared implementation | The gate, the canonicaliser and `computePrecedence` are each defined once and imported by **both** the command and the harness |
+
+**The two acceptance-time decisions were approved.** `L1-CONF-*` stays as the permanent namespace,
+with no eighth validation layer; comparison stays confined to a RAF slot and its disjointness
+partner, recorded as limitation **66** with a named trigger for revisiting it.
+
+**One latent defect was found and fixed.** `L1-CONF-005` — precedence undecidable — fired whether or
+not a human had decided the conflict. A **WARNING requires a waiver** to pass a gate
+([validation-architecture.md](../40-quality/validation-architecture.md) §1), so in V7 every
+human-decided undecidable conflict would have demanded a waiver justifying a condition the human had
+already handled: nagging that teaches reviewers to waive without reading. It now fires only while the
+conflict is undecided. **Latent in V6, which writes no decided conflicts, and live the moment V7
+exists** — a predicate change, not an ID or severity change, so nothing was renumbered. Tests: **714
+pass · 0 fail · 0 skipped**.
+
+**What this acceptance claims:** that what should stay undecided stays undecided, that no distinct
+concept is silently merged away, and that precedence recommends without ever applying itself.
+**What it does not claim:** that any detected contradiction is real, or that two surface forms denote
+the same business concept — both reported as `notMeasured`, §9.8.
+
 ---
 
 ## 10. Accepted HTTP status posture
@@ -1453,7 +1486,7 @@ excluded permanently, because it would reverse
 
 ## 14. Next step
 
-### V3, V4a, V4b-core and V5 are ACCEPTED. V6 is IMPLEMENTED and awaits review. V4b-eval, V2-PDF, V7 and H1/H2/H3 have not started.
+### V3, V4a, V4b-core, V5 and V6 are ACCEPTED. V4b-eval, V2-PDF, V7 and H1/H2/H3 have not started.
 
 | | |
 |---|---|
@@ -1469,7 +1502,6 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-| **V6 — conflicts, precedence and reconciliation** | **IMPLEMENTED, AWAITING REVIEW** — §9. Boundary approved 2026-08-23, decisions **Q1–Q9** — [v6-proposal.md](v6-proposal.md), plan of record §3.11. **Accepted for nothing yet** |
+| **V6 — conflicts, precedence and reconciliation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §9, reviewed in §9.10. Decisions **Q1–Q9**; `L1-CONF-*` and slot-scoped comparison approved at acceptance. **Accepted for mechanics and governance, explicitly not semantic correctness** — §9.8 |
 
-**V6 is implemented and must be reviewed before it is accepted. V4b-eval, V2-PDF and V7 are not
-approved. No live provider call is permitted while limitation 62 / H3 stands.**
+**V4b-eval, V2-PDF and V7 are not approved. No live provider call is permitted while limitation 62 / H3 stands.**

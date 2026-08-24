@@ -1,7 +1,9 @@
-# V6 — Canonicalisation, Conflict Candidates and Deterministic Precedence · APPROVED BOUNDARY
+# V6 — Canonicalisation, Conflict Candidates and Deterministic Precedence · ACCEPTED
 
-> **Status: ✅ APPROVED 2026-08-23 — decisions Q1–Q9 all approved.** The boundary below is binding;
-> the plan of record is [phase-2-plan.md](phase-2-plan.md) **§3.11**.
+> **Status: ✅ APPROVED, IMPLEMENTED and ACCEPTED 2026-08-23** — decisions Q1–Q9 all approved.
+> Delivered state: [phase-2-status.md](phase-2-status.md) **§9**; the acceptance review, the two
+> acceptance-time decisions it settled and the latent defect it fixed are in **§9.10**. The plan of
+> record is [phase-2-plan.md](phase-2-plan.md) **§3.11**.
 >
 > **The approved Q1–Q9 are lettered as the approver stated them**, and that differs from the
 > numbering this document proposed: the approver's **Q1** absorbs "candidates only" *and* the SQL

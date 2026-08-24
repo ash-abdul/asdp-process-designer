@@ -276,7 +276,7 @@ dimensions are read from file headers with no library. Runtime dependencies rema
 |---|---|
 | **V4** | AI analysis passes — **split and no longer provisional**: **V4a accepted** (§3.8), **V4b-core accepted / V4b-eval deferred** (§3.9) |
 | **V5** | Structured requirement model and epistemic handling — **boundary APPROVED 2026-08-23**, §3.10 |
-| **V6** | Conflicts, precedence and coverage — **boundary APPROVED 2026-08-23**, §3.11. **J2** confirmed conflict detection, `Conflict` records, `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES` and deterministic precedence here |
+| **V6** | Conflicts, precedence and coverage — ✅ **ACCEPTED 2026-08-23**, §3.11. **J2** confirmed conflict detection, `Conflict` records, `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES` and deterministic precedence here |
 | **V7** | Human requirements workspace and G1 approval — **and it keeps them**: **J4** confirmed no approval route exists before V7 |
 
 **Two re-cuts of this sequence were approved with V5** and are recorded so the sequence is not read
@@ -456,7 +456,7 @@ architectural compliance gap**, pre-existing from V4a.
 
 **No live provider call is permitted while this gap remains unresolved.**
 
-### 3.11 V6 — approved boundary ✅ **APPROVED 2026-08-23**
+### 3.11 V6 — approved boundary ✅ **ACCEPTED 2026-08-23**
 
 **Approved 2026-08-23** with decisions **Q1–Q9**. Full boundary, taxonomy, data model, AI task design,
 evaluation and risks: [v6-proposal.md](v6-proposal.md) v1.0.

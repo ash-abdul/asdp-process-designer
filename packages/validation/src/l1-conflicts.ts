@@ -96,7 +96,10 @@ export const L1_CONFLICT_RULES: readonly RuleDefinition[] = [
     'Precedence could not separate the participants: equal authority, no comparable dates, ' +
       'undetermined specificity and equal epistemic level. A warning rather than an error — the ' +
       'conflict is real and decidable by a human, who simply has no computed starting point. ' +
-      'Decision Q4 forbids breaking the tie arbitrarily.',
+      'Decision Q4 forbids breaking the tie arbitrarily. Fires ONLY WHILE THE CONFLICT IS ' +
+      'UNDECIDED: a WARNING requires a waiver to pass a gate (validation-architecture.md §1), and ' +
+      'demanding one for a conflict a human has already decided would ask them to justify a ' +
+      'condition they handled — nagging that teaches reviewers to waive without reading.',
   ),
   rule(
     'L1-CONF-006',
@@ -230,7 +233,10 @@ export function evaluateL1Conflicts(state: ConflictsState, runId: string): reado
       findings.push(finding(runId, 'L1-CONF-003', conflict.id, { conflictId: conflict.id }));
     }
 
-    if (conflict.precedenceUndecidable) {
+    // Undecided only. Once a human has decided, the absence of a computed
+    // starting point is history rather than an open condition, and a warning
+    // that outlives its subject is a waiver factory.
+    if (conflict.precedenceUndecidable && conflict.decision === undefined) {
       findings.push(finding(runId, 'L1-CONF-005', conflict.id, { conflictId: conflict.id }));
     }
 
