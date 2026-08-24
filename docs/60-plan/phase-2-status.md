@@ -70,7 +70,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
 | **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` + `a653333` | **Accepted** — 2026-08-23, §9. Accepted for **mechanics and governance, explicitly not semantic correctness** — §9.8 |
 | **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
-| **H4** — project-scoped requirement identity, migration 013, the one allocator | *(uncommitted at time of writing)* | **Implemented and verified — NOT ACCEPTED** |
+| **H4** — project-scoped requirement identity, migration 013, the one allocator | `ce15d9d` + `193d295` | **Implemented and verified — NOT ACCEPTED.** Boundary `ce15d9d`; implementation `193d295` |
 | **V7** — the human requirements workspace, human-originated L3, clarification questions, and **G1** | `7bfa440` + `f38ef06` + `96f84e4` + `7e50303` | **Accepted** — 2026-08-24, §10, reviewed in §10.10. **G1 is reachable end to end.** Accepted for **mechanics and governance, explicitly not model quality** — §10.7 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.

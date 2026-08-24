@@ -208,6 +208,7 @@ signature covers, or what any approved document says.
 | **`requirement_relation`** | `unique (from_id, to_id, kind)` → `unique (project_id, from_id, to_id, kind)` |
 | **`@asdp/domain`** | `allocateD15_requirementId` and `assertD15_notReused` become the only allocation path (**K3**) |
 | **`RequirementRepository` port** | `projectId` added to the addressing methods (**K4**), in `ports.ts`, `requirement-repositories.ts` and `repo-memory.ts` |
+| **`@asdp/schemas`** | `RequirementEvidenceLink` and `CanonicalEntityAlias` gain `projectId`. **Added to this table on 2026-08-24, after the acceptance review found the package changed without being named here.** It is a direct consequence of **K1**, not an expansion: `requirement_evidence.project_id` and `canonical_entity_alias.project_id` are `not null`, so a link or alias that carried only `requirementId` could not be written — and `requirementId` alone no longer names a requirement |
 | **Commands** | `requirements.ts` and `review.ts` updated for the new signatures; the four conventional ownership checks kept as belt-and-braces, not removed |
 | **Architecture checker** | One new rule (§10) |
 | **Documentation** | [phase-2-status.md](phase-2-status.md) §0, §5.12, §12; this document's status line; [phase-2-plan.md](phase-2-plan.md); [docs/README.md](../README.md) |
@@ -437,6 +438,29 @@ would suggest:** addressing a requirement that exists only in another project
 returns **400**, not 404, because the command layer raises `ValidationError` and
 the filter maps that to 400. That mapping predates H4 and is not this boundary's
 to change. It is asserted at its real value so the discrepancy is visible.
+
+---
+
+### 13a.1 Acceptance-review corrections — 2026-08-24
+
+An independent acceptance review of `193d295` found four defects. **None was in production
+behaviour** — the schema, the migration and the runtime were verified correct at the
+`pg_constraint` level — and all four were corrected without touching a line of production code.
+
+| # | Defect | Correction |
+|---|---|---|
+| **F1** | **An acceptance criterion evidenced only vacuously.** A4's structural test linked to `REQ-9999`, an id no project holds — which the **pre-H4** foreign key `requirement_evidence.requirement_id -> requirement(id)` would have refused just as firmly. The test passed identically before and after H4 and could not detect a regression of what A4 claims | Rewritten to link to a requirement that **exists, in another project**. Proved discriminating by running the same insert against both schemas: **pre-H4 ACCEPTED, post-H4 REFUSED.** The test now asserts the id's global existence explicitly, so the reason the old key would have passed is on the page |
+| **F2** | **A vacuous control assertion** in the same test: `on conflict do nothing` with `assert.ok(result !== undefined)`, which holds even when nothing is written. Measured: `affectedRows = 0` | The control now inserts a link that does not already exist and asserts `affectedRows === 1`. A refused-insert leak check was added alongside it |
+| **F3** | **A false statement in the durable record.** The completed-slices table gave H4's commit as *"(uncommitted at time of writing)"* after it had been committed | Replaced with `ce15d9d` + `193d295` |
+| **F4** | **Undocumented scope.** `@asdp/schemas` changed — `RequirementEvidenceLink` and `CanonicalEntityAlias` gained `projectId` — without being named in §5.1 | §5.1 now names the package, with why it is a consequence of **K1** rather than an expansion |
+
+Four observations were recorded and deliberately **not** acted on, because acting on them would
+expand the boundary: A9's in-suite test reconstructs the member mapping rather than exercising
+production (covered in combination by A5 and by the diff, and verified end to end by review probe);
+A7 does not require both projects to have produced aliases (verified 3 each in practice); the
+`requirement-id-allocation` rule misses two evasion forms it was never scoped to catch; and
+`resolveFlag`'s SQL is unscoped by project, which is **H5 territory** and safe today because the
+command pre-filters by `flagsForProject`.
 
 ---
 

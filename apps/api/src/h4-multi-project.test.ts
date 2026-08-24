@@ -457,45 +457,110 @@ describe('H4 requirement addressing is structurally project-scoped', () => {
   test('SQL REFUSES a cross-project evidence link, not merely the command layer', async () => {
     // A4's structural half, asserted against the database directly. The command
     // check above could be removed by a future refactor; this could not be.
+    //
+    // THIS TEST IS BUILT TO DISCRIMINATE. An earlier cut of it linked to
+    // `REQ-9999`, an id no project holds — which the PRE-H4 foreign key
+    // (`requirement_evidence.requirement_id -> requirement(id)`) would have
+    // refused just as firmly. It therefore passed identically before and after
+    // the change and could not detect a regression of the very thing A4 claims.
+    //
+    // The discriminating case is a requirement id that EXISTS — in another
+    // project. Under the old single-column key that row satisfied the reference
+    // and the insert was accepted; under `(project_id, id)` the pair does not
+    // exist and it is refused. The test asserts the id's global existence
+    // explicitly, so the reason the old key would have passed is on the page.
     const s = await startServer();
     try {
       const a = await projectWithProposals(s, 'fk-a');
       const b = await projectWithProposals(s, 'fk-b');
 
-      const bEvidence = (
-        await call(s, 'GET', `/projects/${b.projectId}/evidence`, undefined, asAnalyst)
-      ).json.evidence[0];
-      assert.ok(bEvidence !== undefined, 'project B must hold evidence');
+      // Both projects populate from the same document and allocate the SAME id
+      // set, so an id unique to one project has to be created deliberately.
+      const extra = await call(
+        s, 'POST', `/projects/${b.projectId}/requirements/inferred`,
+        {
+          requirementSetId: b.setId,
+          text: 'Project B alone records this intent.',
+          rafSlot: 'businessObjective',
+          category: 'constraint',
+          inferenceRationale: 'Recorded from the sponsor interview.',
+        },
+        asAnalyst,
+      );
+      assert.equal(extra.status, 201, JSON.stringify(extra.json));
+      const onlyInB: string = extra.json.id;
 
-      // A's project id paired with a requirement id A does not own. Before H4 the
-      // foreign key named `requirement(id)` alone and the project half of this
-      // pair was not checked by anything in SQL.
+      // The two halves of "discriminating", stated as assertions rather than as
+      // a comment:
+      //   1. the id EXISTS in the requirement table, so the pre-H4 foreign key
+      //      would have been satisfied by it;
+      //   2. it does NOT exist in project A, so the composite key must refuse it.
+      const globally = await s.database.query(
+        'select project_id from requirement where id = $1',
+        [onlyInB],
+      );
+      assert.equal(
+        globally.rows.length, 1,
+        `${onlyInB} must exist exactly once globally — the pre-H4 key referenced id alone`,
+      );
+      assert.equal(String(globally.rows[0]?.project_id), b.projectId);
+      assert.equal(
+        (await requirementIn(s, a.projectId, onlyInB)), undefined,
+        `project A must NOT hold ${onlyInB}`,
+      );
+
+      const aEvidence = (
+        await call(s, 'GET', `/projects/${a.projectId}/evidence`, undefined, asAnalyst)
+      ).json.evidence[0];
+      assert.ok(aEvidence !== undefined, 'project A must hold evidence');
+
+      // THE DISCRIMINATING INSERT. Pre-H4: accepted. Post-H4: refused.
       await assert.rejects(
         () =>
           s.database.query(
             `insert into requirement_evidence (project_id, requirement_id, evidence_item_id, contribution)
-             values ($1, 'REQ-9999', $2, 'supporting')`,
-            [a.projectId, bEvidence.id],
+             values ($1, $2, $3, 'supporting')`,
+            [a.projectId, onlyInB, aEvidence.id],
           ),
         /violates foreign key/,
-        'the composite key must refuse a link to a requirement the project does not own',
+        'the composite key must refuse a link to a requirement another project owns',
       );
 
-      // The same insert against a requirement the project DOES own is accepted,
-      // so the refusal above is the key doing its job rather than the table being
-      // unwritable.
+      // Nothing was written by the refused insert.
+      const leaked = await s.database.query(
+        'select 1 from requirement_evidence where project_id = $1 and requirement_id = $2',
+        [a.projectId, onlyInB],
+      );
+      assert.equal(leaked.rows.length, 0, 'the refused link must leave no row behind');
+
+      // THE CONTROL, and it must actually write. A legitimate link — project A's
+      // own requirement, project A's own evidence — is accepted, which is what
+      // makes the refusal above the KEY doing its job rather than the table being
+      // unwritable. Asserted on rows affected: an earlier cut used
+      // `on conflict do nothing` and asserted only that a result object existed,
+      // which is true even when nothing is written (it wrote nothing).
       const owned = await requirementIn(s, a.projectId, 'REQ-0001');
-      assert.ok(owned !== undefined);
-      const aEvidence = (
+      assert.ok(owned !== undefined, 'project A must hold REQ-0001');
+
+      const already = new Set(
+        (
+          await s.database.query(
+            'select evidence_item_id from requirement_evidence where project_id = $1 and requirement_id = $2',
+            [a.projectId, 'REQ-0001'],
+          )
+        ).rows.map((r) => String(r.evidence_item_id)),
+      );
+      const unlinked = (
         await call(s, 'GET', `/projects/${a.projectId}/evidence`, undefined, asAnalyst)
-      ).json.evidence.find((e: any) => e.id !== undefined);
+      ).json.evidence.find((e: any) => !already.has(e.id));
+      assert.ok(unlinked !== undefined, 'the fixture must leave A one unlinked evidence item');
+
       const inserted = await s.database.query(
         `insert into requirement_evidence (project_id, requirement_id, evidence_item_id, contribution)
-         values ($1, 'REQ-0001', $2, 'supporting')
-         on conflict do nothing`,
-        [a.projectId, aEvidence.id],
+         values ($1, 'REQ-0001', $2, 'supporting')`,
+        [a.projectId, unlinked.id],
       );
-      assert.ok(inserted !== undefined);
+      assert.equal(inserted.affectedRows, 1, 'the control insert must actually write a row');
     } finally {
       await s.close();
     }
