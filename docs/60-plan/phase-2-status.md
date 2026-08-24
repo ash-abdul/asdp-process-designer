@@ -1,13 +1,13 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V6 ACCEPTED. V7 IMPLEMENTED AND CORRECTED — reviewed once, six defects fixed, NOT YET ACCEPTED.** V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2. · **Version:** 5.0 · **Updated:** 2026-08-24
-> **Checkpoint:** §0 · **Commit:** `7bfa440` — V7 implemented; corrections on top (§10.8). V6 **accepted** at `a653333`
+> **Status:** **V0–V7 ACCEPTED. Phase 2 is NOT CLOSED — blocked on H4 / limitation 77.** V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2. · **Version:** 5.1 · **Updated:** 2026-08-24
+> **Checkpoint:** §0 · **Commit:** `7e50303` — V7 implemented at `7bfa440`, corrected at `f38ef06`/`96f84e4`/`7e50303`, **accepted** 2026-08-24
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
 ---
 
-## 0. Checkpoint — 2026-08-23
+## 0. Checkpoint — 2026-08-24
 
 The single place to read to know where this project stands. Everything below is
 traceable to a commit or an approved decision; nothing here is reconstructed.
@@ -15,13 +15,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V7 — the human requirements workspace and G1.** Boundary **APPROVED 2026-08-23** (U1–U10) at `31a3531`; implemented at `7bfa440`, **reviewed, six defects found and corrected** — §10.8. **NOT YET ACCEPTED.** **G1 is reachable end to end.**
-| **Previously** | **V6 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against decisions **Q1–Q9**, with the two acceptance-time decisions approved and one latent defect fixed, §9.10 |
-| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6.** V6 accepted at `a653333`; V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
-| **Commit** | V6 `eebabe0` + `a653333`. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
-| **Working tree** | **Clean.** V6 is committed at `eebabe0` and accepted |
-| **Work in progress** | **None.** V6 is accepted. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **Re-review V7** (§10) — implemented, corrected, **still not accepted**, and it must not be marked accepted without an acceptance decision on the record. Its boundary was **APPROVED 2026-08-23** with decisions **U1–U10** — [v7-proposal.md](v7-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.12. **V7 is replay-only: H3 still blocks every live provider call.** **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 is implemented and awaits review** |
+| **Current slice** | **None in progress.** **V7 is ACCEPTED / COMPLETE** — 2026-08-24, §10.10. Boundary **APPROVED 2026-08-23** (U1–U10) at `31a3531`; implemented `7bfa440`; **two review rounds, eight defects found and fixed** (§10.8) |
+| **Previously** | **V6 ACCEPTED / COMPLETE** — 2026-08-23 against decisions **Q1–Q9**, §9.10 |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 — the whole approved Phase 2 slice sequence.** V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | **V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`.** V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Phase 2 closure** | **NOT CLOSED, and deliberately so.** Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*. **H4 / limitation 77** means G1 is reachable for the **first project in a database and for no other**. Closing on that basis would put a claim on the record the code does not support |
+| **Working tree** | **Clean.** Everything is committed |
+| **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **Analyse H4 and propose the SMALLEST hardening boundary, for approval. Propose only — do not implement.** §5.12 sets out the two candidate shapes and why the apparently smaller one is not. **Nothing else may begin.** **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -35,6 +36,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
 | **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` + `a653333` | **Accepted** — 2026-08-23, §9. Accepted for **mechanics and governance, explicitly not semantic correctness** — §9.8 |
 | **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
+| **V7** — the human requirements workspace, human-originated L3, clarification questions, and **G1** | `7bfa440` + `f38ef06` + `96f84e4` + `7e50303` | **Accepted** — 2026-08-24, §10, reviewed in §10.10. **G1 is reachable end to end.** Accepted for **mechanics and governance, explicitly not model quality** — §10.7 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
@@ -137,8 +139,8 @@ Studio, no graphical designer. **P3 has not started.**
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) — all accepted. **V7** (§10) implemented, awaiting review |
-| Next slice | **None approved.** A **V7 boundary** is recorded at [v7-proposal.md](v7-proposal.md) — the human requirements workspace and **G1**, decisions **U1–U10** — and awaits review. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) · **V7** (§10) — **all accepted**. The approved Phase 2 slice sequence is complete; **Phase 2 itself is not closed** — H4 / limitation 77 |
+| Next slice | **None approved.** The next approved *action* is to **analyse H4 and propose the smallest hardening boundary** — a proposal, not an implementation. **P3 has not started** and its boundary is neither proposed nor approved. **V4b-eval** is deferred: it needs an approved credential, E1-permitted material and **H3**. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **765 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · 714 V6 · 739 V7 · **769 V7-corrected**) |
 | Verification | build · `check:arch` (152 files) · checker self-test (**39 cases**) · `check:docs` (91 files, 875 links) — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
@@ -160,6 +162,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
 | V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at `43ab748` |
 | V6 | `eebabe0` — *canonicalisation, conflict candidates, deterministic precedence* · **accepted** at `a653333` |
+| V7 | `7bfa440` — *the human requirements workspace and G1* · corrected at `f38ef06`, `96f84e4`, `7e50303` · **accepted** 2026-08-24 |
 
 ---
 
@@ -1332,9 +1335,10 @@ the same business concept — both reported as `notMeasured`, §9.8.
 
 ---
 
-## 10. V7 capabilities delivered — the human requirements workspace and G1
+## 10. V7 capabilities delivered — the human requirements workspace and G1 · ✅ **ACCEPTED 2026-08-24**
 
-**Complete, awaiting review.** Boundary: [v7-proposal.md](v7-proposal.md), plan of record
+**ACCEPTED / COMPLETE**, after two independent review rounds — §10.10. Boundary:
+[v7-proposal.md](v7-proposal.md), plan of record
 [phase-2-plan.md](phase-2-plan.md) §3.12, decisions **U1–U10**. **No new dependency** — seven.
 
 **G1 is reachable end to end**, proved by one test that carries a project from draft proposals to a
@@ -1486,6 +1490,48 @@ condition would be detected.
 
 Two converse tests hold the line from the other side: an **`info`-level** L0 finding does **not**
 block, and **reading** the readiness panel does not reopen an approved gate.
+
+### 10.10 Accepted after two independent reviews — 2026-08-24
+
+**V7 is ACCEPTED / COMPLETE.** It was reviewed **twice**, and it failed the first review.
+
+| Round | Outcome |
+|---|---|
+| **First** (against `7bfa440`) | **CHANGE.** Four approved decisions or acceptance criteria undelivered — **U4**, **U7**, criteria **2**, **6**, **9**, **10** — plus reopening wired on one path only, and three preconditions that could not fail. **Not accepted** |
+| **Corrections** | `f38ef06` (seven defects), `96f84e4` (a defect in the corrections themselves), `7e50303` (defect 8, and H4 raised) |
+| **Second** (against `7e50303`) | **ACCEPT.** All ten U-decisions delivered or deferred by decision; all thirteen acceptance criteria met; nothing weakened; verification clean |
+
+**Eight defects across the two rounds**, five of them one shape: *a check that cannot fail reads as a
+check that passed*. `L4-REQ-007` and `L4-REQ-008` both reported **met** on every project regardless
+of state. Defect 8 was found by **walking** criterion 10 rather than re-reading it — the answer
+became citable evidence that no requirement could ever cite, because a revision could only narrow a
+citation set.
+
+#### What this acceptance claims, and what it does not
+
+> **It claims mechanics and governance. It does not claim model quality**, exactly as V4b-core, V5
+> and V6 were accepted. `POPULATE_FRAME` slot accuracy is **45%**, reconciliation recall **50%**,
+> canonicalisation P/R **50%**, and six traps remain unexercised — all on a **synthetic** corpus
+> against an **authored stub**. No live model has ever been called. Nothing here says a requirement
+> is *right*; limitations 63 and 65 stand.
+
+> **It does not claim anyone reviewed carefully.** V7 makes approval possible and attributable; it
+> cannot make it considered. Approval theatre is real, unmeasured, and mitigated only structurally.
+
+#### Nothing was weakened to reach it
+
+Measured, not asserted: **zero lines removed** from `check-architecture.mjs` across all V7 work ·
+migration 010 **untouched** by every correction · `packages/raf` **byte-identical** since V6
+acceptance (criterion 12) · the `controller-thinness` cap still **220**, unchanged since V0, with the
+surface split **twice** rather than the cap raised · checker self-test **36 → 39 cases** · **U1–U10
+unchanged**. Two migrations and one checker rule were **added**. Dependencies stand at **seven**.
+
+#### H4 was raised at acceptance, and NOT held against V7
+
+**Limitation 77** — a second project cannot reach G1 — was found during the final review. It is a
+**V5** defect (migration 008, `4b148b4`), outside the approved V7 boundary, and V7 neither caused it
+nor was approved to fix it. It is **not** a reason to refuse V7; it **is** the reason Phase 2 is not
+closed. See §5.12 **H4**.
 
 ---
 
@@ -1701,7 +1747,7 @@ excluded permanently, because it would reverse
 
 ## 15. Next step
 
-### V0–V6 are ACCEPTED. V7 is IMPLEMENTED AND CORRECTED, and NOT YET ACCEPTED. V4b-eval, V2-PDF, P3 and H1/H2/H3 have not started.
+### V0–V7 are ACCEPTED. Phase 2 is NOT CLOSED — H4 blocks it. V4b-eval, V2-PDF, P3 and H1/H2/H3/H4 have not started.
 
 | | |
 |---|---|
@@ -1709,7 +1755,8 @@ excluded permanently, because it would reverse
 | **V4a — AI broker and live-path foundation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §6. Discharges **D6** items 4, 9 and 10. Zero new dependencies. **Accepted for the foundation, not for extraction quality** — §6.0 |
 | **V4b-core — AI evidence extraction** | **ACCEPTED / COMPLETE**, 2026-08-23 — §7, reviewed in §7.10. Discharges the approved V4b-core scope; needed no credential. **Accepted for mechanics and governance, explicitly not model quality** — §7.8 |
 | **V5 — evidence to structured requirement proposals** | **ACCEPTED / COMPLETE**, 2026-08-23 — §8, reviewed in §8.11. Decisions **J1–J9**, plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **Accepted for mechanics and governance, explicitly not semantic correctness** — §8.9. Verified `EvidenceItem`s become structured requirement **proposals** with retained provenance, never approved requirements. **J2** (conflicts stay V6), **J3-a** (coverage pulled into V5) and **J6** (`L1-REQ-*`) **re-cut approved artefacts** and need explicit approval; **J9** retains rejected proposals in full per [ADR-0032](../adr/ADR-0032-retain-everything.md). **Must not begin without approval** |
-| **V7 — the human requirements workspace and G1** | **BOUNDARY APPROVED 2026-08-23**, decisions **U1–U10** — [v7-proposal.md](v7-proposal.md), plan of record §3.12. **Implemented** at `7bfa440`; **reviewed 2026-08-24, seven defects found and corrected** — §10.8. **G1 is reachable end to end.** **NOT YET ACCEPTED**: acceptance is an explicit decision on the record, and marking it accepted without one is the thing §10.8 exists to prevent |
+| **V7 — the human requirements workspace and G1** | **ACCEPTED / COMPLETE**, 2026-08-24 — §10, reviewed in §10.10. Decisions **U1–U10**, plan of record §3.12. **G1 is reachable end to end.** Two review rounds, eight defects found and fixed. **Accepted for mechanics and governance, explicitly not model quality** — §10.7 |
+| **H4 — requirement identity per project against a global key** | **RAISED 2026-08-24, not started, and it BLOCKS PHASE 2 CLOSURE.** Limitation **77**, §5.12. A V5 defect: a second project cannot reach G1. **The next approved action is to analyse it and propose the smallest hardening boundary — a proposal, not an implementation** |
 | **V4b-eval — real-provider evaluation** | **Deferred**, and blocked by **H3**. Requires an approved credential, E1-permitted material and prompt/response retention; it is the first point at which model quality can be claimed |
 | **H1 / H2 — provenance hardening** | **Proposed, not approved** — §5.12. Acceptance of V3 was deliberately not held on either |
 | **V2-PDF — PDF intake** | **BLOCKED** on a representative Arabic PDF corpus, spike S2, and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) approval |
@@ -1720,6 +1767,7 @@ PDF engine import — so the V2-PDF block remains mechanical rather than remembe
 
 | **V6 — conflicts, precedence and reconciliation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §9, reviewed in §9.10. Decisions **Q1–Q9**; `L1-CONF-*` and slot-scoped comparison approved at acceptance. **Accepted for mechanics and governance, explicitly not semantic correctness** — §9.8 |
 
-**V4b-eval and V2-PDF are not approved; V7 is approved and implemented but NOT ACCEPTED. P3 has not
+**V7 is ACCEPTED. Phase 2 is NOT CLOSED — H4 / limitation 77 stands, and "G1 is reachable" holds for
+the first project in a database and for no other. V4b-eval and V2-PDF are not approved. P3 has not
 started and its boundary is not proposed. No live provider call is permitted while limitation 62 /
 H3 stands.**

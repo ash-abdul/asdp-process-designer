@@ -2,7 +2,7 @@
 
 > **Phase:** 2 — Multimodal intake & structured requirements
 > **Status:** Phase 0 complete (architecture & specification) · Phase 1 complete (foundations) ·
-> **Phase 2 V0–V3, V4a, V4b-core, V5 and V6 accepted · V7 implemented, awaiting review** · V4b-eval deferred (blocked by H3) · V2-PDF blocked on spike S2
+> **Phase 2 V0–V7 all accepted · G1 is reachable · Phase 2 NOT closed — blocked on H4 (limitation 77)** · V4b-eval deferred (blocked by H3) · V2-PDF blocked on spike S2
 > Application code and dependencies now exist: 10 packages, a compiled TypeScript build, a NestJS
 > composition layer, durable PGlite persistence, and text, Word-document, image and structural-model
 > intake with resolvable provenance, AI evidence extraction whose citations are located and verified
@@ -102,6 +102,17 @@ abstraction, `ai_interaction` persistence, an explicitly invoked live path and d
 fixtures — is complete and **accepted**. **Its acceptance covers the foundation, not extraction
 quality:** every recording is stub-produced, and no live external model has been evaluated
 ([`phase-2-status.md`](docs/60-plan/phase-2-status.md) §6.0).
+**Phase 2 V5, V6 and V7** — structured requirement proposals, canonicalisation and deterministic
+conflict precedence, and **the human requirements workspace with G1** — are complete and
+**accepted**. **G1 is reachable end to end**: a project goes from draft AI proposals to a
+human-approved, signed requirements baseline, and every requirement in it reaches **L4** through the
+gate and through nothing else. **Their acceptance covers mechanics and governance, not model
+quality** ([`phase-2-status.md`](docs/60-plan/phase-2-status.md) §8.9, §9.8, §10.7, §10.10).
+
+**Phase 2 is NOT closed.** Its completion test is *"Phase 2 ends when G1 can be reached"*, and
+**H4 / limitation 77** — requirement ids allocated per project against a global primary key, a V5
+defect — means G1 is reachable for the **first project in a database and for no other**.
+
 **V2-PDF** is blocked on a representative Arabic PDF corpus, on spike S2, and on
 [`ADR-0037`](docs/adr/ADR-0037-binary-document-extraction.md) being approved.
 
@@ -114,7 +125,7 @@ files** as evidence: an image region carries a target-verified anchor marked
 **`content_unverified`** — target verified, interpreted content not — so a vision citation is never
 mistaken for a verified one, and evidence over it is attributed to the AI interaction that read it.
 **No live provider has ever been called:** the vision extractor refuses unless one is configured,
-and verification is entirely replay-based. **620 tests pass; none are skipped or suppressed.**
+and verification is entirely replay-based. **769 tests pass; none are skipped or suppressed.**
 
 **No generation capability exists.** BPMN, DMN and form generation, Process IR compilation, the
 Specification Studio, and any graphical designer are out of scope for Phase 2.

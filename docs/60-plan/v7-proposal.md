@@ -1,6 +1,10 @@
-# V7 — The Human Requirements Workspace and G1 · APPROVED BOUNDARY
+# V7 — The Human Requirements Workspace and G1 · ✅ ACCEPTED
 
-> **Status: ✅ APPROVED 2026-08-23 — decisions U1–U10 all approved.** The boundary below is binding;
+> **Status: ✅ ACCEPTED 2026-08-24.** Boundary approved 2026-08-23 (decisions **U1–U10**);
+> implemented `7bfa440`; corrected `f38ef06` / `96f84e4` / `7e50303`; **accepted after two
+> independent reviews** — [phase-2-status.md](phase-2-status.md) §10.10.
+>
+> **Original approval note: decisions U1–U10 all approved.** The boundary below is binding;
 > the plan of record is [phase-2-plan.md](phase-2-plan.md) **§3.12**.
 >
 > **Two of the ten were already implemented and needed only to be used.** `transcript` is an existing
@@ -509,7 +513,7 @@ replay-only and makes no live provider call.**
 | **Implemented** | `7bfa440`, 2026-08-24 |
 | **Reviewed** | 2026-08-24, against this boundary. **Not accepted** — seven defects, four of them an approved decision or acceptance criterion that had not been delivered |
 | **Corrected** | All seven. The record is [phase-2-status.md](phase-2-status.md) §10.8 |
-| **Accepted** | **No.** Acceptance is an explicit decision and has not been given |
+| **Accepted** | **YES — 2026-08-24**, after a second independent review at `7e50303`. Accepted for **mechanics and governance, explicitly not model quality**. Record: [phase-2-status.md](phase-2-status.md) §10.10 |
 
 **The four criteria that were not met at `7bfa440`**, and are met now:
 
@@ -525,3 +529,12 @@ Two further defects were structural rather than missing features: **reopening wa
 **documentation recorded none of it**, while crediting U7 in a section that did not implement it.
 
 **U1–U10 are unchanged.** Nothing in this boundary was re-cut to accommodate the corrections.
+
+**The second review found one further defect (8)** and fixed it: `reviseRequirement` could only ever
+*narrow* a citation set, never add to one, so the evidence an answered question produces was
+uncitable by any requirement — criterion **10**'s *"a requirement citing it resolves"* was impossible
+rather than merely untested. §13's *"the reviewer may **add** or remove links explicitly"* now holds.
+
+**Phase 2 is not closed by this acceptance.** **H4 / limitation 77** — requirement identity allocated
+per project against a global primary key, a **V5** defect outside this boundary — means a second
+project cannot reach G1.

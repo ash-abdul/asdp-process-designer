@@ -460,7 +460,27 @@ ADR-0017 signature reopen; reopening is **centralised** in a `mutate` wrapper en
 re-cut. The `controller-thinness` cap is unchanged at 220 and the surface was split again instead.
 **Two migrations and one checker rule were added; U1–U10 are unchanged.**
 
-**Acceptance remains an explicit decision and has not been given.** V5 needs no credential, no
+#### ✅ ACCEPTED 2026-08-24
+
+**V7 is ACCEPTED / COMPLETE**, after a **second** independent review against this boundary at
+`7e50303`. All ten U-decisions are delivered or deferred by decision (**U5**), and all thirteen
+acceptance criteria in [v7-proposal.md](v7-proposal.md) §20 are met — including **2**, **6**, **9**
+and **10**, which the first review found unmet.
+
+The second review found and fixed one further defect (**8**): a revision could only ever *narrow* a
+citation set, so the evidence an answered question produces was uncitable by any requirement —
+criterion 10's *"a requirement citing it resolves"* was impossible. Record: [phase-2-status.md](phase-2-status.md) §10.8 and §10.10.
+
+**Accepted for mechanics and governance, explicitly not model quality**, on the same footing as
+V4b-core, V5 and V6.
+
+**Nothing was weakened.** No checker rule relaxed, no SQL invariant dropped, no U-decision re-cut;
+`packages/raf` is byte-identical since V6 (criterion 12) and the `controller-thinness` cap is
+unchanged at 220. Two migrations and one checker rule were added; dependencies stand at **seven**.
+
+**Phase 2 is NOT closed.** **H4 / limitation 77** — a V5 defect outside this boundary — means G1 is
+reachable for the first project in a database and for no other. It was raised at acceptance and not
+held against V7. V5 needs no credential, no
 corpus and no Docker.
 
 #### H3 is a live-call blocker, not a V5 blocker
@@ -549,7 +569,7 @@ becoming mutable.
 V6 is **replay-only** — implementation, tests and evaluation alike. Limitation **62** / **H3** is
 unresolved, so **no live provider call is permitted**, and V6 does not depend on resolving it.
 
-### 3.12 V7 — approved boundary ✅ **APPROVED 2026-08-23**
+### 3.12 V7 — approved boundary ✅ **ACCEPTED 2026-08-24**
 
 **Approved 2026-08-23** with decisions **U1–U10**. Full boundary, workflow, data model, G1 criteria,
 evaluation and risks: [v7-proposal.md](v7-proposal.md) v1.0.
