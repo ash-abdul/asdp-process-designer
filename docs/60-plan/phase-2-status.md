@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V7 ACCEPTED. H4 IMPLEMENTED AND VERIFIED, NOT ACCEPTED. Phase 2 is NOT CLOSED — H5 / limitation 78 blocks it.** H4's boundary was approved 2026-08-24 (**K1–K6** and **K8**; **K7 refused**) and implemented the same day; limitation 77 is closed in code, §5.13. V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2. · **Version:** 5.3 · **Updated:** 2026-08-24
-> **Checkpoint:** §0 · **Commit:** `50855bd` — **V7 ACCEPTED**. Implemented `7bfa440`; corrected `f38ef06`, `96f84e4`, `7e50303`; accepted `50855bd`
+> **Status:** **V0–V7 AND H4 ACCEPTED. Phase 2 is NOT CLOSED — H5 / limitation 78 blocks it.** H4 accepted 2026-08-24 after an independent review and a correction pass; limitation **77 is CLOSED**, §5.13. V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2. · **Version:** 6.0 · **Updated:** 2026-08-24
+> **Checkpoint:** §0 · **Commit:** **H4 ACCEPTED** — boundary `ce15d9d`, implementation `193d295`, corrections `5a5504b`, acceptance recorded here. V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -24,12 +24,16 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 > `4b148b4`, reproduced directly on 2026-08-24. Every test uses one project per server, which is why
 > it stood.
 >
-> **H4 IS IMPLEMENTED AND VERIFIED — AND NOT ACCEPTED.** Boundary approved 2026-08-24
-> ([h4-proposal.md](h4-proposal.md), **K1–K6** and **K8**; **K7 refused**); implemented the same
-> day; `npm run verify` green end to end at **782 pass / 0 fail / 155 suites**. **Two projects in
-> one database now each reach G1 independently, and each starts at `REQ-0001`** — §5.13.
-> **Acceptance is a separate act and has not happened.** Do not treat implementation as
-> acceptance, and do not begin anything else until it is decided.
+> **H4 IS ACCEPTED — 2026-08-24.** Boundary `ce15d9d` (**K1–K6** and **K8**; **K7 refused**),
+> implementation `193d295`, corrections `5a5504b`. **Limitation 77 is CLOSED:** two projects in
+> one database each reach G1 independently, and each starts at `REQ-0001` — §5.13.
+>
+> **PHASE 2 IS STILL NOT CLOSED, and exactly one thing blocks it: H5 / limitation 78.** Durable
+> multi-project G1 does not survive an application restart. That is K8's approval clarification
+> and it is binding. **H5 has no proposed boundary and must not begin** until one is approved.
+>
+> **H4 is accepted for mechanics and governance, explicitly NOT for semantic quality, and
+> explicitly NOT across a restart** — §5.13.1.
 >
 > **PHASE 2 NOW HAS TWO BLOCKERS, NOT ONE.** K8's approval clarification makes **H5 / limitation
 > 78** a blocker in its own right: durable multi-project G1 must survive an application restart.
@@ -49,14 +53,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **H4 — implemented, verified, AWAITING ACCEPTANCE** (§5.13). Boundary approved 2026-08-24 at `ce15d9d` (**K1–K6**, **K8**; **K7 refused**). **V7 is ACCEPTED / COMPLETE** — 2026-08-24, §10.10 |
+| **Current slice** | **None in progress.** **H4 is ACCEPTED / COMPLETE** — 2026-08-24, §5.13, after an independent acceptance review and a four-defect correction pass (§13a.1 of [h4-proposal.md](h4-proposal.md)). **V7 ACCEPTED** — 2026-08-24, §10.10 |
 | **Previously** | **V6 ACCEPTED / COMPLETE** — 2026-08-23 against decisions **Q1–Q9**, §9.10 |
-| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 — the whole approved Phase 2 slice sequence.** V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
-| **Commit** | **V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`.** V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
-| **Phase 2 closure** | **NOT CLOSED.** Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*. **H4 / limitation 77 is closed in code** (§5.13) and **its acceptance is not yet decided**. **H5 / limitation 78 remains open and blocks closure** — after a restart against a durable database the first write of any kind collides, so durable multi-project G1 does not survive a restart (K8's approval clarification, 2026-08-24). **Phase 2 stays open even once H4 is accepted** |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 — the whole approved Phase 2 slice sequence, plus the H4 hardening.** H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | **H4 `ce15d9d` + `193d295` + `5a5504b`.** V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Phase 2 closure** | **NOT CLOSED. Exactly ONE blocker remains: H5 / limitation 78.** Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*. **H4 / limitation 77 is CLOSED and ACCEPTED** (§5.13) — G1 is reachable by any number of projects **within one process lifetime**. **H5 blocks closure**: every surrogate id comes from a per-process counter, so after a restart against a durable database the first write of any kind collides and durable multi-project G1 does not survive a restart (K8's approval clarification). **H5 has no proposed boundary** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **DECIDE H4's ACCEPTANCE.** H4 is **implemented and verified** (§5.13) and **NOT accepted** — acceptance is a separate act and is explicitly not automatic. **Nothing else may begin until that decision.** **K7 must not be implemented** (limitation 79 / H6). **H5 must not be implemented** inside H4 (limitation 78). **Phase 2 must not close** on H4 alone — H5 blocks it too. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **NONE. Nothing is approved and nothing may begin.** H4 is accepted and closed. The obvious candidate is **H5 / limitation 78** — the one remaining Phase 2 closure blocker — but **§11 of [CLAUDE.md](../../CLAUDE.md) requires its boundary to be proposed and approved first**, exactly as H4's was. **H5 must not begin.** **K7 / H6 (limitation 79) must not be implemented.** **Phase 2 must not close** while H5 stands. **P3 must not start** — no proposed boundary. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -70,7 +74,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
 | **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | `eebabe0` + `a653333` | **Accepted** — 2026-08-23, §9. Accepted for **mechanics and governance, explicitly not semantic correctness** — §9.8 |
 | **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
-| **H4** — project-scoped requirement identity, migration 013, the one allocator | `ce15d9d` + `193d295` | **Implemented and verified — NOT ACCEPTED.** Boundary `ce15d9d`; implementation `193d295` |
+| **H4** — project-scoped requirement identity, migration 013, the one allocator | `ce15d9d` + `193d295` + `5a5504b` | **Accepted** — 2026-08-24, §5.13. Boundary `ce15d9d` (K1–K6, K8; **K7 refused**); implementation `193d295`; corrections `5a5504b` after an independent review. Accepted for **mechanics and governance, explicitly not semantic quality and explicitly not across a restart** — §5.13.1 |
 | **V7** — the human requirements workspace, human-originated L3, clarification questions, and **G1** | `7bfa440` + `f38ef06` + `96f84e4` + `7e50303` | **Accepted** — 2026-08-24, §10, reviewed in §10.10. **G1 is reachable end to end.** Accepted for **mechanics and governance, explicitly not model quality** — §10.7 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
@@ -141,7 +145,7 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 
 | Item | Blocked on |
 |---|---|
-| **PHASE 2 CLOSURE** | **H5 / limitation 78.** Phase 2 ends when G1 can be reached. **H4 / limitation 77 is CLOSED IN CODE** (§5.13, awaiting an acceptance decision): two projects in one database each reach G1 independently. **H5 remains open and blocks closure** — durable multi-project G1 does not survive an application restart, made a closure blocker by K8's approval clarification, 2026-08-24. It needs its own analysis, boundary approval, implementation and acceptance |
+| **PHASE 2 CLOSURE** | **EXACTLY ONE BLOCKER: H5 / limitation 78.** Phase 2 ends when G1 can be reached. **H4 / limitation 77 is CLOSED AND ACCEPTED** — 2026-08-24, §5.13: two projects in one database each reach G1 independently. **H5 blocks closure**: durable multi-project G1 does not survive an application restart (K8's approval clarification, 2026-08-24). **H5 has no proposed boundary and must not begin until one is approved** — §11 of [CLAUDE.md](../../CLAUDE.md). It needs analysis, boundary approval, implementation and acceptance, in that order |
 | **P3 — the Specification Studio** | **No proposed boundary, no approval.** §11 of [CLAUDE.md](../../CLAUDE.md): a slice needs its scope approved, not merely a go-ahead. It must not begin |
 | **V2-PDF** — PDF adapter, rasterisation, `pdf_region` rectangle lists, `L0-ING-008` wired | (1) a representative Arabic PDF corpus per [s2-corpus-request.md](s2-corpus-request.md) · (2) **spike S2 completed** against it, producing the exact-precision yield rate · (3) **ADR-0037 approved**. Enforced mechanically by the checker rule `pdf-engine-not-approved`; `@embedpdf/pdfium` is **not installed** |
 | **V4b-eval, and every live provider call** | **Three** things, not two: (1) an approved credential · (2) E1-permitted representative material · (3) **H3 — limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads to be retained and migration 006 retains metadata only, so **no live provider call is permitted while the gap stands** — an unretained live payload is unrecoverable. **V5 is unaffected: it is replay-only** |
@@ -160,7 +164,6 @@ traces to a numbered limitation or an approved decision.
 
 | Item | State | Why it matters now |
 |---|---|---|
-| **H4** — requirement identity per project vs a **global** primary key | **IMPLEMENTED AND VERIFIED 2026-08-24, NOT ACCEPTED.** Boundary approved the same day (K1–K6, K8; K7 refused). §5.13, limitation **77** | The defect is closed in code: two projects each reach G1 independently. **Next action: decide acceptance.** It is not automatic, and Phase 2 still does not close — **H5** blocks it |
 | **H5** — every surrogate id comes from a **per-process** counter | **Found and reproduced 2026-08-24 while analysing H4. Recorded, NOT started. A PHASE 2 CLOSURE BLOCKER as of 2026-08-24** (K8's approval clarification). Limitation **78** | After a restart against a durable database the first write of any kind collides, so **durable multi-project G1 does not survive a restart**. Latent only because the default database is in-memory. **Deliberately outside the H4 boundary** and **must not be implemented inside it**. Needs its own analysis, boundary approval, implementation and acceptance |
 | **H6** — a domain error thrown inside a transaction is flattened to `503` | **Confirmed and reproduced 2026-08-24 while analysing H4. Recorded, not started.** Limitation **79** | `PgliteDatabase.transaction` re-maps every escaping error through `mapDriverError`, so a modelling defect reads as an infrastructure outage. Proposed as **K7** and **NOT APPROVED for H4** — a separate concern, not required to fix limitation 77. **Must not be implemented in the H4 boundary** |
 | **H3** — AI prompt/response payloads not retained | **Proposed, not approved.** Limitation **62**, §5.12 | **Blocks every live provider call**, and therefore V4b-eval. [ADR-0032](../adr/ADR-0032-retain-everything.md) requires retention; migration 006 stores metadata only. Raise **before** the first live call — an unretained payload is unrecoverable |
@@ -725,13 +728,21 @@ The second option looks smaller and is not: `(id, version)` is what a baseline m
 and changing it changes what every existing signature covered. **This needs its boundary approved
 like any other slice.**
 
-**The boundary is APPROVED — 2026-08-24:** [h4-proposal.md](h4-proposal.md), decisions **K1–K8**. **K1–K6 and K8 approved; K7 NOT approved.** The approved shape is the composite key `(project_id, id)`; `REQ-####` is unchanged and stays per project, so no ADR-0017 signature moves. **Not yet implemented, not yet accepted.** Two defects found while analysing this one are recorded and deliberately excluded: **H5** (limitation 78) — which **K8's approval clarification makes a Phase 2 closure blocker** — and **H6** (limitation 79), the rejected **K7**.
+**CLOSED AND ACCEPTED — 2026-08-24:** [h4-proposal.md](h4-proposal.md), decisions **K1–K8** (**K1–K6** and **K8** approved; **K7 refused**). The shape is the composite key `(project_id, id)`; `REQ-####` is unchanged and stays per project, so **no ADR-0017 signature moved**. Boundary `ce15d9d`, implementation `193d295`, corrections `5a5504b`. **§5.13** records the acceptance and **§5.13.1** what it does and does not claim. Two defects found while analysing this one remain recorded and excluded: **H5** (limitation 78) — **the one remaining Phase 2 closure blocker** — and **H6** (limitation 79), the rejected **K7**.
 
-### 5.13 H4 implemented — AWAITING ACCEPTANCE, **NOT ACCEPTED**
+### 5.13 H4 — **ACCEPTED 2026-08-24**
 
-**Implemented 2026-08-24 to the approved boundary** ([h4-proposal.md](h4-proposal.md), **K1-K6**
-and **K8**). **K7 was NOT approved and is not implemented.** **H5 is NOT implemented.**
-**Acceptance is a separate act and has not happened.**
+**Accepted 2026-08-24** against the approved boundary ([h4-proposal.md](h4-proposal.md),
+**K1–K6** and **K8**), after an **independent acceptance review** and a **four-defect correction
+pass**. **K7 was NOT approved and is not implemented.** **H5 is NOT implemented.**
+**Limitation 77 is CLOSED.**
+
+| | |
+|---|---|
+| **Boundary** | `ce15d9d` — K1–K6 and K8 approved, **K7 refused** |
+| **Implementation** | `193d295` |
+| **Corrections** | `5a5504b` — F1–F4 from the acceptance review, **no production code touched** |
+| **Verification at acceptance** | `npm run verify` **green end to end, exit 0**, run twice on the committed tree: **782 pass · 0 fail · 0 skipped · 0 todo · 155 suites**; `check:arch` 153 files; `check:arch:selftest` 43 cases; `check:docs` 92 files / 948 links |
 
 `requirement`'s primary key is now `(project_id, id)`. `REQ-0001` is still `REQ-0001`, still
 allocated from the calling project's high-water mark, and **still what a baseline member names** —
@@ -755,6 +766,34 @@ fixture and is itself confirmation that numbering is per project.
 
 **Nothing was weakened.** No assertion was loosened, no test skipped or deleted. Three fixture errors
 were corrected and one expectation was replaced by a comparison against observed state.
+
+#### 5.13.1 What H4's acceptance claims, and what it does not
+
+**Accepted for — mechanics and governance:**
+
+- **Two projects in one database each reach G1 independently**, and each starts at `REQ-0001`. That
+  is the defect limitation 77 named, and it is closed.
+- **Requirement identity is `(projectId, id)` and is enforced by the database**, not by convention.
+  A cross-project evidence link is refused by the composite foreign key; a cross-project baseline
+  membership has no row to name.
+- **No existing [ADR-0017](../adr/ADR-0017-approval-as-baseline-signature.md) signature moved.** A
+  baseline signed under the pre-H4 schema recomputes byte-identically after migration 013, through
+  the production read path.
+- **The migration is additive**: no id renumbered, no row deleted, no baseline, approval or audit
+  record touched.
+- **`REQ-####` is allocated in exactly one place**, and an architecture-checker rule refuses a second.
+
+**NOT claimed:**
+
+- **NOT semantic quality of any kind.** Nothing here says a requirement is right. No live model has
+  ever been called; `npm run verify` makes no live provider call.
+- **NOT durability across a restart.** Multi-project G1 holds **within one process lifetime**. Every
+  surrogate id still comes from a per-process counter (**H5 / limitation 78**), so after a restart
+  against a durable database the first write of any kind collides. **This is why Phase 2 does not
+  close on H4's acceptance** — K8's approval clarification, and it is binding.
+- **NOT a fix for the `503` flattening.** A domain error thrown inside a transaction still reads as
+  an infrastructure outage (**K7 refused; limitation 79 / H6**). H4's D15 non-reuse guard is
+  therefore asserted at the repository boundary rather than over HTTP.
 
 ---
 
@@ -1799,7 +1838,7 @@ behaviour as correct.
 | 73 | **A new validation run over an approved set reopens G1** | Correct under ADR-0017 — the signature binds the run, and the ADR rejected a grace period by name — but it means `POST g1/validate` is not a read. **Readiness is the read**, persists nothing, and is what a reviewer should use to look. Reported here because the asymmetry will surprise someone |
 | 74 | **`blocked_by_policy` is produced only by a refused `POPULATE_FRAME` pass** | An egress refusal during **evidence extraction** leaves no slot-level record, because there is no slot to attribute it to yet. So a project whose material never got as far as population reports missing slots as `empty`, which is the distinction data-governance.md §3.1 draws, unresolved one layer earlier |
 | 75 | **The G1 end-to-end fixture exercises three of the eight kinds of human work** | Accept, infer, confirm. Flags, conflicts, questions and policy blocks are exercised by the **adverse** tests (§10.9) rather than by the happy path, because the fixture produces none of them naturally. The wiring of each is tested; a single journey through all eight is not |
-| 77 | ~~**A SECOND PROJECT CANNOT REACH G1.**~~ — **CLOSED IN CODE by H4, 2026-08-24 (§5.13); ACCEPTANCE NOT YET DECIDED.** The original statement, kept so the defect is legible: Requirement ids are allocated per project against a **global** primary key, so the second project to populate collides on `REQ-0001` and fails with a 503 | **A V5 defect (migration 008, `4b148b4`), raised during the final V7 review and NOT fixed there** — it is outside the V7 boundary. Reproduced directly. Every test uses one project per server, which is why it stood. **Hardening candidate H4** — §5.12, with two candidate shapes, one of which touches what an ADR-0017 signature covers. **Material to Phase 2 closure**: "G1 is reachable" held for the first project in a database and for no other. **H4 changed `requirement`'s primary key to `(project_id, id)`; two projects now each reach G1 independently and each starts at `REQ-0001`.** Phase 2 still does not close: **H5 / limitation 78** blocks it |
+| 77 | ~~**A SECOND PROJECT CANNOT REACH G1.**~~ — **CLOSED by H4 and ACCEPTED 2026-08-24** (§5.13; `ce15d9d` + `193d295` + `5a5504b`). The original statement, kept so the defect stays legible: Requirement ids are allocated per project against a **global** primary key, so the second project to populate collides on `REQ-0001` and fails with a 503 | **A V5 defect (migration 008, `4b148b4`), raised during the final V7 review and NOT fixed there** — it is outside the V7 boundary. Reproduced directly. Every test uses one project per server, which is why it stood. **Hardening candidate H4** — §5.12, with two candidate shapes, one of which touches what an ADR-0017 signature covers. **Material to Phase 2 closure**: "G1 is reachable" held for the first project in a database and for no other. **H4 changed `requirement`'s primary key to `(project_id, id)`; two projects now each reach G1 independently and each starts at `REQ-0001`.** Phase 2 still does not close: **H5 / limitation 78** blocks it |
 | 78 | **AFTER A RESTART AGAINST A DURABLE DATABASE, THE FIRST WRITE OF ANY KIND COLLIDES.** Every surrogate id is minted by `counterIdGenerator` — a **per-process** counter with no persistence — into a **global** primary key. 47 call sites, 22 prefixes | **Found and reproduced 2026-08-24 while analysing H4; a V0 defect, not a V7 one.** Latent today only because `ASDP_DATABASE_DIR` is optional and unset means in-memory, so every restart is currently a fresh database. It becomes universal against PostgreSQL (**A2**). Reproduced: `session 1 minted prj-0001 ok; session 2 after restart minted prj-0001 FAILED duplicate key`. **Hardening candidate H5** — recorded, not fixed, and deliberately outside the proposed H4 boundary ([h4-proposal.md](h4-proposal.md) §2, decision **K8**). **Material to what H4 may claim**: multi-project G1 holds within one process lifetime and not across a restart until H5 closes |
 | 79 | **A DOMAIN ERROR THROWN INSIDE A TRANSACTION IS FLATTENED TO `503 database unavailable`.** `PgliteDatabase.transaction` re-maps every error escaping the callback through `mapDriverError`, which returns a generic `DatabaseError` for anything it does not recognise. The mapping is also **redundant** — `query` and `exec` already map driver errors at the driver boundary | **Confirmed and reproduced 2026-08-24 while analysing H4.** It is why limitation 77 surfaces as an infrastructure outage rather than the modelling defect it is: `insertProposal`'s `requirement REQ-0001 already exists … (D15)` never reaches the caller. Proposed as **K7** and **NOT APPROVED for the H4 boundary** — a separate concern, not required to fix limitation 77. **Hardening candidate H6** — recorded, not fixed, and **must not be implemented inside H4**. Consequence for H4: the D15 non-reuse guard is asserted at the repository boundary rather than over HTTP |
 | 76 | **The project `classificationCeiling` is carried but not enforced by `evaluateEgress`** | Pre-existing, found during the V7 corrections and **not fixed here** — expanding a correction pass into an unrelated egress change is how boundaries stop meaning anything. Egress today is decided by deployment class, task, retention and training opt-out; the project ceiling adds nothing on top. **Raise before the first live provider call**, alongside **H3** |

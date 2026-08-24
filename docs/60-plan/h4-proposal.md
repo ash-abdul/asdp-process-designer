@@ -1,8 +1,10 @@
-# H4 — Project-Scoped Requirement Identity · ⏳ IMPLEMENTED, AWAITING ACCEPTANCE
+# H4 — Project-Scoped Requirement Identity · ✅ ACCEPTED
 
-> **Status: BOUNDARY APPROVED 2026-08-24. IMPLEMENTED 2026-08-24. NOT ACCEPTED.**
-> Implementation is not acceptance. The acceptance report is
-> [phase-2-status.md](phase-2-status.md) §5.13; the decision is the reviewer's.
+> **Status: ACCEPTED 2026-08-24.** Boundary approved `ce15d9d`, implemented `193d295`,
+> corrected `5a5504b` after an independent acceptance review. **Limitation 77 is closed.**
+> What the acceptance claims and does not claim is [phase-2-status.md](phase-2-status.md)
+> **§5.13.1** — in short: mechanics and governance, **not** semantic quality and **not** across
+> an application restart.
 > **K1–K6 and K8 approved. K7 NOT APPROVED for this boundary.** The approved boundary below is
 > binding: only what **K1–K6** and **K8** authorise may be built, per §11 of
 > [CLAUDE.md](../../CLAUDE.md). Implementation does not confer acceptance — acceptance is a
@@ -464,15 +466,17 @@ command pre-filters by `flagsForProject`.
 
 ---
 
-## 14. Status and what happens next
+## 14. Status — CLOSED
 
-**Approved 2026-08-24.** K1–K6 and K8 approved; **K7 NOT APPROVED**; K8 carries the clarification that
-**H5 blocks Phase 2 closure**.
+**ACCEPTED 2026-08-24.** Boundary `ce15d9d` (K1–K6, K8; **K7 refused**), implementation
+`193d295`, corrections `5a5504b`. Verified green twice on the committed tree: **782 pass · 0 fail
+· 155 suites**, exit 0. **This document is now a record, not a plan.**
 
-1. **Implement H4 to this boundary and no further.** K7 and H5 are out, by decision.
-2. **Run full verification and produce an acceptance report** against criteria **A1–A10** (§8.1) and
-   the retained criteria (§8.2). Implementation is not acceptance.
-3. **Acceptance is a separate act**, on the record, and is not automatic.
-4. **Phase 2 does NOT close on H4's acceptance.** It stays open until **H5** is separately analysed,
-   approved, implemented and accepted — K8's approval clarification.
-5. **P3 must not begin.** Its boundary is neither proposed nor approved.
+**What remains open, and is NOT authorised by this document:**
+
+1. **H5 / limitation 78** — the per-process id allocator, and **the one remaining Phase 2 closure
+   blocker** (K8's approval clarification). **No proposed boundary. Must not begin** until one is
+   approved, per §11 of [CLAUDE.md](../../CLAUDE.md).
+2. **H6 / limitation 79** — the refused **K7**. Recorded, not scheduled.
+3. **Phase 2 closure** — blocked on H5 alone.
+4. **P3** — no proposed boundary. Must not begin.
