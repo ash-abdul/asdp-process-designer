@@ -24,6 +24,7 @@
     "eval:baseline": "node apps/api/dist/ai/baseline.js",
     "eval:extract": "node apps/api/dist/ai/extract-baseline.js",
     "eval:frame": "node apps/api/dist/ai/frame-baseline.js",
+    "eval:reconcile": "node apps/api/dist/ai/reconcile-baseline.js",
     "start": "node apps/api/dist/main.js",
     "start:worker": "node apps/api/dist/worker.js",
     "build:assets": "node tools/copy-assets.mjs"

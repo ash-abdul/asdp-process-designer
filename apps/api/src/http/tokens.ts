@@ -30,3 +30,9 @@ export const EVIDENCE_EXTRACTOR = Symbol('ASDP_EVIDENCE_EXTRACTOR');
 
 /** The V5 `FramePopulator` (`POPULATE_FRAME`). Refuses when no provider is wired. */
 export const FRAME_POPULATOR = Symbol('ASDP_FRAME_POPULATOR');
+
+/** The V6 `CANONICALISE_ENTITIES` port. Refuses when no provider is wired. */
+export const CANONICALISER = Symbol('ASDP_CANONICALISER');
+
+/** The V6 `RECONCILE_SOURCES` port. Refuses when no provider is wired. */
+export const RECONCILER = Symbol('ASDP_RECONCILER');

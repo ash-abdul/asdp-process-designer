@@ -103,6 +103,14 @@ export const COMMANDS: readonly CommandDescriptor[] = [
   // answer, and an answer only its author may read is not an answer.
   { name: 'listRequirements', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
   { name: 'frameCoverage', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
+  // V6. Reconciliation spends money and causes egress, and it writes the conflict
+  // candidates a human will later decide. An analyst act, like extraction and
+  // population — and NOT a decision: nothing this command writes is decided.
+  { name: 'reconcileSources', requiredRoles: ['BusinessAnalyst', 'ProcessArchitect'], stage: 'intake', mutatesArtifact: false },
+  // "What disagrees, and what would precedence suggest?" is a compliance question
+  // as much as an analyst one, so reading is wide — the same reasoning as the
+  // AI-disclosure log.
+  { name: 'reconciliationView', requiredRoles: ['Viewer', 'Contributor', 'BusinessAnalyst', 'ProcessArchitect', 'ComplianceReviewer', 'PlatformAdmin'], stage: null, mutatesArtifact: false },
 ];
 
 export function commandDescriptor(name: string): CommandDescriptor {

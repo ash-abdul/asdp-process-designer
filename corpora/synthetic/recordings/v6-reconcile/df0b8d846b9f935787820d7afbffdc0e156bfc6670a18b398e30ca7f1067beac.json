@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v6-reconcile",
+    "taskType": "CANONICALISE_ENTITIES",
+    "promptVersion": "canonicalise-entities@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "404baec1e1095d23f1a763f162d5fdc01303c58ee9ec99ae7a5e014ad8bc6005"
+  },
+  "keyHash": "df0b8d846b9f935787820d7afbffdc0e156bfc6670a18b398e30ca7f1067beac",
+  "response": {
+    "outputs": [
+      "{\"merges\":[],\"limitations\":[\"produced by the authored stub provider, not by a model; it proposes NO semantic merges, because exact match-form equality is already settled by code and everything else needs judgement a stub does not have\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 43,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-24T06:58:15.721Z",
+  "classification": "PUBLIC"
+}

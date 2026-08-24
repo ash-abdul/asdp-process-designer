@@ -1,0 +1,33 @@
+{
+  "id": "v6-reconcile",
+  "name": "V6 reconciliation gold corpus",
+  "tier": "synthetic",
+  "classification": "PUBLIC",
+  "languages": [
+    "en",
+    "ar"
+  ],
+  "heldOut": false,
+  "goldSetRef": "gold.json",
+  "documents": [
+    {
+      "documentId": "renewal-policy-en",
+      "sourceKind": "policy",
+      "language": "en",
+      "provenance": "AUTHORED BY HAND for this repository. Invented content; no real organisation or process. The HIGHER-AUTHORITY document of the pair, and the older one — deliberately, so that ADR-0012 step 1 and step 2 disagree and the precedence rationale has to say which decided."
+    },
+    {
+      "documentId": "renewal-sop-en",
+      "sourceKind": "sop",
+      "language": "en",
+      "provenance": "AUTHORED BY HAND. Lower authority, more recent. States a DIFFERENT time limit for the same review (a real contradiction), the SAME fee limit in different words (an equivalence, not a conflict), and an ADDITIONAL required document (complementary, not a conflict). Those three cases are the whole taxonomy under test."
+    },
+    {
+      "documentId": "renewal-notice-ar",
+      "sourceKind": "policy",
+      "language": "ar",
+      "provenance": "AUTHORED BY HAND in Arabic. Names the same actor as the English documents ('المراجع' / 'the reviewing officer'), which no amount of match-form folding can equate — so it is the case that MUST stay an AI candidate and must never be merged deterministically."
+    }
+  ],
+  "notes": "SYNTHETIC (F1, unchanged). Expected canonicalisations and conflict candidates are explicitly labelled in gold.json by a human, each naming the requirement propositions a human says are involved. NO AI OUTPUT WAS USED AS GROUND TRUTH. Weighted 0.25 by TIER_WEIGHT and never usable for a routing decision (ADR-0031 rule 4). NO REAL-WORLD MODEL QUALITY CLAIM MAY BE MADE FROM THIS TIER — and in V6 the warning is stronger again, because whether two propositions REALLY contradict, and whether two surface forms REALLY mean the same thing, are semantic judgements this corpus cannot settle."
+}

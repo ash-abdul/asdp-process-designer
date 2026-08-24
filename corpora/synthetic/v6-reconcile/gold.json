@@ -1,0 +1,59 @@
+{
+  "corpusId": "v6-reconcile",
+  "authoredBy": "human",
+  "reviewedBy": "human",
+  "provenance": "Hand-authored labels (F1, unchanged in V6). No AI-generated expected output. Every expected canonicalisation names the surface forms a human says denote one thing; every expected conflict names the two propositions a human says are involved and the classification a human assigned. The three cases the taxonomy turns on are each represented, and so is the case that MUST NOT be merged.",
+  "expectedCanonicalisations": [
+    {
+      "id": "c1",
+      "kind": "actor",
+      "surfaceForms": ["the reviewing officer", "The reviewing officer"],
+      "expectedOrigin": "deterministic",
+      "note": "Identical after match-form folding (case only). Code merges this without asking anyone, and an AI proposal for it would be measuring nothing."
+    },
+    {
+      "id": "c2",
+      "kind": "actor",
+      "surfaceForms": ["the reviewing officer", "المراجع"],
+      "expectedOrigin": "ai_proposed",
+      "note": "The SAME role named in two languages. No amount of folding equates them (ADR-0023 folds within a script, not across languages), so this must arrive as an UNCONFIRMED AI candidate or not at all. A deterministic merge here would be the over-merge R-V6-2 describes."
+    }
+  ],
+  "expectedConflicts": [
+    {
+      "id": "k1",
+      "classification": "potentially_contradictory",
+      "topic": "review time limit",
+      "aboutText": ["within three working days", "within ten working days"],
+      "expectedPrecedenceStep": "source_authority",
+      "note": "A REAL contradiction: the same review cannot be both. Precedence must decide at step 1 — the policy outranks the SOP — even though the SOP is more recent, which is exactly why the rationale has to name which step decided."
+    },
+    {
+      "id": "k2",
+      "classification": "equivalent",
+      "topic": "renewal fee",
+      "aboutText": ["renewal fee of 500 AED", "renewal charge of 500 AED"],
+      "note": "The SAME amount worded differently. Reporting this as a contradiction is the false-conflict failure R-V6-1 describes, and it is the single most damaging thing a detector can do here."
+    }
+  ],
+  "traps": [
+    {
+      "id": "t1",
+      "kind": "not_a_conflict",
+      "aboutText": ["a valid identity document", "a tenancy contract when the address has changed"],
+      "mustNotBeClassified": "potentially_contradictory",
+      "note": "COMPLEMENTARY: two different required documents. Both are true at once. Flagging this as a contradiction would ask a human to adjudicate an addition."
+    },
+    {
+      "id": "t2",
+      "kind": "must_not_merge",
+      "surfaceForms": ["the reviewing officer", "the applicant"],
+      "note": "Two DIFFERENT actors with no textual similarity. Merging them would be the silent over-merge: the applicant would simply stop existing, and every requirement about the applicant would appear to be about the officer."
+    },
+    {
+      "id": "t3",
+      "kind": "must_not_decide",
+      "note": "No conflict in any run may carry a decision, a decider or a decision timestamp. NOT EXERCISABLE by the authored stub, which has no way to produce one — the schema, the gate, the command and migration 009 each refuse it independently. Covered by unit and SQL test instead, and reported as not-exercised rather than as a pass."
+    }
+  ]
+}

@@ -17,7 +17,9 @@ import type {
   EvidenceExtractor,
   HealthReport,
   IdGenerator,
+  Canonicaliser,
   FramePopulator,
+  Reconciler,
   Repositories,
   SourceProfiler,
   UnitOfWork,
@@ -41,9 +43,11 @@ import { SourceViewerController } from './source-viewer.controller.ts';
 import { EvidenceController } from './evidence.controller.ts';
 import { AnalysisController } from './analysis.controller.ts';
 import { RequirementsController } from './requirements.controller.ts';
+import { ReconciliationController } from './reconciliation.controller.ts';
 import { unavailableSourceProfiler } from '../ai/broker-profiler.ts';
 import { unavailableEvidenceExtractor } from '../ai/broker-extractor.ts';
 import { unavailableFramePopulator } from '../ai/broker-frame-populator.ts';
+import { unavailableCanonicaliser, unavailableReconciler } from '../ai/broker-reconciler.ts';
 import { ActorGuard } from './actor.guard.ts';
 import { CorrelationInterceptor } from './correlation.interceptor.ts';
 import {
@@ -59,6 +63,8 @@ import {
   SOURCE_PROFILER,
   EVIDENCE_EXTRACTOR,
   FRAME_POPULATOR,
+  CANONICALISER,
+  RECONCILER,
   REPOSITORIES,
   UNIT_OF_WORK,
 } from './tokens.ts';
@@ -94,6 +100,10 @@ export interface AppDependencies {
   readonly evidenceExtractor?: EvidenceExtractor;
   /** The V5 `POPULATE_FRAME` port. Refuses by default, like every other AI port. */
   readonly framePopulator?: FramePopulator;
+  /** The V6 `CANONICALISE_ENTITIES` port. Refuses by default. */
+  readonly canonicaliser?: Canonicaliser;
+  /** The V6 `RECONCILE_SOURCES` port. Refuses by default. */
+  readonly reconciler?: Reconciler;
 }
 
 /**
@@ -154,6 +164,7 @@ export class AppModule {
         // More specific than SourcesController's `:sourceId`, so registered first.
         AnalysisController,
         RequirementsController,
+        ReconciliationController,
         SourcesController,
         EvidenceController,
       ],
@@ -174,6 +185,8 @@ export class AppModule {
           provide: FRAME_POPULATOR,
           useValue: deps.framePopulator ?? unavailableFramePopulator(),
         },
+        { provide: CANONICALISER, useValue: deps.canonicaliser ?? unavailableCanonicaliser() },
+        { provide: RECONCILER, useValue: deps.reconciler ?? unavailableReconciler() },
         { provide: BLOB_STORE, useValue: deps.blobStore },
         { provide: CLOCK, useValue: deps.clock },
         { provide: ID_GENERATOR, useValue: deps.ids },

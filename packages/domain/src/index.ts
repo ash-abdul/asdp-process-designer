@@ -75,3 +75,13 @@ export {
   ceilingFor,
   permittedByCeiling,
 } from './ceilings.ts';
+
+export {
+  type Specificity,
+  type PrecedenceStep,
+  type PrecedenceParticipant,
+  type PrecedenceInput,
+  type PrecedenceRecommendation,
+  PRECEDENCE_FUNCTION_VERSION,
+  computePrecedence,
+} from './precedence.ts';

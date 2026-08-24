@@ -23,8 +23,10 @@ import {
   type AiRequest,
   type AiResponse,
   type EvidenceExtraction,
+  type EntityCanonicalisation,
   type FramePopulation,
   type ProviderDescriptor,
+  type SourceReconciliation,
 } from '@asdp/schemas';
 
 export const STUB_PROVIDER_ID = 'synthetic-stub';
@@ -211,6 +213,101 @@ export function populateFrameFromShape(
   };
 }
 
+/**
+ * Propose merges from surface-form SHAPE, deterministically.
+ *
+ * The stub merges nothing at all, and that is the honest answer for a stub. Exact
+ * match-form equality has already been settled by code before this call, so what
+ * remains is the semantic equivalence a real model would supply — synonyms,
+ * abbreviations, cross-language pairs — and a stub that faked those would be
+ * rigged in the one direction the evaluation is meant to measure.
+ *
+ * It reports that in `limitations` rather than returning an empty list silently,
+ * because "no merges" and "I do not do merges" are different claims.
+ */
+export function canonicaliseFromShape(): EntityCanonicalisation {
+  return {
+    merges: [],
+    limitations: [
+      'produced by the authored stub provider, not by a model; it proposes NO semantic merges, ' +
+        'because exact match-form equality is already settled by code and everything else needs ' +
+        'judgement a stub does not have',
+    ],
+  };
+}
+
+/**
+ * Propose reconciliation candidates from SHAPE, deterministically.
+ *
+ * Pairs propositions within the slot it was given and classifies each pair by a
+ * marker table: two statements carrying different explicit durations are
+ * `potentially_contradictory`; two carrying the same duration in different words
+ * are `equivalent`; anything else naming different required things is
+ * `complementary`.
+ *
+ * Deliberately crude, and it will be wrong often — which is the point. A stub
+ * that classified well would invite someone to read the evaluation as a
+ * measurement of classification.
+ */
+export function reconcileFromShape(batchText: string): SourceReconciliation {
+  const items: { id: string; text: string }[] = [];
+  for (const line of batchText.split(/\n+/)) {
+    const parsed = /^\[([^\]]+)\]\s*(.+)$/.exec(line.trim());
+    if (parsed === null) continue;
+    items.push({ id: (parsed[1] as string).trim(), text: (parsed[2] as string).trim() });
+  }
+
+  const candidates: SourceReconciliation['candidates'] = [];
+
+  /** Explicit durations, in days. Words are folded to numbers so 90 !== 30 is visible. */
+  const durationOf = (text: string): number | undefined => {
+    const words: Record<string, number> = {
+      one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, ten: 10,
+      fourteen: 14, thirty: 30, sixty: 60, ninety: 90,
+    };
+    const numeric = /\b(\d+)\s+(day|days|working day|working days|month|months)\b/i.exec(text);
+    if (numeric !== null) {
+      const n = Number(numeric[1]);
+      return /month/i.test(numeric[2] as string) ? n * 30 : n;
+    }
+    const worded = /\b(one|two|three|four|five|six|seven|ten|fourteen|thirty|sixty|ninety)\s+(day|days|working day|working days|month|months)\b/i.exec(text);
+    if (worded !== null) {
+      const n = words[(worded[1] as string).toLowerCase()] ?? 0;
+      return /month/i.test(worded[2] as string) ? n * 30 : n;
+    }
+    return undefined;
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i] as { id: string; text: string };
+      const b = items[j] as { id: string; text: string };
+      const da = durationOf(a.text);
+      const db = durationOf(b.text);
+      if (da === undefined || db === undefined) continue;
+
+      candidates.push({
+        requirementIds: [a.id, b.id],
+        classification: da === db ? 'equivalent' : 'potentially_contradictory',
+        topic: 'stated time limit',
+        explanation:
+          da === db
+            ? `both state a limit of ${da} day(s), worded differently`
+            : `one states ${da} day(s) and the other ${db} day(s); they cannot both hold`,
+        modelSelfRating: 0.5,
+      });
+    }
+  }
+
+  return {
+    candidates,
+    limitations: [
+      'produced by the authored stub provider, not by a model; it compares explicit durations by ' +
+        'a marker table and understands nothing else',
+    ],
+  };
+}
+
 /** A provider that answers deterministically, offline, from document shape. */
 export function createAuthoredStubProvider(): AiProvider {
   const descriptor = stubDescriptor();
@@ -239,7 +336,11 @@ export function createAuthoredStubProvider(): AiProvider {
           ? extractFromShape(text, unitIds)
           : request.taskType === 'POPULATE_FRAME'
             ? populateFrameFromShape(text, offeredSlots)
-            : profileFromShape(text);
+            : request.taskType === 'CANONICALISE_ENTITIES'
+              ? canonicaliseFromShape()
+              : request.taskType === 'RECONCILE_SOURCES'
+                ? reconcileFromShape(text)
+                : profileFromShape(text);
 
       return {
         outputs: [JSON.stringify(payload)],

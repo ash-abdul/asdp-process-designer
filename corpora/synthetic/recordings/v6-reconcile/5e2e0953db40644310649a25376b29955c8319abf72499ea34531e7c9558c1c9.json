@@ -1,0 +1,32 @@
+{
+  "key": {
+    "corpusId": "v6-reconcile",
+    "taskType": "RECONCILE_SOURCES",
+    "promptVersion": "reconcile-sources@1",
+    "providerId": "synthetic-stub",
+    "modelId": "stub-1",
+    "inputHash": "5cced1894b1f1b077e917ca0a697f7b70e5d85b6f0e073ddd451ee7ba613ec3e"
+  },
+  "keyHash": "5e2e0953db40644310649a25376b29955c8319abf72499ea34531e7c9558c1c9",
+  "response": {
+    "outputs": [
+      "{\"candidates\":[{\"requirementIds\":[\"REQ-0001\",\"REQ-0004\"],\"classification\":\"potentially_contradictory\",\"topic\":\"stated time limit\",\"explanation\":\"one states 3 day(s) and the other 10 day(s); they cannot both hold\",\"modelSelfRating\":0.5}],\"limitations\":[\"produced by the authored stub provider, not by a model; it compares explicit durations by a marker table and understands nothing else\"]}"
+    ],
+    "citations": [],
+    "usage": {
+      "inputUnits": 503,
+      "cachedInputUnits": 0,
+      "outputUnits": 0,
+      "costEstimate": 0,
+      "latencyMs": 0
+    },
+    "providerMeta": {
+      "providerId": "synthetic-stub",
+      "modelId": "stub-1",
+      "capabilityTier": "unknown"
+    },
+    "degradations": []
+  },
+  "recordedAt": "2026-08-24T06:58:15.723Z",
+  "classification": "PUBLIC"
+}

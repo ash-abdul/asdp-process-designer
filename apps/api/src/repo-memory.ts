@@ -16,8 +16,14 @@ import type {
   GateCode,
   PageImage,
   Project,
+  CanonicalEntity,
+  CanonicalEntityAlias,
+  Conflict,
+  ConflictParticipant,
+  ReconciliationRejection,
   Requirement,
   RequirementEvidenceLink,
+  RequirementRelation,
   RequirementFlag,
   RequirementRejection,
   RequirementSet,
@@ -32,6 +38,7 @@ import {
   type ApprovalRepository,
   type AuditRepository,
   type BaselineRepository,
+  type ReconciliationRepository,
   type RequirementRepository,
   type Clock,
   type DependencyProbe,
@@ -422,6 +429,80 @@ class MemoryRequirementRepository implements RequirementRepository {
   }
 }
 
+/**
+ * Canonicalisation and conflicts — INSERT-ONLY, exactly as in SQL (**Q1**).
+ *
+ * No update, no delete, and **no `setDecision`**. An in-memory adapter more
+ * permissive than its SQL counterpart would let a test prove a behaviour
+ * production cannot have.
+ */
+class MemoryReconciliationRepository implements ReconciliationRepository {
+  private readonly entities: CanonicalEntity[] = [];
+  private readonly aliases: CanonicalEntityAlias[] = [];
+  private readonly conflicts: Conflict[] = [];
+  private readonly participants: ConflictParticipant[] = [];
+  private readonly relations: RequirementRelation[] = [];
+  private readonly rejections: ReconciliationRejection[] = [];
+
+  async insertCanonicalEntity(
+    entity: CanonicalEntity,
+    aliases: readonly CanonicalEntityAlias[],
+  ): Promise<void> {
+    if (aliases.length === 0) {
+      throw new Error(`canonical entity ${entity.id} has no aliases`);
+    }
+    this.entities.push(entity);
+    this.aliases.push(...aliases);
+  }
+  async canonicalEntitiesForSet(requirementSetId: string): Promise<readonly CanonicalEntity[]> {
+    return this.entities.filter((e) => e.requirementSetId === requirementSetId);
+  }
+  async aliasesForSet(requirementSetId: string): Promise<readonly CanonicalEntityAlias[]> {
+    const ids = new Set(
+      this.entities.filter((e) => e.requirementSetId === requirementSetId).map((e) => e.id),
+    );
+    return this.aliases.filter((a) => ids.has(a.canonicalEntityId));
+  }
+
+  async insertConflict(
+    conflict: Conflict,
+    participants: readonly ConflictParticipant[],
+  ): Promise<void> {
+    if (conflict.decision !== undefined) {
+      // Q1, in the adapter as well as in SQL: V6 cannot write a decided conflict.
+      throw new Error(`conflict ${conflict.id} carries a decision; V6 writes candidates only (Q1)`);
+    }
+    this.conflicts.push(conflict);
+    this.participants.push(...participants);
+  }
+  async conflictsForSet(requirementSetId: string): Promise<readonly Conflict[]> {
+    return this.conflicts.filter((c) => c.requirementSetId === requirementSetId);
+  }
+  async participantsForSet(requirementSetId: string): Promise<readonly ConflictParticipant[]> {
+    const ids = new Set(
+      this.conflicts.filter((c) => c.requirementSetId === requirementSetId).map((c) => c.id),
+    );
+    return this.participants.filter((p) => ids.has(p.conflictId));
+  }
+
+  async insertRelation(relation: RequirementRelation): Promise<void> {
+    const held = this.relations.some(
+      (r) => r.fromId === relation.fromId && r.toId === relation.toId && r.kind === relation.kind,
+    );
+    if (!held) this.relations.push(relation);
+  }
+  async relationsForProject(projectId: string): Promise<readonly RequirementRelation[]> {
+    return this.relations.filter((r) => r.projectId === projectId);
+  }
+
+  async insertRejection(rejection: ReconciliationRejection): Promise<void> {
+    this.rejections.push(rejection);
+  }
+  async rejectionsForSet(requirementSetId: string): Promise<readonly ReconciliationRejection[]> {
+    return this.rejections.filter((r) => r.requirementSetId === requirementSetId);
+  }
+}
+
 export function createMemoryRepositories(): Repositories {
   return {
     projects: new MemoryProjectRepository(),
@@ -435,6 +516,7 @@ export function createMemoryRepositories(): Repositories {
     pageImages: new MemoryPageImageRepository(),
     aiInteractions: new MemoryAiInteractionRepository(),
     requirements: new MemoryRequirementRepository(),
+    reconciliation: new MemoryReconciliationRepository(),
   };
 }
 

@@ -15,13 +15,12 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **V6 — canonicalisation, conflict candidates and deterministic precedence.** Boundary **APPROVED 2026-08-23** (Q1–Q9), §3.11 of the plan.
-| **Previously** | **V5 is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary and decisions **J1–J9**, §8.11. V0–V3, V4a, V4b-core and V5 accepted |
-| **Previously** | **None in progress.** **V4b-core is ACCEPTED / COMPLETE** — reviewed 2026-08-23 against its approved boundary ([v4b-proposal.md](v4b-proposal.md)) and accepted with one defect found and fixed in review, §7.10. V0–V3, V4a and V4b-core accepted |
-| **Commit** | **`34ca68e`** — *Phase 2 V4b-core*; **accepted** at **`3d5dfb6`**. V4a accepted at **`d82d285`** |
-| **Working tree** | **Clean.** V5 is committed at `4b148b4` and **accepted** at `43ab748` |
-| **Work in progress** | **None.** V5 is complete and awaiting review. Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **None. Nothing is approved to begin.** **Implement V6.** Its boundary was **APPROVED 2026-08-23** with decisions **Q1–Q9** — [v6-proposal.md](v6-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.11. **V6 is replay-only: H3 still blocks every live provider call.** Its boundary was **APPROVED 2026-08-23** with decisions **J1–J9** — [v5-proposal.md](v5-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.10. **V4b-eval must not begin**, and is now blocked by **three** things, not two: a credential, E1-permitted material, **and H3** (§5.12) — **no live provider call is permitted while limitation 62 stands**. V2-PDF stays blocked; **H1/H2** are proposed, not approved |
+| **Current slice** | **V6 — canonicalisation, conflict candidates and deterministic precedence.** Boundary **APPROVED 2026-08-23** with decisions **Q1–Q9** ([v6-proposal.md](v6-proposal.md), plan of record [phase-2-plan.md](phase-2-plan.md) §3.11); implementation **complete, awaiting review** — §9 |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5.** V5 accepted at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | V6 at *(this commit)*, awaiting review. V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Working tree** | **Clean.** V6 is committed and awaits review |
+| **Work in progress** | **None.** V6 is complete. Spike S2's probe scripts lived outside the repo and were never committed |
+| **Next approved action** | **Review V6** (§9) — implemented, **not accepted**, and it must not be marked accepted without review. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 stands.** V2-PDF stays blocked; **H1/H2** are proposed, not approved; **V7 has not started** |
 
 ### Completed slices
 
@@ -33,6 +32,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **V3** — Image intake, vision evidence, ADR-0038 verification, structural BPMN/DMN/Form import | `dc2e683` + `bea4041` | **Accepted** — 2026-08-23 |
 | **V4a** — AI broker wiring, `PROFILE_SOURCE`, `ai_interaction` persistence, live path, fixtures, baseline | `09dfc9b` + `d82d285` | **Accepted** — 2026-08-23, §6 |
 | **V4b-core** — `EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate, confidence, chunking, gold-set evaluation | `34ca68e` + `3d5dfb6` | **Accepted** — 2026-08-23, §7. Accepted for **mechanics and governance, explicitly not model quality** — §7.8 |
+| **V6** — `CANONICALISE_ENTITIES`, `RECONCILE_SOURCES`, precedence engine, conflict candidates, `L1-CONF` | *(this commit)* | **Complete, awaiting review** — §9 |
 | **V5** — `POPULATE_FRAME`, six disjointness-closed passes, proposal gate, draft-only in SQL, RAF coverage, `L1-REQ` | `4b148b4` + `43ab748` | **Accepted** — 2026-08-23, §8. Accepted for **mechanics and governance, explicitly not semantic correctness** — §8.9 |
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
@@ -41,8 +41,8 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| Tests | **664 pass · 0 fail · 0 skipped · 0 todo** · 133 suites |
-| `check:arch` | passed — 135 source files |
+| Tests | **713 pass · 0 fail · 0 skipped · 0 todo** · 140 suites |
+| `check:arch` | passed — 146 source files |
 | `check:arch:selftest` | passed — **36 cases** |
 | `check:docs` | passed — 89 files, 801 links |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
@@ -50,6 +50,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | Migrations | `001_governance` · `002_intake` · `003_source_kind_docx` · `004_page_image` · `005_ai_attribution` · `006_ai_interaction` · `007_evidence_confidence` · **`008_requirements`** |
 | `eval:baseline` | `PROFILE_SOURCE`, **synthetic** corpus: schema 100%, reproducibility 100%, label agreement 100%, **not usable for a routing decision** |
 | `eval:extract` | `EXTRACT_EVIDENCE`, **synthetic** gold set: precision **100%**, recall **100%**, F1 **100%**, unsupported-accepted **0%**, hallucination **0%**, ambiguity rejections **2**, traps 2 rejected / 1 **not exercised**. **Mechanics, not model quality** |
+| `eval:reconcile` | `CANONICALISE_ENTITIES` + `RECONCILE_SOURCES`, **synthetic** gold set: conflict precision **100%**, recall **50%**, false-conflict **0%**, canonicalisation P/R **50%**, over-merge **0%**, precedence **reproducible**, traps 2 held / 1 **not exercised**. **Mechanics, not model quality** |
 | `eval:frame` | `POPULATE_FRAME`, **synthetic** gold set: precision **100%**, recall **88%**, F1 **93%**, **slot accuracy 45%**, ungrounded **0%**, traceability **100%**, non-draft **0**, traps 2 **not exercised**. **Semantic faithfulness NOT MEASURED** — §8.9 |
 
 ### Approved decisions
@@ -127,9 +128,9 @@ Process IR, no Specification Studio, no graphical designer.
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) — all accepted |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) — all accepted. **V6** (§9) implemented, awaiting review |
 | Next slice | **V6 — canonicalisation, conflict candidates, deterministic precedence.** Boundary **APPROVED 2026-08-23**, decisions **Q1–Q9**. **V4b-eval** is deferred: it needs an approved credential and E1-permitted material. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
-| Tests | **664 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · **664 V5**) |
+| Tests | **713 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · **713 V6**) |
 | Verification | build · `check:arch` (135 files) · checker self-test (36 cases) · `check:docs` — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
@@ -149,6 +150,7 @@ Packages: **ten** — six pure/contract (`schemas`, `text`, `provenance`, `raf`,
 | V4a | `09dfc9b` — *AI broker wiring, `PROFILE_SOURCE`, `ai_interaction`, live path* · **accepted** at `d82d285` |
 | V4b-core | `34ca68e` — *`EXTRACT_EVIDENCE`, §4.4 enforcement, persistence gate* · **accepted** at `3d5dfb6` |
 | V5 | `4b148b4` — *`POPULATE_FRAME`, proposal gate, draft-only in SQL, RAF coverage* · **accepted** at `43ab748` |
+| V6 | *(this commit)* — *canonicalisation, conflict candidates, deterministic precedence* · **awaiting review** |
 
 ---
 
@@ -1140,7 +1142,120 @@ the evidence it cites** — §8.9, and limitation 63.
 
 ---
 
-## 9. Accepted HTTP status posture
+## 9. V6 capabilities delivered — canonicalisation, conflict candidates, precedence
+
+**Complete, awaiting review.** Boundary: [v6-proposal.md](v6-proposal.md) and
+[phase-2-plan.md](phase-2-plan.md) §3.11. Decisions **Q1–Q9**. **No new dependency** — runtime
+dependencies stay at **seven**.
+
+V5 wrote `crossSourceAgreement: 'silent'` on every proposal, an honest record that **nothing had been
+compared**. V6 compares. What it claims is that **what should stay undecided stays undecided**, and
+that no distinct concept is silently merged away. It claims nothing about whether a detected
+contradiction is real — §9.8.
+
+### 9.1 `CANONICALISE_ENTITIES` — deterministic first, AI second
+
+- **Exact match-form equality is settled by code before the model is asked**, so the call only ever
+  concerns the equivalence folding cannot see. Grouping never crosses `kind`.
+- The AI pass proposes **candidates**, and they stay candidates: an AI-proposed merge is a
+  **separate, unconfirmed entity** recording which deterministic entities it *would* absorb in
+  `mergedFromIds`. **The originals are not removed** — which is what makes the merge reversible and
+  what stops a suggestion silently eliminating a business concept (**Q3**).
+- `confirmed_by` / `confirmed_at` are refused on insert by migration 009: confirmation is a V7 act.
+
+### 9.2 The five-way classification — **Q8**
+
+`duplicate` · `equivalent` · `complementary` · `potentially_contradictory` · `true_conflict`.
+
+**`true_conflict` is unreachable from V6 by three independent mechanisms**: the AI output schema's
+enum excludes it, the gate rejects it with a named reason, and migration 009's check constraint omits
+it from the permitted values. Only a human establishes one.
+
+### 9.3 Deterministic precedence — **Q4**, **Q5**
+
+- `computePrecedence` in `@asdp/domain`: authority → effective date → specificity → epistemic level,
+  **versioned** (`precedence-1`), pure, and byte-identical across runs.
+- **A missing effective date is `not_comparable`** — neither a win nor a loss — so a source with no
+  date falls through to the next step rather than losing by default. `L0-ING-010`'s warning becomes a
+  live consequence here, reported by `L1-CONF-007`.
+- **No tie is ever broken.** Equal authority, equal or incomparable dates, `undetermined` specificity
+  and equal level produce `undecidable: true` and no recommendation. Breaking that tie would be the
+  `matches[0]` mistake of provenance §4.4 one level up — an arbitrary pick that survives review
+  because it looks computed.
+- **Specificity is deterministic or `undetermined`**: a strict subset of evidence, or an explicit
+  qualifying condition. When the two tests disagree the answer is `undetermined`, not a guess.
+- The recommendation is stored as `proposedResolution` with a `precedenceRationale` naming **which
+  step decided, on what values**. Nothing applies it, and a test asserts every proposal is unchanged
+  after a reconciliation pass.
+
+### 9.4 Conflict candidates are undecided — **Q1**
+
+`decision`, `decidedBy` and `decidedAt` are refused on insert by `conflict_v6_undecided`. There is no
+`setDecision` on the port, no decide/resolve/accept/apply route, and a test asserts each returns 404.
+Three mechanisms, one invariant.
+
+### 9.5 The reconciliation view — **Q6**, and a defect the tests caught
+
+Computed on read. V5 rows and their stored confidence are **never mutated**; the derived value sits
+beside the stored one.
+
+**`corroborated` is unreachable in V6, and that is the correct answer.** An earlier implementation
+raised it when a *deterministic canonical entity* tied two propositions resting on different sources
+— and a test caught it. That is shared **vocabulary**, not agreement about content: both fixtures name
+"the reviewing officer" while stating three days and ten days, so they share an actor *and contradict
+each other*. Treating a shared name as corroboration is "absence of detected conflict becomes
+agreement" wearing a canonical entity as cover, which is exactly what **Q6** forbids. Corroboration
+now requires an `equivalent` classification, which is AI-proposed, which makes it **provisional** —
+so V6 records `provisionalCorroboration` and leaves the agreement value alone.
+
+### 9.6 Coverage is untouched — **Q9**
+
+`computeFrameCoverage`, `slotStatus` and `RafGroup` are not reimplemented, not redefined and not
+called differently. Conflicts appear in a view **alongside** coverage. Proved by diff at review.
+
+### 9.7 `L1-CONF-*` — seven structural rules
+
+`L1-CONF-001` participants resolve · `002` AI detection is attributed · `003` a recommendation carries
+its rationale · `004` **no decision without a human** · `005` undecidable precedence warns · `006` an
+unconfirmed merge was used · `007` a contributing source has no effective date.
+
+**No eighth validation layer.** The catalogue is 22 rules across **two** layers: 10 `L0-ING`, 5
+`L1-REQ`, 7 `L1-CONF`. **The namespace was not in the approved Q-list** and is implemented on the
+**J6** precedent — flagged for confirmation at acceptance, because rule IDs are permanent.
+
+### 9.8 What V6 does NOT establish
+
+> **Whether a detected contradiction is real, and whether two surface forms denote the same business
+> concept, are semantic judgements.** No deterministic check settles either, and the evaluation
+> reports both as `notMeasured` rather than substituting a number.
+
+`eval:reconcile` over the synthetic corpus: conflict precision **100%**, recall **50%**, false-conflict
+**0%**, canonicalisation precision/recall **50%**, over-merge **0%**, precedence **reproducible**,
+traps **2 held / 1 not exercised**, tier `synthetic`, `usableForRoutingDecision` **false**.
+
+**The 50% recall and 50% canonicalisation figures are the stub's ceiling, and they are reported rather
+than tuned away.** The authored stub compares explicit durations by a marker table and proposes no
+semantic merges at all, so it cannot find the fee equivalence (`k2`) or the cross-language actor pair
+(`c2`). Making those numbers look better would mean teaching the stub the answers, which is the one
+thing that would destroy the measurement.
+
+**A metric defect was found and fixed during implementation.** The first over-merge rate scored *any*
+deterministic group the gold set did not list — so merging "the applicant" with "the applicant"
+counted as an over-merge, and the harness reported 33%. An over-merge is **folding-driven**: the
+denominator is now groups whose members differ by more than case and whitespace, which is the only
+place aggressive folding (Teh Marbuta, Alef, diacritics) can do damage.
+
+### 9.9 Enforcement added
+
+- Migration **009**: five tables, all insert-only, with `conflict_v6_undecided`,
+  `canonical_entity_v6_unconfirmed`, a classification check omitting `true_conflict`, and
+  `conflict_recommendation_explained`.
+- The **shared reconciliation gate**, used identically by the command and the harness (**J5**).
+- **Rejected candidates retained in full** — **J9** applied to merges and conflict candidates alike.
+
+---
+
+## 10. Accepted HTTP status posture
 
 **Settled, and now fully implemented.**
 
@@ -1185,7 +1300,7 @@ behaviour as correct.
 
 ---
 
-## 10. Known limitations
+## 11. Known limitations
 
 | # | Limitation | Consequence |
 |---|---|---|
@@ -1290,9 +1405,20 @@ behaviour as correct.
 | 69 | **Evidence batches are counted in items, not tokens** | A batch of 40 evidence items is assumed to fit. With a real provider and long items it might not, and the refusal would be a context error rather than a clean split. The batch size is configuration (`ASDP_FRAME_EVIDENCE_PER_BATCH`), so the fix is a setting until a real model makes the right number knowable |
 | 70 | **One proposal per pass per batch is recorded as one interaction** | Six passes over one batch produce six interactions, which is correct and also means the disclosure log grows six times faster per population run than per extraction run. Nothing is hidden; it is simply more rows |
 
+### V6 limitations
+
+| # | Limitation | Consequence |
+|---|---|---|
+| 64 | **Canonicalisation covers ACTORS only** | A scope choice, not a design limit: actors are what conflicts most often turn on, and one kind proves the chain. The tables and the AI contract are already kind-agnostic, so terms, data entities, rules and events reuse the machinery unchanged. Missed surface forms are counted as missed equivalence |
+| 65 | **Surface-form observation is a shallow pattern list, not entity recognition** | Deliberate (**A4**: avoid unnecessary dependencies). It generates candidates; it does not understand. A clever extractor would invite someone to read its output as understanding, and the evaluation measures what it misses |
+| 66 | **Comparison is confined to a RAF slot** and its disjointness partner | Cross-slot contradictions are not detected. Widening it would raise recall at a direct cost to the false-conflict rate, which is the metric this slice can least afford to inflate. **Not in the approved Q-list** — raised at acceptance |
+| 67 | **`corroborated` is unreachable, so no proposition is ever recorded as corroborated in V6** | Correct under **Q6** — equivalence is AI-proposed and therefore provisional — but it means the reconciliation view can only ever *lower* confidence in practice. Raising it needs V7 confirmation |
+| 68 | **The stub proposes no semantic merges and compares only explicit durations** | Canonicalisation recall and conflict recall are 50% against the gold set, and both are the **stub's** ceiling rather than the pipeline's. Tuning the stub to match the gold set would destroy the measurement |
+| 69 | **Precedence is computed for every candidate, including `equivalent` ones** | Intentional — an equivalent pair still has an ordering a reader may want — but it means a `proposedResolution` appears on rows where nothing is in dispute, and a reader could mistake it for a finding |
+
 ---
 
-## 11. Docker-deferred infrastructure
+## 12. Docker-deferred infrastructure
 
 Docker remains unavailable. Each item below is deferred **with a named trigger**, not dropped
 ([infra/README.md](../../infra/README.md)).
@@ -1314,7 +1440,7 @@ is **untested** until Docker exists.
 
 ---
 
-## 12. Not started, by instruction
+## 13. Not started, by instruction
 
 BPMN generation, DMN generation, form generation, Process IR compilation, layout, the
 requirements-analysis passes, the Specification Studio, and any graphical process designer.
@@ -1325,9 +1451,9 @@ excluded permanently, because it would reverse
 
 ---
 
-## 13. Next step
+## 14. Next step
 
-### V3, V4a, V4b-core and V5 are ACCEPTED. V6, V4b-eval, V2-PDF and H1/H2/H3 have not started.
+### V3, V4a, V4b-core and V5 are ACCEPTED. V6 is IMPLEMENTED and awaits review. V4b-eval, V2-PDF, V7 and H1/H2/H3 have not started.
 
 | | |
 |---|---|
@@ -1343,7 +1469,7 @@ excluded permanently, because it would reverse
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
-| **V6 — conflicts, precedence and reconciliation** | **BOUNDARY APPROVED 2026-08-23**, decisions **Q1–Q9** — [v6-proposal.md](v6-proposal.md), plan of record §3.11 |
+| **V6 — conflicts, precedence and reconciliation** | **IMPLEMENTED, AWAITING REVIEW** — §9. Boundary approved 2026-08-23, decisions **Q1–Q9** — [v6-proposal.md](v6-proposal.md), plan of record §3.11. **Accepted for nothing yet** |
 
-**V4b-eval, V2-PDF and V6 are not approved. No live provider call is permitted while limitation 62 /
-H3 stands.**
+**V6 is implemented and must be reviewed before it is accepted. V4b-eval, V2-PDF and V7 are not
+approved. No live provider call is permitted while limitation 62 / H3 stands.**

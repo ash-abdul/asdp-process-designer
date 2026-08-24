@@ -459,3 +459,75 @@ export const FramePopulation = z.object({
   limitations: z.array(z.string()).default([]),
 });
 export type FramePopulation = z.infer<typeof FramePopulation>;
+
+// ---------------------------------------------------------------------------
+// CANONICALISE_ENTITIES output contract (V6)
+// ---------------------------------------------------------------------------
+
+/**
+ * One proposed merge of surface forms that mean the same thing.
+ *
+ * **Q3:** this is a *candidate*, always. Exact match-form equality is settled by
+ * code before the model is asked; what the model adds is the equivalence folding
+ * cannot see — a synonym, an abbreviation, a cross-language pair. That is a claim
+ * about the business, and merging two genuinely distinct concepts is **silent**:
+ * the second one simply stops existing.
+ *
+ * There is no field for a canonical **id**, a classification or a confirmation,
+ * because all three are owned by code, and a model fills whatever fields it is
+ * given.
+ */
+export const EntityMergeCandidate = z.object({
+  /** Surface forms from THIS batch. At least two, or it merges nothing. */
+  surfaceForms: z.array(z.string()).default([]),
+  /** Proposed label in BOTH languages: an English-only canonical entity is an English concept. */
+  labelEn: z.string(),
+  labelAr: z.string(),
+  /** Why they are the same thing. Recorded and shown to whoever confirms it. */
+  reason: z.string(),
+  modelSelfRating: z.number().min(0).max(1).optional(),
+});
+export type EntityMergeCandidate = z.infer<typeof EntityMergeCandidate>;
+
+export const EntityCanonicalisation = z.object({
+  merges: z.array(EntityMergeCandidate).default([]),
+  limitations: z.array(z.string()).default([]),
+});
+export type EntityCanonicalisation = z.infer<typeof EntityCanonicalisation>;
+
+// ---------------------------------------------------------------------------
+// RECONCILE_SOURCES output contract (V6)
+// ---------------------------------------------------------------------------
+
+/**
+ * One proposed relationship between two requirement propositions.
+ *
+ * **Three fields the model does NOT get**, and each absence is deliberate:
+ *
+ *   - no `resolution` — precedence is deterministic and belongs to code (**Q5**)
+ *   - no `decision` — a human decides every conflict (**Q1**, ADR-0012)
+ *   - no `true_conflict` in the permitted values — a model may propose that two
+ *     propositions *may* not both hold; establishing that they truly conflict is
+ *     a human act (**Q8**)
+ *
+ * The schema enforces the third mechanically rather than trusting the prompt,
+ * because a model fills the fields it is given and an enum is not a suggestion.
+ */
+export const ReconciliationCandidate = z.object({
+  /** Requirement ids from THIS batch, exactly two. */
+  requirementIds: z.array(z.string()).default([]),
+  /** What a model may propose. `duplicate` is deterministic; `true_conflict` is human. */
+  classification: z.enum(['equivalent', 'complementary', 'potentially_contradictory']),
+  /** What the disagreement or agreement is about. */
+  topic: z.string().min(1),
+  /** Why. Shown to whoever decides, and the reason RECONCILE_SOURCES exists at all. */
+  explanation: z.string(),
+  modelSelfRating: z.number().min(0).max(1).optional(),
+});
+export type ReconciliationCandidate = z.infer<typeof ReconciliationCandidate>;
+
+export const SourceReconciliation = z.object({
+  candidates: z.array(ReconciliationCandidate).default([]),
+  limitations: z.array(z.string()).default([]),
+});
+export type SourceReconciliation = z.infer<typeof SourceReconciliation>;

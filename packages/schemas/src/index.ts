@@ -14,4 +14,5 @@ export * from './validation.ts';
 export * from './governance.ts';
 export * from './intake.ts';
 export * from './requirements.ts';
+export * from './reconciliation.ts';
 export * from './ai.ts';

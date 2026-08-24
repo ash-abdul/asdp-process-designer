@@ -9,6 +9,14 @@
 
 import type {
   AiInteraction,
+  CanonicalEntity,
+  CanonicalEntityAlias,
+  Conflict,
+  ConflictParticipant,
+  EntityCanonicalisation,
+  ReconciliationRejection,
+  RequirementRelation,
+  SourceReconciliation,
   Approval,
   AuditEvent,
   Baseline,
@@ -202,6 +210,36 @@ export interface Repositories {
   readonly pageImages: PageImageRepository;
   readonly aiInteractions: AiInteractionRepository;
   readonly requirements: RequirementRepository;
+  readonly reconciliation: ReconciliationRepository;
+}
+
+/**
+ * Canonical entities, conflict candidates and relations — INSERT-ONLY (V6).
+ *
+ * No update method and no delete method, and **no `setDecision`**: the only
+ * mutation worth having here is the one **Q1** forbids V6 to make. A conflict is
+ * decided by a human in V7, through a surface this port deliberately does not
+ * offer — and migration 009 refuses a non-null `decision` on insert, so the
+ * boundary survives a direct connection too.
+ */
+export interface ReconciliationRepository {
+  insertCanonicalEntity(
+    entity: CanonicalEntity,
+    aliases: readonly CanonicalEntityAlias[],
+  ): Promise<void>;
+  canonicalEntitiesForSet(requirementSetId: string): Promise<readonly CanonicalEntity[]>;
+  aliasesForSet(requirementSetId: string): Promise<readonly CanonicalEntityAlias[]>;
+
+  insertConflict(conflict: Conflict, participants: readonly ConflictParticipant[]): Promise<void>;
+  conflictsForSet(requirementSetId: string): Promise<readonly Conflict[]>;
+  participantsForSet(requirementSetId: string): Promise<readonly ConflictParticipant[]>;
+
+  insertRelation(relation: RequirementRelation): Promise<void>;
+  relationsForProject(projectId: string): Promise<readonly RequirementRelation[]>;
+
+  /** **J9** applied again: rejected candidates are retained in full. */
+  insertRejection(rejection: ReconciliationRejection): Promise<void>;
+  rejectionsForSet(requirementSetId: string): Promise<readonly ReconciliationRejection[]>;
 }
 
 /**
@@ -411,4 +449,76 @@ export type PopulateFrameOutcome =
 export interface FramePopulator {
   readonly id: string;
   populate(request: PopulateFrameRequest): Promise<PopulateFrameOutcome>;
+}
+
+/**
+ * The `CANONICALISE_ENTITIES` port (V6).
+ *
+ * One call per entity **kind**, so the caller owns the partition and a refusal
+ * degrades one kind rather than the run. The canonicaliser returns **merge
+ * candidates**, never merges: checking membership, kind, classification and
+ * legality is the command's job, because it is the part that must not depend on a
+ * provider behaving well.
+ */
+export interface CanonicaliseRequest {
+  readonly projectId: string;
+  readonly kind: string;
+  /** Surface forms this pass may group. Anything else is not groupable. */
+  readonly surfaceForms: readonly string[];
+  readonly classification: Classification;
+  readonly languageHints: readonly string[];
+  readonly correlationId?: string;
+}
+
+export type CanonicaliseOutcome =
+  | {
+      readonly kind: 'canonicalised';
+      readonly canonicalisation: EntityCanonicalisation;
+      readonly interaction: AiInteraction;
+    }
+  | {
+      readonly kind: 'refused';
+      readonly reason: string;
+      readonly degradations: readonly string[];
+      readonly options: readonly string[];
+      readonly interaction?: AiInteraction;
+    };
+
+export interface Canonicaliser {
+  readonly id: string;
+  canonicalise(request: CanonicaliseRequest): Promise<CanonicaliseOutcome>;
+}
+
+/**
+ * The `RECONCILE_SOURCES` port (V6).
+ *
+ * One call per RAF slot. It **explains, it does not settle**: precedence is
+ * computed deterministically by the command, and a human decides.
+ */
+export interface ReconcileRequest {
+  readonly projectId: string;
+  readonly rafSlot: string;
+  readonly requirements: readonly { readonly requirementId: string; readonly text: string }[];
+  readonly classification: Classification;
+  readonly languageHints: readonly string[];
+  readonly correlationId?: string;
+}
+
+export type ReconcileOutcome =
+  | {
+      readonly kind: 'reconciled';
+      readonly reconciliation: SourceReconciliation;
+      readonly interaction: AiInteraction;
+    }
+  | {
+      readonly kind: 'refused';
+      readonly reason: string;
+      readonly degradations: readonly string[];
+      readonly options: readonly string[];
+      readonly interaction?: AiInteraction;
+    };
+
+export interface Reconciler {
+  readonly id: string;
+  reconcile(request: ReconcileRequest): Promise<ReconcileOutcome>;
 }
