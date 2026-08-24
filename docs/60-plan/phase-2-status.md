@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
 > **Status:** **V0–V7 ACCEPTED. Phase 2 is NOT CLOSED — blocked on H4 / limitation 77.** V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2. · **Version:** 5.1 · **Updated:** 2026-08-24
-> **Checkpoint:** §0 · **Commit:** `7e50303` — V7 implemented at `7bfa440`, corrected at `f38ef06`/`96f84e4`/`7e50303`, **accepted** 2026-08-24
+> **Checkpoint:** §0 · **Commit:** `50855bd` — **V7 ACCEPTED**. Implemented `7bfa440`; corrected `f38ef06`, `96f84e4`, `7e50303`; accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -11,6 +11,32 @@
 
 The single place to read to know where this project stands. Everything below is
 traceable to a commit or an approved decision; nothing here is reconstructed.
+
+> ## If you are a fresh session, read this box first
+>
+> **The whole approved Phase 2 slice sequence — V0 through V7 — is ACCEPTED. G1 is reachable end to
+> end.** Nothing is in progress and the working tree is clean.
+>
+> **Phase 2 is NOT closed.** One defect blocks it: **H4 / limitation 77**. `requirement.id` is a
+> **global** primary key (migration 008) while `nextRequirementNumber` allocates **per project**
+> (invariant D15). The second project in a database to run `POPULATE_FRAME` collides on `REQ-0001`
+> and fails with a **503**, so **a second project can never reach G1**. It is a **V5** defect from
+> `4b148b4`, reproduced directly on 2026-08-24. Every test uses one project per server, which is why
+> it stood.
+>
+> **THE NEXT APPROVED ACTION, AND THE ONLY ONE:** analyse **H4** and **propose the smallest
+> hardening boundary for approval**. §5.12 sets out the two candidate shapes and why the apparently
+> smaller one is not — it changes what an ADR-0017 signature covers. **Propose only. Do not
+> implement it, and do not start anything else.**
+>
+> **Do NOT start P3.** Its boundary is neither proposed nor approved, and §11 of
+> [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins.
+>
+> **No live provider call is permitted** while limitation **62 / H3** stands.
+>
+> **What V0–V7 acceptance claims:** mechanics and governance. **What it does not claim:** model
+> quality. No live model has ever been called; every evaluation number is a synthetic corpus against
+> an authored stub.
 
 | | |
 |---|---|
@@ -40,14 +66,15 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 **V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
 
-### Verification of the current working tree
+### Verification of the current working tree — at `50855bd`, green
 
 | | |
 |---|---|
+| Verified | **2026-08-24**, `npm run verify` end to end, on a clean tree |
 | Tests | **769 pass · 0 fail · 0 skipped · 0 todo** · 150 suites |
 | `check:arch` | passed — 152 source files |
 | `check:arch:selftest` | passed — **39 cases** (36 before V7's corrections; the new `g1-reconciliation` rule carries three) |
-| `check:docs` | passed — 91 files, 875 links |
+| `check:docs` | passed — 91 files, **882 links** |
 | `npm run verify` | **green end to end**, and it makes **no live provider call** |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it |
 | Migrations | `001_governance` … `007_evidence_confidence` · `008_requirements` · `009_reconciliation` · `010_requirement_review` · **`011_validation_run`** · **`012_slot_policy_block`** |
@@ -105,6 +132,8 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 
 | Item | Blocked on |
 |---|---|
+| **PHASE 2 CLOSURE** | **H4 / limitation 77.** Phase 2 ends when G1 can be reached, and G1 is reachable for the **first project in a database and for no other**. §5.12 **H4**. **The next approved action is to propose H4's boundary — proposal only** |
+| **P3 — the Specification Studio** | **No proposed boundary, no approval.** §11 of [CLAUDE.md](../../CLAUDE.md): a slice needs its scope approved, not merely a go-ahead. It must not begin |
 | **V2-PDF** — PDF adapter, rasterisation, `pdf_region` rectangle lists, `L0-ING-008` wired | (1) a representative Arabic PDF corpus per [s2-corpus-request.md](s2-corpus-request.md) · (2) **spike S2 completed** against it, producing the exact-precision yield rate · (3) **ADR-0037 approved**. Enforced mechanically by the checker rule `pdf-engine-not-approved`; `@embedpdf/pdfium` is **not installed** |
 | **V4b-eval, and every live provider call** | **Three** things, not two: (1) an approved credential · (2) E1-permitted representative material · (3) **H3 — limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads to be retained and migration 006 retains metadata only, so **no live provider call is permitted while the gap stands** — an unretained live payload is unrecoverable. **V5 is unaffected: it is replay-only** |
 | **Vision quality measurement** | No live provider has ever been called and no recorded corpus exists. Shape, refusals, egress and provenance are proven; **accuracy is not** |
@@ -114,6 +143,25 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 | **Element-wise confirmation records** | V5. V3 made each region individually addressable, which is its prerequisite |
 | Collation behaviour, PostgreSQL container, MinIO, OIDC, durable job queue, container build | **Docker unavailable** — §10, each with a named trigger |
 | `RESTRICTED`+ material analysis | **OD-1**, now scoped as a *deployment* gate rather than a development blocker (A8) |
+
+### Open items a fresh session must know about
+
+Consolidated from §12, §5.12 and the blocked-items table. **Nothing here is reconstructed** — each
+traces to a numbered limitation or an approved decision.
+
+| Item | State | Why it matters now |
+|---|---|---|
+| **H4** — requirement identity per project vs a **global** primary key | **Raised 2026-08-24. Not started.** Limitation **77**, §5.12 | **Blocks Phase 2 closure.** A second project cannot reach G1. **Next approved action: propose its boundary, proposal only** |
+| **H3** — AI prompt/response payloads not retained | **Proposed, not approved.** Limitation **62**, §5.12 | **Blocks every live provider call**, and therefore V4b-eval. [ADR-0032](../adr/ADR-0032-retain-everything.md) requires retention; migration 006 stores metadata only. Raise **before** the first live call — an unretained payload is unrecoverable |
+| **H1 / H2** — provenance hardening | **Proposed, not approved.** Limitations **43**, **44**, §5.12 | V3 acceptance was explicitly not held on either. Small, mechanical, still unapproved |
+| **ADR-0037** — binary document extraction | **PROPOSED — HELD.** The only open ADR | Gates **V2-PDF**. `@embedpdf/pdfium` is not installed and the checker rule `pdf-engine-not-approved` fails the build on any PDF engine import |
+| **Spike S2** — Arabic PDF corpus | **Not completed.** [s2-corpus-request.md](s2-corpus-request.md) | Gates ADR-0037, and therefore V2-PDF. Needs representative material that does not exist here |
+| **V4b-eval** — real-provider evaluation | **Deferred, not started** | Needs **three** things: an approved credential, E1-permitted material, **and H3**. It is the first point at which model quality could be claimed at all |
+| **U5** — source-declared undecided issues | **Deferred by approved decision.** Limitation **72** | A document saying *"the escalation path is TBD"* raises no question. Deliberate, and V7 was accepted with it deferred |
+| **`SYNTHESISE_QUESTIONS` wording half** | **Not built.** Limitation **71** | V7 ships only the deterministic half by decision **U6**. Questions read as generated text |
+| **The two V7 workflow signals** | **Not reported.** Limitation **70** | §16 of [v7-proposal.md](v7-proposal.md) offered conflicts-overturned and proposals-edited-before-approval. Neither is computed, so approval theatre stays unmeasured |
+| **Project `classificationCeiling` unenforced** | **Pre-existing, unfixed.** Limitation **76** | Found during the V7 corrections and deliberately not fixed there. **Raise alongside H3, before any live call** |
+| **Docker-deferred infrastructure** | **Deferred with named triggers.** §13 | PostgreSQL container, MinIO, OIDC, durable job queue, container build, collation behaviour |
 
 ### What is NOT started
 
@@ -142,7 +190,7 @@ Studio, no graphical designer. **P3 has not started.**
 | Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) · **V7** (§10) — **all accepted**. The approved Phase 2 slice sequence is complete; **Phase 2 itself is not closed** — H4 / limitation 77 |
 | Next slice | **None approved.** The next approved *action* is to **analyse H4 and propose the smallest hardening boundary** — a proposal, not an implementation. **P3 has not started** and its boundary is neither proposed nor approved. **V4b-eval** is deferred: it needs an approved credential, E1-permitted material and **H3**. **V2-PDF** stays blocked on spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) |
 | Tests | **765 pass · 0 fail · 0 skipped · 0 suppressed** (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · 714 V6 · 739 V7 · **769 V7-corrected**) |
-| Verification | build · `check:arch` (152 files) · checker self-test (**39 cases**) · `check:docs` (91 files, 875 links) — all clean, and **no live provider call** |
+| Verification | build · `check:arch` (152 files) · checker self-test (**39 cases**) · `check:docs` (91 files, 882 links) — all clean, and **no live provider call** |
 | Durability | Verified by execution: sources, text, units and evidence survive a full service restart, **and anchors minted before the restart still resolve after it** |
 | ADRs | ADR-0034/0035/0036 in V0. **V1 and V2 added none.** [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) **approved** for V3. [ADR-0037](../adr/ADR-0037-binary-document-extraction.md) remains **PROPOSED — HELD**, and no dependency from it is present |
 | Decisions | **A1–A8 all approved** — see [phase-2-plan.md](phase-2-plan.md) §4. **A8** (2026-08-23) permits Claude API as the initial live provider through the abstraction. **V3 decisions D1–D6 approved**, D6 deferring three in-scope items to V4 (§5.10) |
