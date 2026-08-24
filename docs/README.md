@@ -105,6 +105,7 @@ for the module you are building.
 | [v6-proposal.md](60-plan/v6-proposal.md) | V6 boundary — canonicalisation, conflict **candidates**, deterministic precedence, reconciliation. **APPROVED, implemented and ACCEPTED 2026-08-23.** Decisions **Q1–Q9** |
 | [v7-proposal.md](60-plan/v7-proposal.md) | V7 boundary — the human requirements workspace and **G1**. **APPROVED 2026-08-23; implemented and ACCEPTED 2026-08-24.** Decisions **U1–U10** |
 | [h4-proposal.md](60-plan/h4-proposal.md) | **H4 boundary — project-scoped requirement identity.** Closed limitation **77**: a second project in the same database could not reach G1. **APPROVED, implemented and ACCEPTED 2026-08-24.** Decisions **K1–K8** — K1–K6 and K8 approved, **K7 refused** |
+| [h5-proposal.md](60-plan/h5-proposal.md) | **H5 boundary — durable identity generation.** Closes limitation **78**: every surrogate id comes from a per-process counter, so the first write after a restart collides. **BOUNDARY APPROVED 2026-08-24; not yet implemented, not yet accepted.** Decisions **M1–M9** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 
