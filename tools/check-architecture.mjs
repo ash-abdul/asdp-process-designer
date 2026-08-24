@@ -321,6 +321,28 @@ const CONTROLLER_MAX_LINES = 220;
 const G1_RECONCILED_FILE = 'apps/api/src/commands/review.ts';
 const G1_RECONCILE_EXEMPT = ['approveG1'];
 
+// --- D15 / H4: there is exactly ONE requirement-id allocator ---------------
+
+/**
+ * `REQ-####` is allocated by `allocateD15_requirementId` in `@asdp/domain` and
+ * nowhere else.
+ *
+ * Two inline copies of the same template literal lived in the command layer until
+ * H4, while the primary key they wrote into was global rather than per project.
+ * The identifier and the key drifted apart precisely because the allocation rule
+ * existed in three places and the invariant in one, so nothing broke when they
+ * stopped agreeing — the second project in a database simply could not create a
+ * requirement (limitation 77).
+ *
+ * The domain module is exempt because it IS the allocator. Test files are exempt
+ * because a fixture naming `REQ-0001` is data, not an allocation.
+ */
+const REQUIREMENT_ID_ALLOCATOR_FILE = 'packages/domain/src/invariants.ts';
+const REQUIREMENT_ID_ALLOCATION_PATTERNS = [
+  { re: /`REQ-\$\{/, why: 'a template literal minting a REQ-#### identifier' },
+  { re: /['"]REQ-['"]\s*\+/, why: 'string concatenation minting a REQ-#### identifier' },
+];
+
 // --- ADR-0035: persistence confinement and SQL safety ----------------------
 
 const PERSISTENCE_PACKAGES = ['@electric-sql/pglite', 'pg'];
@@ -687,6 +709,25 @@ export function evaluateRules(files) {
       }
     }
 
+    // --- D15 / H4: one allocator -----------------------------------------
+    if (
+      normalisedPath !== REQUIREMENT_ID_ALLOCATOR_FILE &&
+      !/\.test\.ts$/.test(normalisedPath)
+    ) {
+      for (const { re, why } of REQUIREMENT_ID_ALLOCATION_PATTERNS) {
+        if (re.test(f.text)) {
+          violations.push({
+            rule: 'requirement-id-allocation',
+            file: f.path,
+            detail:
+              `${why}. REQ-#### is allocated by allocateD15_requirementId in ` +
+              `${REQUIREMENT_ID_ALLOCATOR_FILE} and nowhere else (invariant D15). A second ` +
+              'allocator is how the identifier and the key it is stored under drift apart',
+          });
+        }
+      }
+    }
+
     // --- ADR-0035: persistence confinement ------------------------------
     for (const spec of imports) {
       const bare = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
@@ -917,6 +958,32 @@ const SELF_TEST_CASES = [
     expectNone: true,
     file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
             text: `export async function rejectRequirement(ctx) {\n  return mutate(ctx, a, s, async (repos) => repos.x());\n}\n` },
+  },
+  {
+    name: 'an inline REQ-#### template literal is rejected (D15 / H4)',
+    rule: 'requirement-id-allocation',
+    file: { path: 'apps/api/src/commands/requirements.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const id = `REQ-${String(n).padStart(4, "0")}`;\n' },
+  },
+  {
+    name: 'concatenating a REQ-#### identifier is rejected too (D15 / H4)',
+    rule: 'requirement-id-allocation',
+    file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const id = "REQ-" + pad(n);\n' },
+  },
+  {
+    name: 'the domain allocator ITSELF is permitted — it is the one allocator (D15 / H4)',
+    rule: 'requirement-id-allocation',
+    expectNone: true,
+    file: { path: 'packages/domain/src/invariants.ts', pkg: '@asdp/domain', cls: 'pure',
+            text: 'export function allocateD15_requirementId(h) {\n  return `REQ-${String(h + 1).padStart(4, "0")}`;\n}\n' },
+  },
+  {
+    name: 'calling the allocator is PERMITTED (D15 / H4)',
+    rule: 'requirement-id-allocation',
+    expectNone: true,
+    file: { path: 'apps/api/src/commands/requirements.ts', pkg: '@asdp/api', cls: 'application',
+            text: 'const id = allocateD15_requirementId(nextNumber - 1);\n' },
   },
   {
     name: 'a test constructing a transport with NO injected fetch is rejected (A7 / D5)',

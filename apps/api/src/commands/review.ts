@@ -21,6 +21,7 @@
  */
 
 import {
+  allocateD15_requirementId,
   approveGate,
   computeConfidence,
   evaluateGate,
@@ -206,7 +207,11 @@ export async function reviewRequirement(
 ): Promise<Requirement> {
   assertRole(actor, 'reviewRequirement');
 
-  const requirement = await ctx.repos.requirements.get(input.requirementId);
+  // K4: `projectId` is half the key, so a requirement in another project is not
+  // found rather than found-and-rejected. The ownership comparison below is kept
+  // as belt and braces — it costs nothing and it fails loudly if the key ever
+  // stops being composite.
+  const requirement = await ctx.repos.requirements.get(input.projectId, input.requirementId);
   if (requirement === undefined || requirement.projectId !== input.projectId) {
     throw new ValidationError(`unknown requirement ${input.requirementId}`);
   }
@@ -230,7 +235,7 @@ export async function reviewRequirement(
     projectId: input.projectId,
     requirementSetId: requirement.requirementSetId,
   }, async (repos) => {
-    await repos.requirements.setReviewStatus(input.requirementId, status);
+    await repos.requirements.setReviewStatus(input.projectId, input.requirementId, status);
     await repos.audit.append({
       id: ctx.ids.next('aud'),
       at: ctx.clock.nowIso(),
@@ -297,12 +302,12 @@ export async function reviseRequirement(
     );
   }
 
-  const current = await ctx.repos.requirements.get(input.requirementId);
+  const current = await ctx.repos.requirements.get(input.projectId, input.requirementId);
   if (current === undefined || current.projectId !== input.projectId) {
     throw new ValidationError(`unknown requirement ${input.requirementId}`);
   }
 
-  const existing = await ctx.repos.requirements.evidenceFor(input.requirementId);
+  const existing = await ctx.repos.requirements.evidenceFor(input.projectId, input.requirementId);
 
   // The reviewer may ADD or REMOVE citations, not merely narrow the inherited set
   // — a revision prompted by a clarification answer has to be able to cite the
@@ -334,6 +339,7 @@ export async function reviseRequirement(
       // command deciding which evidence carries a proposition, which is a
       // judgement the reviewer makes, not a default.
       return {
+        projectId: input.projectId,
         requirementId: input.requirementId,
         evidenceItemId: id,
         contribution: 'supporting' as const,
@@ -463,7 +469,9 @@ export async function addInferredRequirement(
   });
 
   const requirement: Requirement = {
-    id: `REQ-${String(number).padStart(4, '0')}`,
+    // K3: the one allocator, same as POPULATE_FRAME's. `number` is already the
+    // next number, so the allocator is handed the high-water mark it derives from.
+    id: allocateD15_requirementId(number - 1),
     requirementSetId: input.requirementSetId,
     projectId: input.projectId,
     text: input.text.trim(),
@@ -545,7 +553,7 @@ export async function resolveFlag(
   const flags = await ctx.repos.requirements.flagsForProject(input.projectId);
   const flag = flags.find((f) => f.id === input.flagId);
   if (flag === undefined) throw new ValidationError(`unknown flag ${input.flagId}`);
-  const flagged = await ctx.repos.requirements.get(flag.requirementId);
+  const flagged = await ctx.repos.requirements.get(flag.projectId, flag.requirementId);
   const requirementSetId = await setIdFor(ctx, input.projectId, flagged?.requirementSetId);
 
   const now = ctx.clock.nowIso();
@@ -687,7 +695,11 @@ export async function confirmInference(
 ): Promise<void> {
   assertRole(actor, 'confirmInference');
 
-  const requirement = await ctx.repos.requirements.get(input.requirementId);
+  // K4: `projectId` is half the key, so a requirement in another project is not
+  // found rather than found-and-rejected. The ownership comparison below is kept
+  // as belt and braces — it costs nothing and it fails loudly if the key ever
+  // stops being composite.
+  const requirement = await ctx.repos.requirements.get(input.projectId, input.requirementId);
   if (requirement === undefined || requirement.projectId !== input.projectId) {
     throw new ValidationError(`unknown requirement ${input.requirementId}`);
   }
@@ -702,7 +714,12 @@ export async function confirmInference(
     projectId: input.projectId,
     requirementSetId: requirement.requirementSetId,
   }, async (repos) => {
-    await repos.requirements.confirmInference(input.requirementId, actor.subject, now);
+    await repos.requirements.confirmInference(
+      input.projectId,
+      input.requirementId,
+      actor.subject,
+      now,
+    );
     await repos.audit.append({
       id: ctx.ids.next('aud'),
       at: now,
@@ -1555,6 +1572,7 @@ export async function approveG1(
 
     // THE promotion to L4, and the only one in the system.
     await repos.requirements.approveRequirements(
+      input.projectId,
       inBaseline.map((r) => r.id),
       { approvedBy: actor.subject, approvedAt: now, baselineId: baseline.id },
     );

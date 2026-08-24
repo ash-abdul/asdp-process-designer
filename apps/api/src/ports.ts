@@ -302,16 +302,29 @@ export interface RequirementRepository {
   /** The next `REQ-####` for a project, from the high-water mark (invariant D15). */
   nextRequirementNumber(projectId: string): Promise<number>;
 
+  // --- addressing a requirement (H4, decision K4) --------------------------
+  //
+  // Every method that names a single requirement takes `projectId` FIRST.
+  //
+  // A requirement's identity is `(projectId, id)`; `REQ-0001` alone does not name
+  // one, because two projects legitimately hold a `REQ-0001`. Passing the project
+  // is therefore not a filter and not a permission check — it is half the key.
+  //
+  // The practical effect is that project ownership stopped being a convention the
+  // command layer remembers to apply (it was checked at four call sites and could
+  // be forgotten at a fifth) and became something the caller cannot express
+  // wrongly without the compiler saying so.
+
   insertProposal(
     requirement: Requirement,
     evidence: readonly RequirementEvidenceLink[],
     flags: readonly RequirementFlag[],
   ): Promise<void>;
 
-  get(id: string): Promise<Requirement | undefined>;
+  get(projectId: string, id: string): Promise<Requirement | undefined>;
   listForSet(requirementSetId: string): Promise<readonly Requirement[]>;
   listForProject(projectId: string): Promise<readonly Requirement[]>;
-  evidenceFor(requirementId: string): Promise<readonly RequirementEvidenceLink[]>;
+  evidenceFor(projectId: string, requirementId: string): Promise<readonly RequirementEvidenceLink[]>;
   evidenceForSet(requirementSetId: string): Promise<readonly RequirementEvidenceLink[]>;
   flagsForSet(requirementSetId: string): Promise<readonly RequirementFlag[]>;
 
@@ -349,7 +362,7 @@ export interface RequirementRepository {
   insertInferred(requirement: Requirement): Promise<void>;
 
   /** Move a requirement between review states. **Never to `approved`** — that is `approveRequirements`. */
-  setReviewStatus(requirementId: string, status: Requirement['status']): Promise<void>;
+  setReviewStatus(projectId: string, requirementId: string, status: Requirement['status']): Promise<void>;
 
   /**
    * The G1 approval transaction, and **the only path to `approved`** (**U1**).
@@ -359,14 +372,15 @@ export interface RequirementRepository {
    * be jointly invalid (ADR-0017's rejected alternative).
    */
   approveRequirements(
+    projectId: string,
     requirementIds: readonly string[],
     approval: { approvedBy: string; approvedAt: string; baselineId: string },
   ): Promise<void>;
 
   /** Confirm a LOW-confidence inferred requirement — G1 precondition 6. */
-  confirmInference(requirementId: string, by: string, at: string): Promise<void>;
+  confirmInference(projectId: string, requirementId: string, by: string, at: string): Promise<void>;
 
-  versionsFor(requirementId: string): Promise<readonly { version: number; text: string; changeReason?: string }[]>;
+  versionsFor(projectId: string, requirementId: string): Promise<readonly { version: number; text: string; changeReason?: string }[]>;
 
   resolveFlag(flagId: string, resolution: string, by: string, at: string): Promise<void>;
   flagsForProject(projectId: string): Promise<readonly RequirementFlag[]>;

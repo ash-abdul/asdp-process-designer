@@ -215,6 +215,15 @@ export type Requirement = z.infer<typeof Requirement>;
  * optional.
  */
 export const RequirementEvidenceLink = z.object({
+  /**
+   * The owning project.
+   *
+   * Present because a requirement's identity is `(projectId, id)` since H4, so a
+   * link that named only `requirementId` would not name a requirement. It is also
+   * what makes cross-project citation refusable **by the database** rather than
+   * only by the command layer: the composite foreign key has no row to point at.
+   */
+  projectId: EntityId,
   requirementId: z.string().min(1),
   evidenceItemId: EntityId,
   /**

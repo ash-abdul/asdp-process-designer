@@ -66,6 +66,7 @@ function mapAlias(row: Record<string, unknown>): CanonicalEntityAlias {
   return {
     id: str(row.id),
     canonicalEntityId: str(row.canonical_entity_id),
+    projectId: str(row.project_id),
     surfaceForm: str(row.surface_form),
     matchForm: str(row.match_form),
     language: str(row.language),
@@ -180,12 +181,13 @@ class SqlReconciliationRepository implements ReconciliationRepository {
     );
     for (const alias of aliases) {
       await this.db.query(
-        `insert into canonical_entity_alias (id, canonical_entity_id, surface_form, match_form,
-                                             language, origin, requirement_id, ai_interaction_id)
-         values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        `insert into canonical_entity_alias (id, canonical_entity_id, project_id, surface_form,
+                                             match_form, language, origin, requirement_id,
+                                             ai_interaction_id)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [
-          alias.id, alias.canonicalEntityId, alias.surfaceForm, alias.matchForm, alias.language,
-          alias.origin, alias.requirementId, alias.aiInteractionId ?? null,
+          alias.id, alias.canonicalEntityId, alias.projectId, alias.surfaceForm, alias.matchForm,
+          alias.language, alias.origin, alias.requirementId, alias.aiInteractionId ?? null,
         ],
       );
     }
@@ -202,7 +204,7 @@ class SqlReconciliationRepository implements ReconciliationRepository {
   async aliasesForSet(requirementSetId: string): Promise<readonly CanonicalEntityAlias[]> {
     const r = await this.db.query(
       `select a.* from canonical_entity_alias a
-         join canonical_entity e on e.id = a.canonical_entity_id
+         join canonical_entity e on e.id = a.canonical_entity_id and e.project_id = a.project_id
         where e.requirement_set_id = $1
         order by a.canonical_entity_id asc, a.surface_form asc`,
       [requirementSetId],

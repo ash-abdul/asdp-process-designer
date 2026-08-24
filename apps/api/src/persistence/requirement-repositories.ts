@@ -127,6 +127,7 @@ function mapRequirement(row: Record<string, unknown>): Requirement {
 
 function mapLink(row: Record<string, unknown>): RequirementEvidenceLink {
   return {
+    projectId: str(row.project_id),
     requirementId: str(row.requirement_id),
     evidenceItemId: str(row.evidence_item_id),
     contribution: str(row.contribution) as RequirementEvidenceLink['contribution'],
@@ -285,9 +286,9 @@ class SqlRequirementRepository implements RequirementRepository {
 
     for (const link of evidence) {
       await this.db.query(
-        `insert into requirement_evidence (requirement_id, evidence_item_id, contribution)
-         values ($1,$2,$3)`,
-        [link.requirementId, link.evidenceItemId, link.contribution],
+        `insert into requirement_evidence (project_id, requirement_id, evidence_item_id, contribution)
+         values ($1,$2,$3,$4)`,
+        [link.projectId, link.requirementId, link.evidenceItemId, link.contribution],
       );
     }
 
@@ -304,8 +305,18 @@ class SqlRequirementRepository implements RequirementRepository {
     }
   }
 
-  async get(id: string): Promise<Requirement | undefined> {
-    const r = await this.db.query('select * from requirement where id = $1', [id]);
+  /**
+   * One requirement, addressed by its whole identity (**K4**).
+   *
+   * `project_id` is in the WHERE clause because it is half the primary key, not
+   * because this is filtering someone else's rows out. A lookup by `id` alone
+   * would match a `REQ-0001` in every project in the database.
+   */
+  async get(projectId: string, id: string): Promise<Requirement | undefined> {
+    const r = await this.db.query(
+      'select * from requirement where project_id = $1 and id = $2',
+      [projectId, id],
+    );
     const row = r.rows[0];
     return row === undefined ? undefined : mapRequirement(row);
   }
@@ -326,11 +337,14 @@ class SqlRequirementRepository implements RequirementRepository {
     return r.rows.map(mapRequirement);
   }
 
-  async evidenceFor(requirementId: string): Promise<readonly RequirementEvidenceLink[]> {
+  async evidenceFor(
+    projectId: string,
+    requirementId: string,
+  ): Promise<readonly RequirementEvidenceLink[]> {
     const r = await this.db.query(
-      `select * from requirement_evidence where requirement_id = $1
+      `select * from requirement_evidence where project_id = $1 and requirement_id = $2
         order by contribution asc, evidence_item_id asc`,
-      [requirementId],
+      [projectId, requirementId],
     );
     return r.rows.map(mapLink);
   }
@@ -338,7 +352,7 @@ class SqlRequirementRepository implements RequirementRepository {
   async evidenceForSet(requirementSetId: string): Promise<readonly RequirementEvidenceLink[]> {
     const r = await this.db.query(
       `select re.* from requirement_evidence re
-         join requirement r on r.id = re.requirement_id
+         join requirement r on r.project_id = re.project_id and r.id = re.requirement_id
         where r.requirement_set_id = $1
         order by re.requirement_id asc, re.evidence_item_id asc`,
       [requirementSetId],
@@ -349,7 +363,7 @@ class SqlRequirementRepository implements RequirementRepository {
   async flagsForSet(requirementSetId: string): Promise<readonly RequirementFlag[]> {
     const r = await this.db.query(
       `select f.* from requirement_flag f
-         join requirement r on r.id = f.requirement_id
+         join requirement r on r.project_id = f.project_id and r.id = f.requirement_id
         where r.requirement_set_id = $1
         order by f.requirement_id asc, f.id asc`,
       [requirementSetId],
@@ -407,9 +421,9 @@ class SqlRequirementRepository implements RequirementRepository {
                                         superseded_at, superseded_by)
        select id, version, requirement_set_id, project_id, text, original_ai_text, category,
               raf_slot, epistemic_level, derivation, status, change_reason, inference_rationale,
-              classification, language, created_by, created_at, $2, $3
-         from requirement where id = $1`,
-      [next.id, next.createdAt, next.createdBy],
+              classification, language, created_by, created_at, $3, $4
+         from requirement where project_id = $1 and id = $2`,
+      [next.projectId, next.id, next.createdAt, next.createdBy],
     );
 
     await this.db.query(
@@ -424,24 +438,27 @@ class SqlRequirementRepository implements RequirementRepository {
               -- covered the previous content, and revising means the gate must be
               -- satisfied again rather than inherited.
               approved_by = null, approved_at = null, approval_baseline_id = null
-        where id = $1`,
+        where project_id = $19 and id = $1`,
       [
         next.id, next.text, next.category, next.rafSlot, next.epistemicLevel, next.derivation,
         next.computedConfidence, next.confidenceBand, next.confidenceFunctionVersion,
         next.humanConfirmationRequired, next.status, next.version, next.supersedesId ?? null,
         next.changeReason ?? null, next.inferenceRationale ?? null, next.generatedBy,
-        next.classification, next.language,
+        next.classification, next.language, next.projectId,
       ],
     );
 
     // Links are replaced wholesale from what the caller inherited, so the set is
     // always exactly what the reviewer saw.
-    await this.db.query('delete from requirement_evidence where requirement_id = $1', [next.id]);
+    await this.db.query(
+      'delete from requirement_evidence where project_id = $1 and requirement_id = $2',
+      [next.projectId, next.id],
+    );
     for (const link of evidence) {
       await this.db.query(
-        `insert into requirement_evidence (requirement_id, evidence_item_id, contribution)
-         values ($1,$2,$3)`,
-        [link.requirementId, link.evidenceItemId, link.contribution],
+        `insert into requirement_evidence (project_id, requirement_id, evidence_item_id, contribution)
+         values ($1,$2,$3,$4)`,
+        [link.projectId, link.requirementId, link.evidenceItemId, link.contribution],
       );
     }
   }
@@ -471,7 +488,11 @@ class SqlRequirementRepository implements RequirementRepository {
     );
   }
 
-  async setReviewStatus(requirementId: string, status: Requirement['status']): Promise<void> {
+  async setReviewStatus(
+    projectId: string,
+    requirementId: string,
+    status: Requirement['status'],
+  ): Promise<void> {
     if (status === 'approved') {
       // U1, in the adapter as well as in SQL. Approval is a gate transaction, and
       // routing it through a status setter is exactly how that boundary erodes.
@@ -480,36 +501,48 @@ class SqlRequirementRepository implements RequirementRepository {
           `refusing to set it on ${requirementId}`,
       );
     }
-    await this.db.query('update requirement set status = $2 where id = $1', [requirementId, status]);
+    await this.db.query(
+      'update requirement set status = $3 where project_id = $1 and id = $2',
+      [projectId, requirementId, status],
+    );
   }
 
   async approveRequirements(
+    projectId: string,
     requirementIds: readonly string[],
     approval: { approvedBy: string; approvedAt: string; baselineId: string },
   ): Promise<void> {
     for (const id of requirementIds) {
       await this.db.query(
         `update requirement
-            set status = 'approved', approved_by = $2, approved_at = $3, approval_baseline_id = $4
-          where id = $1`,
-        [id, approval.approvedBy, approval.approvedAt, approval.baselineId],
+            set status = 'approved', approved_by = $3, approved_at = $4, approval_baseline_id = $5
+          where project_id = $1 and id = $2`,
+        [projectId, id, approval.approvedBy, approval.approvedAt, approval.baselineId],
       );
     }
   }
 
-  async confirmInference(requirementId: string, by: string, at: string): Promise<void> {
+  async confirmInference(
+    projectId: string,
+    requirementId: string,
+    by: string,
+    at: string,
+  ): Promise<void> {
     await this.db.query(
-      'update requirement set inference_confirmed_by = $2, inference_confirmed_at = $3 where id = $1',
-      [requirementId, by, at],
+      `update requirement set inference_confirmed_by = $3, inference_confirmed_at = $4
+        where project_id = $1 and id = $2`,
+      [projectId, requirementId, by, at],
     );
   }
 
   async versionsFor(
+    projectId: string,
     requirementId: string,
   ): Promise<readonly { version: number; text: string; changeReason?: string }[]> {
     const r = await this.db.query(
-      'select version, text, change_reason from requirement_version where requirement_id = $1 order by version asc',
-      [requirementId],
+      `select version, text, change_reason from requirement_version
+        where project_id = $1 and requirement_id = $2 order by version asc`,
+      [projectId, requirementId],
     );
     return r.rows.map((row) => ({
       version: Number(row.version),

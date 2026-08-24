@@ -35,6 +35,7 @@ import type {
   Source,
 } from '@asdp/schemas';
 import { isCitable, resolveAnchor } from '@asdp/provenance';
+import { allocateD15_requirementId } from '@asdp/domain';
 import type { Actor, CommandContext } from '../commands.ts';
 import { assertRole, ValidationError } from '../commands.ts';
 import type { FramePopulator, UnitOfWork } from '../ports.ts';
@@ -422,7 +423,10 @@ export async function populateFrame(
         }
         held.add(key);
 
-        const requirementId = `REQ-${String(nextNumber).padStart(4, '0')}`;
+        // K3: the ONE allocator. This was an inline template literal until H4,
+        // and the second copy of it is how the identifier drifted away from the
+        // key that was supposed to hold it.
+        const requirementId = allocateD15_requirementId(nextNumber - 1);
         nextNumber++;
 
         const citedEvidence = gated.evidence
@@ -466,6 +470,7 @@ export async function populateFrame(
         };
 
         const links: RequirementEvidenceLink[] = gated.evidence.map((e) => ({
+          projectId: input.projectId,
           requirementId,
           evidenceItemId: e.evidenceItemId,
           contribution: e.contribution,

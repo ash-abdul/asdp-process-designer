@@ -41,7 +41,11 @@ import {
   createFilesystemRecordingStore,
   createReplayProvider,
 } from '@asdp/eval';
-import { computePrecedence, PRECEDENCE_FUNCTION_VERSION } from '@asdp/domain';
+import {
+  allocateD15_requirementId,
+  computePrecedence,
+  PRECEDENCE_FUNCTION_VERSION,
+} from '@asdp/domain';
 import { toMatchText } from '@asdp/text';
 import { EntityCanonicalisation, SourceReconciliation } from '@asdp/schemas';
 import {
@@ -132,7 +136,10 @@ function propositionsFor(
       const trimmed = sentence.trim();
       if (trimmed.length === 0) continue;
       if (!/\b(?:must|shall)\b|يجب/i.test(trimmed)) continue;
-      const id = `REQ-${String(index).padStart(4, '0')}`;
+      // K3: the evaluation harness mints ids the same way the application does.
+      // A third allocator was living here — the architecture-checker rule added
+      // with H4 is what found it.
+      const id = allocateD15_requirementId(index - 1);
       index++;
       out.push({
         requirementId: id,

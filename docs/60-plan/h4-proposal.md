@@ -1,6 +1,8 @@
-# H4 — Project-Scoped Requirement Identity · ✅ BOUNDARY APPROVED
+# H4 — Project-Scoped Requirement Identity · ⏳ IMPLEMENTED, AWAITING ACCEPTANCE
 
-> **Status: BOUNDARY APPROVED 2026-08-24. NOT YET IMPLEMENTED, NOT YET ACCEPTED.**
+> **Status: BOUNDARY APPROVED 2026-08-24. IMPLEMENTED 2026-08-24. NOT ACCEPTED.**
+> Implementation is not acceptance. The acceptance report is
+> [phase-2-status.md](phase-2-status.md) §5.13; the decision is the reviewer's.
 > **K1–K6 and K8 approved. K7 NOT APPROVED for this boundary.** The approved boundary below is
 > binding: only what **K1–K6** and **K8** authorise may be built, per §11 of
 > [CLAUDE.md](../../CLAUDE.md). Implementation does not confer acceptance — acceptance is a
@@ -409,6 +411,32 @@ identifier *is*, and three approved domain documents say what it is today.
   **K8** requires that to be recorded rather than glossed.
 - It does **not** claim anything about model quality. Nothing here touches AI, and the V0–V7
   acceptance scope — *mechanics and governance, explicitly not model quality* — is unchanged.
+
+---
+
+## 13a. What implementation found — recorded 2026-08-24
+
+Three things the proposal did not predict. All three are in the record because a
+boundary that only reports what it expected is not a boundary.
+
+| # | Found | Disposition |
+|---|---|---|
+| **1** | **A THIRD inline allocator**, in `apps/api/src/ai/reconcile-baseline.ts` — the evaluation harness. §4 **K3** named two, in `requirements.ts` and `review.ts`. The new architecture-checker rule found the third on its first run | **Fixed in scope.** K3 says the domain allocator is the only allocation path, and the harness is a path. It now calls `allocateD15_requirementId` |
+| **2** | **`canonical_entity_alias` needed more than a column.** §6.1 predicted the schema change and missed the code: the alias schema, its mapper, its insert and both construction sites in `reconciliation.ts` all had to carry `projectId`, or `POST /reconcile` fails outright | **Fixed in scope**, and it is the one defect the implementation itself introduced. Test **A7** caught it — `reconcile` returned `503` — which is precisely why A7 was specified before the code was written |
+| **3** | **Both projects allocate the SAME id set** from the same document, so the adverse test could not find "an id A has that B does not" by construction | **Test corrected, not weakened.** Project A is given one extra inferred requirement. The finding is itself confirmation: identical numbering across projects is what D15 asks for |
+
+**No test assertion was loosened.** Three fixture errors of mine were corrected — a
+`GET /requirements/:id` route that does not exist (reads go through the project's
+list route), `revise` returning `201` rather than `200`, and `/gates` returning a
+bare array — and one expectation about an inferred requirement's initial status
+was replaced by a comparison against the status it was actually created with,
+which asserts *"nothing moved"* rather than restating a U8-a default.
+
+**One behaviour is asserted as it is rather than as §12 of [CLAUDE.md](../../CLAUDE.md)
+would suggest:** addressing a requirement that exists only in another project
+returns **400**, not 404, because the command layer raises `ValidationError` and
+the filter maps that to 400. That mapping predates H4 and is not this boundary's
+to change. It is asserted at its real value so the discrepancy is visible.
 
 ---
 

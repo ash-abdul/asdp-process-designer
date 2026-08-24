@@ -228,6 +228,7 @@ export async function reconcileSources(
       aliases: members.map((m) => ({
         id: ctx.ids.next('cal'),
         canonicalEntityId: entityId,
+        projectId: input.projectId,
         surfaceForm: m.surfaceForm,
         matchForm: canonicalMatchForm(m.surfaceForm),
         language: m.language,
@@ -312,6 +313,7 @@ export async function reconcileSources(
           aliases: gated.members.map((m) => ({
             id: ctx.ids.next('cal'),
             canonicalEntityId: entityId,
+            projectId: input.projectId,
             surfaceForm: m.surfaceForm,
             matchForm: canonicalMatchForm(m.surfaceForm),
             language: m.language,

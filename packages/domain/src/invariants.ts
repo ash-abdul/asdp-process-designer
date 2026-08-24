@@ -213,7 +213,21 @@ export function assertD14_proposalApplication(actorKind: ActorKind): void {
 // D15 — identifiers are never reused
 // ---------------------------------------------------------------------------
 
-/** Allocate the next requirement id from a monotonic sequence. */
+/**
+ * Allocate the next requirement id from a monotonic sequence.
+ *
+ * **The sequence is PER PROJECT** (D15: *"a per-project monotonic sequence"*), so
+ * `highestAllocated` must be the calling project's high-water mark and nobody
+ * else's. Two projects both starting at `REQ-0001` is correct, and the composite
+ * key `(project_id, id)` is what makes it representable — before H4 the key was
+ * global and the second project in a database could never allocate at all
+ * (limitation 77).
+ *
+ * **This is the only allocator.** Two inline copies of this expression lived in
+ * the command layer until H4; that duplication is how the key and the allocator
+ * drifted apart in the first place, and the architecture checker rule
+ * `requirement-id-allocation` now refuses a third.
+ */
 export function allocateD15_requirementId(highestAllocated: number): string {
   const next = highestAllocated + 1;
   return `REQ-${String(next).padStart(4, '0')}`;

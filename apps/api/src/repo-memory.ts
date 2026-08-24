@@ -375,13 +375,28 @@ class MemoryAiInteractionRepository implements AiInteractionRepository {
  * something the database would refuse. An adapter that were more permissive than
  * its SQL counterpart would let a test prove a behaviour production cannot have.
  */
+/**
+ * The composite requirement key, as one string (**H4**, decision **K1**).
+ *
+ * A `Map` cannot be keyed by a tuple, so the two halves are joined with a
+ * character that cannot occur in either: a project id is an `EntityId` and a
+ * requirement id matches `^REQ-[0-9]{4,}$`, so neither contains a newline. Using
+ * `-` or `/` would let `('a-b', 'c')` and `('a', 'b-c')` collide, which is the
+ * same class of bug this slice exists to remove.
+ */
+function requirementKey(projectId: string, id: string): string {
+  return `${projectId}\n${id}`;
+}
+
 class MemoryRequirementRepository implements RequirementRepository {
   private readonly sets = new Map<string, RequirementSet>();
+  /** Keyed by `(projectId, id)` — the composite identity, matching SQL. */
   private readonly requirements = new Map<string, Requirement>();
   private readonly links: RequirementEvidenceLink[] = [];
   private readonly flags: RequirementFlag[] = [];
   private readonly rejections: RequirementRejection[] = [];
   private readonly history: {
+    projectId: string;
     requirementId: string;
     version: number;
     text: string;
@@ -406,7 +421,8 @@ class MemoryRequirementRepository implements RequirementRepository {
   }
   async nextRequirementNumber(projectId: string): Promise<number> {
     // The project-wide high-water mark, not a per-set count: identifiers are
-    // never reused, even after rejection (invariant D15).
+    // never reused, even after rejection (invariant D15). Per PROJECT, and since
+    // H4 the key is per project too, so two projects both returning 1 is correct.
     const high = [...this.requirements.values()]
       .filter((r) => r.projectId === projectId)
       .reduce((max, r) => Math.max(max, Number(r.id.slice(4))), 0);
@@ -423,16 +439,25 @@ class MemoryRequirementRepository implements RequirementRepository {
         `requirement ${requirement.id} cites no evidence; invariant D2 forbids persisting it`,
       );
     }
-    if (this.requirements.has(requirement.id)) {
+    const key = requirementKey(requirement.projectId, requirement.id);
+    if (this.requirements.has(key)) {
       throw new Error(`requirement ${requirement.id} already exists; ids are never reused (D15)`);
     }
-    this.requirements.set(requirement.id, requirement);
+    if (evidence.some((l) => l.projectId !== requirement.projectId)) {
+      // The memory twin of the composite foreign key. An adapter more permissive
+      // than SQL would let a test prove a behaviour production cannot have.
+      throw new Error(
+        `requirement ${requirement.id} cites evidence from another project; the composite key ` +
+          'forbids a cross-project link',
+      );
+    }
+    this.requirements.set(key, requirement);
     this.links.push(...evidence);
     this.flags.push(...flags);
   }
 
-  async get(id: string): Promise<Requirement | undefined> {
-    return this.requirements.get(id);
+  async get(projectId: string, id: string): Promise<Requirement | undefined> {
+    return this.requirements.get(requirementKey(projectId, id));
   }
   async listForSet(requirementSetId: string): Promise<readonly Requirement[]> {
     return [...this.requirements.values()]
@@ -444,16 +469,27 @@ class MemoryRequirementRepository implements RequirementRepository {
       .filter((r) => r.projectId === projectId)
       .sort((a, b) => a.id.localeCompare(b.id));
   }
-  async evidenceFor(requirementId: string): Promise<readonly RequirementEvidenceLink[]> {
-    return this.links.filter((l) => l.requirementId === requirementId);
+  async evidenceFor(
+    projectId: string,
+    requirementId: string,
+  ): Promise<readonly RequirementEvidenceLink[]> {
+    return this.links.filter(
+      (l) => l.projectId === projectId && l.requirementId === requirementId,
+    );
   }
   async evidenceForSet(requirementSetId: string): Promise<readonly RequirementEvidenceLink[]> {
-    const ids = new Set((await this.listForSet(requirementSetId)).map((r) => r.id));
-    return this.links.filter((l) => ids.has(l.requirementId));
+    // Keyed on the composite, not on the bare id: a set in project A must not
+    // pick up a link belonging to project B's identically numbered requirement.
+    const keys = new Set(
+      (await this.listForSet(requirementSetId)).map((r) => requirementKey(r.projectId, r.id)),
+    );
+    return this.links.filter((l) => keys.has(requirementKey(l.projectId, l.requirementId)));
   }
   async flagsForSet(requirementSetId: string): Promise<readonly RequirementFlag[]> {
-    const ids = new Set((await this.listForSet(requirementSetId)).map((r) => r.id));
-    return this.flags.filter((f) => ids.has(f.requirementId));
+    const keys = new Set(
+      (await this.listForSet(requirementSetId)).map((r) => requirementKey(r.projectId, r.id)),
+    );
+    return this.flags.filter((f) => keys.has(requirementKey(f.projectId, f.requirementId)));
   }
   async insertRejection(rejection: RequirementRejection): Promise<void> {
     this.rejections.push(rejection);
@@ -471,21 +507,26 @@ class MemoryRequirementRepository implements RequirementRepository {
     if (evidence.length === 0) {
       throw new Error(`requirement ${next.id} version ${next.version} cites no evidence`);
     }
-    const current = this.requirements.get(next.id);
+    const key = requirementKey(next.projectId, next.id);
+    const current = this.requirements.get(key);
     if (current !== undefined) {
       this.history.push({
         version: current.version,
         text: current.text,
         ...(current.changeReason === undefined ? {} : { changeReason: current.changeReason }),
+        projectId: current.projectId,
         requirementId: current.id,
       });
     }
     // A new version is not approved — the previous signature covered the previous
     // content (ADR-0017), so the approval columns are cleared with the revision.
     const { approvedBy: _a, approvedAt: _b, approvalBaselineId: _c, ...unapproved } = next;
-    this.requirements.set(next.id, unapproved as Requirement);
+    this.requirements.set(key, unapproved as Requirement);
     for (let i = this.links.length - 1; i >= 0; i--) {
-      if (this.links[i]?.requirementId === next.id) this.links.splice(i, 1);
+      const link = this.links[i];
+      if (link?.projectId === next.projectId && link.requirementId === next.id) {
+        this.links.splice(i, 1);
+      }
     }
     this.links.push(...evidence);
   }
@@ -497,10 +538,14 @@ class MemoryRequirementRepository implements RequirementRepository {
     if (requirement.inferenceRationale === undefined || requirement.inferenceRationale === '') {
       throw new Error(`requirement ${requirement.id} is inferred with no rationale (D2)`);
     }
-    this.requirements.set(requirement.id, requirement);
+    this.requirements.set(requirementKey(requirement.projectId, requirement.id), requirement);
   }
 
-  async setReviewStatus(requirementId: string, status: Requirement['status']): Promise<void> {
+  async setReviewStatus(
+    projectId: string,
+    requirementId: string,
+    status: Requirement['status'],
+  ): Promise<void> {
     if (status === 'approved') {
       // U1, matching SQL: an adapter more permissive than the database would let a
       // test prove a behaviour production cannot have.
@@ -508,18 +553,21 @@ class MemoryRequirementRepository implements RequirementRepository {
         `status 'approved' is reachable only through the G1 approval transaction (U1)`,
       );
     }
-    const held = this.requirements.get(requirementId);
-    if (held !== undefined) this.requirements.set(requirementId, { ...held, status });
+    const key = requirementKey(projectId, requirementId);
+    const held = this.requirements.get(key);
+    if (held !== undefined) this.requirements.set(key, { ...held, status });
   }
 
   async approveRequirements(
+    projectId: string,
     requirementIds: readonly string[],
     approval: { approvedBy: string; approvedAt: string; baselineId: string },
   ): Promise<void> {
     for (const id of requirementIds) {
-      const held = this.requirements.get(id);
+      const key = requirementKey(projectId, id);
+      const held = this.requirements.get(key);
       if (held === undefined) continue;
-      this.requirements.set(id, {
+      this.requirements.set(key, {
         ...held,
         status: 'approved',
         approvedBy: approval.approvedBy,
@@ -529,10 +577,16 @@ class MemoryRequirementRepository implements RequirementRepository {
     }
   }
 
-  async confirmInference(requirementId: string, by: string, at: string): Promise<void> {
-    const held = this.requirements.get(requirementId);
+  async confirmInference(
+    projectId: string,
+    requirementId: string,
+    by: string,
+    at: string,
+  ): Promise<void> {
+    const key = requirementKey(projectId, requirementId);
+    const held = this.requirements.get(key);
     if (held !== undefined) {
-      this.requirements.set(requirementId, {
+      this.requirements.set(key, {
         ...held,
         inferenceConfirmedBy: by,
         inferenceConfirmedAt: at,
@@ -541,11 +595,12 @@ class MemoryRequirementRepository implements RequirementRepository {
   }
 
   async versionsFor(
+    projectId: string,
     requirementId: string,
   ): Promise<readonly { version: number; text: string; changeReason?: string }[]> {
     return this.history
-      .filter((h) => h.requirementId === requirementId)
-      .map(({ requirementId: _id, ...rest }) => rest);
+      .filter((h) => h.projectId === projectId && h.requirementId === requirementId)
+      .map(({ projectId: _p, requirementId: _id, ...rest }) => rest);
   }
 
   async resolveFlag(flagId: string, resolution: string, by: string, at: string): Promise<void> {

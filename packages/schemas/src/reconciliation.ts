@@ -99,6 +99,15 @@ export type CanonicalEntity = z.infer<typeof CanonicalEntity>;
 export const CanonicalEntityAlias = z.object({
   id: EntityId,
   canonicalEntityId: EntityId,
+  /**
+   * The owning project.
+   *
+   * An alias names a REQUIREMENT, and a requirement's identity is
+   * `(projectId, id)` since H4 — so `requirementId` alone does not name one. It
+   * is also what lets the composite foreign key refuse an alias that reaches
+   * across a project boundary.
+   */
+  projectId: EntityId,
   /** As written in the requirement text. */
   surfaceForm: z.string().min(1),
   /** The folded form (ADR-0023 §2): what equality was actually tested on. */

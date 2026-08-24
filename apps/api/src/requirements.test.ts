@@ -947,7 +947,7 @@ describe('J6 quality signals are flags', () => {
         requirements: [
           { id: 'REQ-0001', projectId: 'prj-1', rafSlot: 'processSteps', classification: 'INTERNAL', resolvedSlot: 'processSteps' },
         ],
-        links: [{ requirementId: 'REQ-0001', evidenceItemId: 'ev-1', contribution: 'primary' }],
+        links: [{ projectId: 'prj-1', requirementId: 'REQ-0001', evidenceItemId: 'ev-1', contribution: 'primary' }],
         evidenceById: new Map([['ev-1', evidence.item]]),
         // The source text no longer contains the quote.
         textBySource: new Map([['src-1', 'A completely different document.']]),
@@ -964,7 +964,7 @@ describe('J6 quality signals are flags', () => {
         requirements: [
           { id: 'REQ-0001', projectId: 'prj-1', rafSlot: 'processSteps', classification: 'INTERNAL', resolvedSlot: 'processSteps' },
         ],
-        links: [{ requirementId: 'REQ-0001', evidenceItemId: 'ev-1', contribution: 'primary' }],
+        links: [{ projectId: 'prj-1', requirementId: 'REQ-0001', evidenceItemId: 'ev-1', contribution: 'primary' }],
         evidenceById: new Map([['ev-1', evidence.item]]),
         textBySource: new Map([['src-1', evidence.storedText]]),
       },
