@@ -1,8 +1,11 @@
 # UI Enablement (`apps/web`) — Boundary · ✅ APPROVED · **U1 ONLY**
 
-> **Status: BOUNDARY APPROVED 2026-08-25. W1–W13 approved. ONLY U1 IS AUTHORISED TO BE BUILT.**
-> **U2–U5 are NOT authorised** and must not begin until U1 is reviewed and explicitly accepted,
-> per §11 of [CLAUDE.md](../../CLAUDE.md).
+> **Status: BOUNDARY APPROVED 2026-08-25. W1–W13 approved. U1 IS ACCEPTED (`d4785c1`, 2026-08-25).**
+> **U2–U5 remain NOT authorised.** U2's boundary must be proposed and approved before it begins,
+> per §11 of [CLAUDE.md](../../CLAUDE.md). U1's acceptance is recorded in
+> [phase-2-status.md](phase-2-status.md) §18, with two **non-blocking follow-up decisions**
+> (§18.1): a browser/E2E framework must be decided before browser-level interaction is material,
+> and development header authentication stays localhost-only, permanently.
 > **React + Vite adoption is recorded in [ADR-0039](../adr/ADR-0039-react-presentation-layer.md)**,
 > approved before any UI code was written.
 > **Version:** 1.0 · **Approved:** 2026-08-25 · **Against commit:** `773c82c`

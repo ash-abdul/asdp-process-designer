@@ -2159,10 +2159,22 @@ The sentence now says *builds the machinery for*, with the correction recorded i
 
 ---
 
-## 18. UI enablement U1 — implemented, **AWAITING ACCEPTANCE**
+## 18. UI enablement U1 — **ACCEPTED 2026-08-25**
 
-> **Documentation of an implemented slice, not an acceptance.** U1 is **NOT accepted**, and
-> **U2–U5 are not authorised**. Phase 2 stays closed; **P3 has not started**.
+> **U1 is ACCEPTED.** **U2 is NOT authorised** — its boundary must be proposed and approved first,
+> per §11 of [CLAUDE.md](../../CLAUDE.md). Phase 2 stays closed; **P3 has not started.**
+
+### 18.0 Acceptance
+
+| | |
+|---|---|
+| **Accepted** | **2026-08-25** |
+| **Implementation** | **`d4785c1`** |
+| **Boundary** | `da95b56` — [ui-enablement-proposal.md](ui-enablement-proposal.md), W1–W13 |
+| **ADR** | `5882bb2` — [ADR-0039](../adr/ADR-0039-react-presentation-layer.md), recorded **before** any UI code |
+| **Verification at acceptance** | `npm run verify` **green end to end, exit 0** — **818 pass / 818 · 0 fail · 0 skipped · 0 todo · 163 suites**; `check:arch` 166 files; `check:arch:selftest` 56 cases; `check:docs` 95 files / 1057 links |
+| **Mutation evidence** | The new rules were shown to **bite**, not merely to exist: introducing `text.indexOf` into the real highlight model fired `presentation-no-text-research`; importing `computeConfidence` fired **both** `forbidden-dependency` and `presentation-no-domain-rules`; and code-point versus UTF-16 slicing was shown to differ by producing a **lone surrogate**. All mutations reverted |
+| **Backend** | **Untouched.** `git show d4785c1 --name-only` contains no `apps/api` or `packages/` source file |
 
 **Boundary approved 2026-08-25** ([ui-enablement-proposal.md](ui-enablement-proposal.md), W1–W13),
 with **[ADR-0039](../adr/ADR-0039-react-presentation-layer.md)** recording the React/Vite adoption
@@ -2191,6 +2203,15 @@ documents:
 - **the rendered text is 170 code points, exactly the `textLength` the server reported.** Nothing was
   lost, duplicated or transformed;
 - no console errors; skip link, `main` landmark, two labelled `nav` landmarks, ordered headings.
+
+### 18.1 Non-blocking follow-up decisions, recorded at acceptance
+
+**Neither blocks U1's acceptance. Both are binding on what comes after it.**
+
+| # | Decision | Status |
+|---|---|---|
+| **F-U1-a** | **An automated browser / E2E testing framework must be decided BEFORE the UI reaches workflows where browser-level interaction is material.** U1's browser behaviour was verified by driving the running application and recording what was observed — reproducible by a person, **not by CI**. That is adequate for a read-only viewer and **is not adequate for a workflow that writes**. [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) records why none was adopted: Playwright and Cypress download browser binaries over the network, which conflicts with the deterministic, network-free posture **A7** requires. **Adopting one is a dependency decision under A4 and needs its own approval** | **OPEN.** Due before the first slice whose acceptance depends on browser-level interaction — on current sequencing, **U3** |
+| **F-U1-b** | **Development header authentication is localhost/development-only and must NEVER be treated as the authentication solution for any shared or remotely accessible environment.** It lets a caller assert its own identity **and its own roles**. It fails closed off localhost by construction, and that guard must not be relaxed, widened or made configurable. Production requires OIDC ([ADR-0027](../adr/ADR-0027-abstract-oidc-identity.md)), whose adapter is not implemented and whose deferral trigger is [phase-2-plan.md](phase-2-plan.md) §6.1 | **STANDING.** Not a task; a constraint that holds until OIDC exists |
 
 **One defect found by the work itself.** The first run of the project list failed with a
 `ContractError` — the UI expected `name` to be a string and the API returns a **bilingual label**
