@@ -139,6 +139,8 @@ Read these before changing anything structural:
 | [0035](docs/adr/ADR-0035-persistence-plain-sql-pglite.md) | Plain parameterised SQL; PGlite in dev, PostgreSQL in production. No ORM |
 | [0036](docs/adr/ADR-0036-build-toolchain.md) | Compiled build; `erasableSyntaxOnly` retained outside `apps/api` |
 | [0038](docs/adr/ADR-0038-target-versus-content-verification.md) | **Target vs content verification.** Visual evidence is `content_unverified`, never `resolved` — never conflate the two |
+| [0039](docs/adr/ADR-0039-react-presentation-layer.md) | **React + Vite is the presentation layer, and its boundary.** The UI renders and requests; it never decides. **Read this before touching `apps/web`** |
+| [0040](docs/adr/ADR-0040-browser-testing-pinned-browser.md) | **Browser tests run on a pre-provisioned browser, never a downloaded one.** `npm run verify` stays network-free and server-free |
 
 ---
 
@@ -294,7 +296,11 @@ scope, because the original boundaries were never durably recorded. Before start
 propose the boundary and get it approved; do not infer scope from the capability name.
 
 **Start every session by reading the checkpoint:**
-[docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md) **§0** — phase, current slice,
+[docs/60-plan/phase-2-status.md](docs/60-plan/phase-2-status.md) **§0** — and **§0.0 first**, which is
+the **fresh-session handoff**: what is accepted, what has not started, the exact next permitted
+action, the unresolved limitations, the verification status with the commands to reproduce it, and how
+to run the API and web application locally. It is written to be read with **no** prior conversation.
+§0 then carries phase, current slice,
 commit, approved decisions, blocked items, open ADRs, next approved action and work in progress, in
 one place. It is the durable record; a conversation is not.
 The slice definitions, the approved decisions **A1–A7**, and the consolidated acceptance criteria

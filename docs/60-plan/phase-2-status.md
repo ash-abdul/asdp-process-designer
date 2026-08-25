@@ -12,6 +12,171 @@
 The single place to read to know where this project stands. Everything below is
 traceable to a commit or an approved decision; nothing here is reconstructed.
 
+---
+
+## 0.0 FRESH-SESSION HANDOFF — read this first, and trust nothing outside the repository
+
+> **This section is self-contained by design.** It assumes **no** prior conversation, and no earlier
+> session's memory. If it disagrees with anything you have been told, **this file wins** — and if it
+> disagrees with an approved ADR, the **ADR** wins (CLAUDE.md §7).
+
+### Where things stand
+
+| | |
+|---|---|
+| **HEAD at handoff** | **`e9ad1b2`** — *"D-U2.5 ACCEPTED — the design system becomes the baseline"* |
+| **Working tree** | **Clean.** Nothing uncommitted, nothing untracked |
+| **Remote** | `origin/main` **equals** local `main` at `e9ad1b2`. Everything accepted is pushed |
+| **In progress** | **Nothing.** No slice is open, no branch is pending, no work is half-done |
+
+### What is ACCEPTED
+
+| Item | State |
+|---|---|
+| **Phase 2** | **CLOSED / ACCEPTED 2026-08-24** — §16. Against its approved exit condition *"Phase 2 ends when G1 can be reached"* plus **K8**'s clarification that durable multi-project G1 must survive a restart. Both proved by executing tests. **Do not re-close it and do not re-open it** |
+| **V0–V7** | **ACCEPTED.** The whole approved Phase 2 slice sequence |
+| **H4** | **ACCEPTED 2026-08-24** — §5.13. Project-scoped requirement identity, migration 013. **Limitation 77 CLOSED** |
+| **H5** | **ACCEPTED 2026-08-24** — §5.14. Durable identity generation. **Limitation 78 CLOSED** |
+| **U1** | **ACCEPTED 2026-08-25** — §18. `apps/web`, development sign-in, project and source selection, the source viewer, server-provided highlighting in both reading directions |
+| **U2** | **ACCEPTED 2026-08-25** — §19. Sources: inventory, upload, authority ranking, L0 validation. **The first slice that writes** |
+| **D-U2.5** | **ACCEPTED 2026-08-25** at `99de2a7`, after a **visual review** — §20.7. The UI/UX design foundation (**Y1–Y28**, with the **Y12** clarification) applied to U1 and U2. **Presentation-only: it delivered no capability** |
+
+### The design baseline is SETTLED — §20.8
+
+**Tokens, the component inventory, the semantic-state vocabulary, WCAG AA contrast over declared
+token pairs, responsive behaviour and its collapse order, RTL/LTR behaviour, the accessibility rules,
+the Ask ASDP interaction model and the Modern AI Engineering visual direction are the accepted
+baseline for every subsequent UI slice.**
+
+They are **not** a starting point to be re-litigated per slice. A slice that needs to change one of
+them is making an **architectural** change and needs its own approval. A new UI slice inherits all of
+it and should say **which screens it adds**, not which of these it intends to redecide.
+
+### What has NOT started, and must not be started implicitly
+
+| | |
+|---|---|
+| **U3 — the requirements workspace** | **NOT STARTED and NOT AUTHORISED.** **W13** approved U1→U5 as a **sequence**, which is **not** authorisation. §11 of [CLAUDE.md](../../CLAUDE.md) requires its boundary to be proposed and **approved** first, as U1's, U2's and D-U2.5's each were |
+| **U4 — coverage** · **U5 — reconciliation and G1** | **NOT STARTED, NOT AUTHORISED, and explicitly OUTSIDE U3.** U4 needs API gap **G-a**, U5 needs **G-b**; both gaps are approved and unbuilt. Do not let U3's scope drift into either |
+| **P3 — the Specification Studio** | **NOT STARTED.** Its boundary is **neither proposed nor approved**. It must not begin |
+| **H3 — AI prompt/response retention** | **UNRESOLVED. Limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads to be retained; migration 006 stores metadata only. **NO LIVE PROVIDER CALL IS PERMITTED from anywhere, including the UI** — an unretained payload is unrecoverable. **Do not implement it implicitly**, and do not "just try" a model call to see whether something works |
+| **Ask ASDP** | Shipped as an **inert shell**: no `fetch`, no client, no handler that could reach one; every control disabled; **no stub answer**, because a plausible canned reply is how *"no live model has ever been called"* stops being obvious. A browser test records **every** request while the dock is opened, typed into and clicked, asserting **zero**. Keep it that way until H3 is resolved and its own boundary is approved |
+
+### THE EXACT NEXT PERMITTED ACTION
+
+> **Propose the U3 Requirements Workspace boundary. Propose it — do not implement it.**
+>
+> Nothing is approved to follow D-U2.5. The proposal should state the screens and journey in scope,
+> what is explicitly out (**U4** coverage, **U5** reconciliation and G1 approval), which decisions
+> need approval, the required tests, and the acceptance criteria — following the shape of
+> [u2-proposal.md](u2-proposal.md) and [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md).
+>
+> **Limitation 70 must be considered in that proposal.** *"Nothing measures whether a reviewer
+> reviewed."* U3 is where approval actually happens, so the risk of **approval theatre** (**R-V7-1**)
+> becomes material there. Its only structural mitigation today is that **no bulk-approve path exists
+> anywhere** — that must not be weakened. Whether U3 should additionally **report** the two countable
+> signals V7's proposal offered (approval rate against edit rate) is a **scope decision for the user**,
+> not an assumption to make.
+
+### Other unresolved items the next session must know
+
+| Item | State |
+|---|---|
+| **Limitation 70** | Open and unmeasured. See above — it is a U3 concern |
+| **Limitations 71–76** | V7-era, open: questions ship only their deterministic half (71); a source declaring its own undecided issue is not observed (72); a new validation run over an approved set **reopens G1** by design (73); `blocked_by_policy` only comes from a refused population pass (74); the G1 fixture exercises three of the eight kinds of human work (75); the project `classificationCeiling` is carried but not enforced by `evaluateEgress` (76) |
+| **H6** — limitation **79** | A domain error thrown inside a transaction is flattened to `503 database unavailable`. Recorded, not started |
+| **H7** — limitation **80** | `order by at, id` mis-orders past the ten-thousandth id of any prefix. Recorded, not started |
+| **H8** — limitation **81** | Repository ordering infers insertion order from the identifier. Recorded, not started |
+| **H1 / H2** — limitations **43**, **44** | Provenance hardening. Proposed, **not approved** |
+| **F-U1-b** | **STANDING and permanent.** Development header authentication is **localhost/development-only**; it lets a caller assert its own identity *and its own roles*, fails closed off localhost by construction, and is **never** the production solution. Production requires OIDC ([ADR-0027](../adr/ADR-0027-abstract-oidc-identity.md)), unimplemented. **Must not be relaxed, widened or made configurable** |
+| **F-U2-a** | The browser suite's *no-download* guarantee is **structural today** — the pinned Playwright packages carry no install script — and would become conventional if an upgrade reintroduced one. **Check at every Playwright version bump** ([ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)) |
+| **V2-PDF** | **BLOCKED** on a representative Arabic PDF corpus, spike **S2**, and **ADR-0037** approval. Enforced mechanically: the checker rule `pdf-engine-not-approved` fails the build on any PDF engine import |
+| **V4b-eval** | **Deferred.** Needs three things: an approved credential, **E1**-permitted material, **and H3** |
+| **ADR-0037** | **The only ADR still `PROPOSED`.** Gates V2-PDF |
+| **Docker-deferred** | PostgreSQL container, ICU collation behaviour, `pgvector`, MinIO, OIDC development IdP, durable job queue, container build — each deferred with a named trigger, §13 |
+| **The claim to never overstate** | **NO LIVE MODEL HAS EVER BEEN CALLED, in any slice.** Every evaluation figure is a **synthetic corpus against an authored stub** — `eval:frame` reports **slot accuracy 45%** and **semantic faithfulness NOT MEASURED**; `eval:reconcile` recall **50%**; `eval:baseline` is *"not usable for a routing decision"*. Vision accuracy is unmeasured. This repository claims **mechanics, governance and traceability** — never model quality |
+
+### Verification — status at handoff, and how to reproduce it
+
+```bash
+npm run verify
+```
+
+**Green end to end, exit 0** at `e9ad1b2`: **878 pass / 878** · 0 fail · 0 skipped · 0 todo · **177
+suites**; `check:arch` **187 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98
+files / 1206 links**. It is **deterministic, network-free, server-free**, and makes **no live provider
+call**.
+
+```bash
+npm run test:e2e
+```
+
+**31 passed / 31.** A **separately invoked** capability ([ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)),
+never part of `verify`. It drives the **system-installed Chrome** via `channel: 'chrome'` and
+**downloads nothing**; a missing browser is a refusal with instructions. It starts the API and web
+server itself, so **stop anything on ports 3000 and 5173 first**.
+
+**The ten U2 browser tests in `apps/web/e2e/u2-sources.spec.ts` are the regression bar for every
+later UI slice.** They passed **unchanged** through the whole design-foundation slice. Do not weaken
+an assertion to make a change pass; if one fails, either the code is wrong or the test is wrong — say
+which (CLAUDE.md §9).
+
+If tests behave strangely, the usual cause is a stale `dist/`:
+
+```bash
+npm run clean && npm run verify
+```
+
+### Running the application locally for development
+
+**Migrations are a one-shot task and NEVER run on service start** ([ADR-0028](../adr/ADR-0028-containerised-compose-first.md)
+K7). Skipping the migrate step leaves a service that starts happily and then answers **every** request
+`503 database unavailable`, which reads as an infrastructure outage and is not one.
+
+```bash
+npm run build
+```
+
+```bash
+ASDP_DATABASE_DIR=.asdp-dev ASDP_BLOB_ROOT=.asdp-dev/blobs node apps/api/dist/migrate-task.js
+```
+
+```bash
+ASDP_DATABASE_DIR=.asdp-dev ASDP_BLOB_ROOT=.asdp-dev/blobs node apps/api/dist/main.js
+```
+
+In a second terminal:
+
+```bash
+npm run dev:web
+```
+
+Then open **`http://127.0.0.1:5173`** and sign in — any subject, any roles, all ten selectable. The
+web dev server binds to **localhost only**, deliberately: **W5-A** permits development authentication
+solely against a localhost origin. `.claude/launch.json` also carries both servers, with `asdp-api`
+chaining migrate-then-serve so it cannot be started unmigrated.
+
+`.asdp-dev/` is gitignored. To reset it — this **deletes local development data and nothing else**:
+
+```bash
+lsof -ti:3000 | xargs kill; sleep 2; rm -rf .asdp-dev; ASDP_DATABASE_DIR=.asdp-dev ASDP_BLOB_ROOT=.asdp-dev/blobs node apps/api/dist/migrate-task.js
+```
+
+Seed something to look at — create a project, then add a source with the returned `id`:
+
+```bash
+curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H 'x-asdp-roles: PlatformAdmin' -H 'content-type: application/json' -d '{"key":"dev","name":"Licence renewal"}'
+```
+
+### Where to read next
+
+1. [CLAUDE.md](../../CLAUDE.md) — operating instructions. **§11 governs whether you may start anything at all.**
+2. This §0, then **§16** (Phase 2 closure), **§17** (roadmap reconciliation), **§18**–**§20** (U1, U2, D-U2.5).
+3. [ui-enablement-proposal.md](ui-enablement-proposal.md) **W1–W13** and [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) **Y1–Y28** — the approved UI boundaries.
+4. [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) and [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) — the presentation boundary and the browser-testing decision. **Read ADR-0039 before touching `apps/web`.**
+
+---
+
 > ## If you are a fresh session, read this box first
 >
 > **The whole approved Phase 2 slice sequence — V0 through V7 — is ACCEPTED, and so are both

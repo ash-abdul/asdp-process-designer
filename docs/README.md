@@ -1,6 +1,8 @@
 # ASDP Process Designer — Documentation Index
 
 > **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V7 all accepted; Phase 2 NOT closed — H4 blocks it** · **Version:** 2.7 · **Updated:** 2026-08-24
+> **Fresh session? Read [phase-2-status.md](60-plan/phase-2-status.md) §0.0** — the self-contained handoff: what is accepted, what has not started, the next permitted action, verification commands, and how to run the app locally.
+>
 > **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0 · **Phase 2 is CLOSED / ACCEPTED** (§16). **UI enablement U1, U2 and the design foundation D-U2.5 are ACCEPTED** (§18, §19, §20.7); the design system is the **baseline** for later UI slices (§20.8). **U3–U5 are NOT authorised.** **P3 has not started and has no approved boundary.**
 
 All documents are versioned specifications, not notes. Where a document and an ADR appear to
