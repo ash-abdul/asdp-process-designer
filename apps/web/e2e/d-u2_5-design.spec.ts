@@ -416,3 +416,40 @@ test('the status strip states that Ask ASDP is unavailable, without opening it',
   await signIn(page, ['BusinessAnalyst']);
   await expect(page.getByTestId('status-assistant')).toContainText(/unavailable \(H3\)/i);
 });
+
+test('a selectable row is operable by KEYBOARD, not only by mouse', async ({ page }) => {
+  // Found in review: the row had a click handler and no keyboard path. For a role
+  // with no action buttons in the row, clicking was the only way to select it.
+  const project = await newProject();
+  await ingest(project.id, 'brd-en.md', EN);
+  await signIn(page, ['Viewer'], project.key);
+  await expect(page.getByTestId('inventory')).toBeVisible();
+
+  const row = page.locator('[data-testid^="source-"]').first();
+  await row.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('source-inspector')).toBeVisible();
+  await expect(row).toHaveAttribute('aria-selected', 'true');
+
+  // A Viewer sees the panel read-only, with the reason in words.
+  await expect(page.getByTestId('source-inspector')).toContainText(/Ranking needs BusinessAnalyst/i);
+});
+
+test('a refused upload uses the shared refusal state, and says nothing was stored', async ({ page }) => {
+  const project = await newProject();
+  await signIn(page, ['BusinessAnalyst'], project.key);
+
+  await page.getByTestId('up-filename').fill('broken.bin');
+  await page.getByTestId('up-file').setInputFiles({
+    name: 'broken.bin',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from([0xff, 0xfe, 0x00, 0x01, 0x02, 0xff, 0xfe]),
+  });
+  await page.getByTestId('up-submit').click();
+
+  const refused = page.getByTestId('up-refused');
+  await expect(refused).toBeVisible();
+  // A refusal is the system working — distinct from an error, and it says so.
+  await expect(refused).toContainText(/A refusal is the system working/i);
+  await expect(refused).toContainText(/Nothing was changed/i);
+});

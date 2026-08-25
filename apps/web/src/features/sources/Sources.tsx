@@ -24,7 +24,7 @@ import { useCallback, useRef, useState, type ReactNode } from 'react';
 import type { ApiClient } from '../../api/client.ts';
 import { SourceList, IngestResponse, IntakeValidation, RuleCatalogue } from '../../api/contracts.ts';
 import { mayInvoke, type DevIdentity } from '../../lib/dev-auth.ts';
-import { Loading, Empty, Failed } from '../../components/states.tsx';
+import { Loading, Empty, Failed, Refused } from '../../components/states.tsx';
 import { idle, loading, failed, ready, type Remote } from '../../app/state.ts';
 import { Button, Reason } from '../../components/ui/Button.tsx';
 import { Card, Field } from '../../components/ui/Card.tsx';
@@ -137,17 +137,17 @@ export function Sources({
         }
       >
         {inventory.kind === 'loading' ? (
-          <div style={{ padding: 'var(--asdp-space-4)' }}>
+          <div className="card__pad">
             <Loading what="sources" lines={4} />
           </div>
         ) : null}
         {inventory.kind === 'error' ? (
-          <div style={{ padding: 'var(--asdp-space-4)' }}>
+          <div className="card__pad">
             <Failed error={inventory.error} retry={() => void load()} />
           </div>
         ) : null}
         {inventory.kind === 'ready' && rows.length === 0 ? (
-          <div style={{ padding: 'var(--asdp-space-4)' }}>
+          <div className="card__pad">
             <Empty what="sources" hint="Add one from the panel beside this list to begin." />
           </div>
         ) : null}
@@ -159,11 +159,7 @@ export function Sources({
               rows={rows}
               rowKey={(s) => s.id}
               rowTestId={(s) => `source-${s.id}`}
-              {...(selectedSourceId === undefined
-                ? selected === undefined
-                  ? {}
-                  : { selectedKey: selected.id }
-                : { selectedKey: selectedSourceId })}
+              selectedKey={selectedSourceId ?? selected?.id}
               onSelect={(s) => setSelected(s)}
               columns={[
                 {
@@ -365,7 +361,7 @@ function SourcePanel({
 
   return (
     <Card
-      title={`Selected source`}
+      title="Selected source"
       testId="source-inspector"
       actions={
         <Button onClick={onClose} tone="subtle" small glyph="✕" testId="source-inspector-close">
@@ -697,16 +693,9 @@ function UploadOutcome({ phase }: { phase: UploadPhase }): ReactNode {
       </p>
     );
   }
-  return (
-    <p className="outcome outcome--refused" role="alert" data-testid="up-refused">
-      <span className="state__title">
-        <span aria-hidden="true">⊘</span>
-        <strong>Refused.</strong>
-      </span>
-      <span>{phase.reason}</span>
-      <span className="state__hint">The server's own words. Nothing was stored.</span>
-    </p>
-  );
+  // The shared refusal state (Y27), not a bespoke one: a refusal is the system
+  // working, and it must read the same way everywhere it can happen.
+  return <Refused what="this upload" reason={phase.reason} testId="up-refused" />;
 }
 
 // ---------------------------------------------------------------------------

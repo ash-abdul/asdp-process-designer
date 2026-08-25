@@ -42,7 +42,7 @@ import {
   type Density,
   type ThemePreference,
 } from '../../design/appearance.ts';
-import { layoutFor, type ShellLayout } from '../../design/responsive.ts';
+import { layoutFor } from '../../design/responsive.ts';
 
 /** The viewport width, as a state value. The only DOM measurement in the shell. */
 function useViewport(): number {
@@ -78,19 +78,13 @@ export interface ShellRegions {
   readonly railFooter: ReactNode;
 }
 
-export function AppShell({
-  currentWorkspace,
-  regions,
-  layoutOverride,
-}: {
-  currentWorkspace: string;
-  regions: ShellRegions;
-  /** Tests and stories may pin a layout. Production never passes it. */
-  layoutOverride?: ShellLayout;
-}): ReactNode {
+export function AppShell({ currentWorkspace, regions }: { currentWorkspace: string; regions: ShellRegions }): ReactNode {
   const width = useViewport();
   const prefersDark = usePrefersDark();
-  const layout = layoutOverride ?? layoutFor(width);
+  // No override hook: the layout is a pure function of the width, and the
+  // browser tests drive a real viewport rather than a pinned value. An escape
+  // hatch nothing uses is a way for the tested path and the real path to differ.
+  const layout = layoutFor(width);
 
   const [themePreference, setThemePreference] = useState<ThemePreference>('system');
   const [density, setDensity] = useState<Density>('comfortable');

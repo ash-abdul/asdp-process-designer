@@ -19,6 +19,8 @@
 }
 .card__body { padding: var(--asdp-space-4); display: flex; flex-direction: column; gap: var(--asdp-space-3); }
 .card__body--flush { padding: 0; }
+/* Padding for content placed inside a flush card — a token, not an inline style. */
+.card__pad { padding: var(--asdp-space-4); }
 .card__spacer { flex: 1 1 auto; }
 
 /* --- buttons ------------------------------------------------------------ */

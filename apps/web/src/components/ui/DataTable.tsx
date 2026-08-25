@@ -11,11 +11,15 @@
  *   zero — U2's third distinction, and the reason `authorityOf` exists;
  * - row selection drives the inspector, and selection is marked by
  *   `aria-selected` **and** an edge rule, never by colour alone;
+ * - **a selectable row is keyboard-operable.** Where `onSelect` is given, the row
+ *   takes focus and answers Enter and Space. A click handler on a `<tr>` with no
+ *   keyboard path is a control that exists only for a mouse — and for a role that
+ *   sees no action buttons in the row, it would be the *only* way to select;
  * - the table scrolls **inside its own region**, so the page never scrolls
  *   sideways.
  */
 
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 
 export interface Column<Row> {
   readonly key: string;
@@ -64,7 +68,18 @@ export function DataTable<Row>({
                 key={key}
                 aria-selected={selected ? 'true' : undefined}
                 {...(rowTestId === undefined ? {} : { 'data-testid': rowTestId(row) })}
-                {...(onSelect === undefined ? {} : { onClick: () => onSelect(row) })}
+                {...(onSelect === undefined
+                  ? {}
+                  : {
+                      onClick: () => onSelect(row),
+                      tabIndex: 0,
+                      onKeyDown: (e: ReactKeyboardEvent<HTMLTableRowElement>) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onSelect(row);
+                        }
+                      },
+                    })}
               >
                 {columns.map((c) => (
                   <td key={c.key} className={c.numeric === true ? 'table__num' : undefined}>

@@ -171,12 +171,7 @@ function Workspace({
         ...(viewingDocument
           ? {
               inspector: (
-                <DocumentInspector
-                  state={document_}
-                  sourceName={sourceName ?? ''}
-                  overlay={false}
-                  onClose={closeDocument}
-                />
+                <DocumentInspector state={document_} sourceName={sourceName ?? ''} onClose={closeDocument} />
               ),
             }
           : {}),
@@ -270,17 +265,17 @@ function ProjectChooser({
 
       <Card title="Projects" flush>
         {state.kind === 'loading' ? (
-          <div style={{ padding: 'var(--asdp-space-4)' }}>
+          <div className="card__pad">
             <Loading what="projects" />
           </div>
         ) : null}
         {state.kind === 'error' ? (
-          <div style={{ padding: 'var(--asdp-space-4)' }}>
+          <div className="card__pad">
             <Failed error={state.error} retry={onRetry} />
           </div>
         ) : null}
         {state.kind === 'ready' && state.value.length === 0 ? (
-          <div style={{ padding: 'var(--asdp-space-4)' }}>
+          <div className="card__pad">
             <Empty
               what="projects"
               hint="Create one through the API to begin. Creating projects is not part of this UI."

@@ -19,18 +19,20 @@ import { Button } from '../ui/Button.tsx';
 export function Inspector({
   title,
   subtitle,
-  overlay,
   onClose,
   children,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
-  overlay?: boolean;
   onClose?: () => void;
   children: ReactNode;
 }): ReactNode {
+  // Whether this panel is docked or overlaid is the SHELL's decision, published
+  // as `data-inspector` on the shell and acted on in CSS. The panel does not
+  // carry a copy of it: a second source of truth for the same fact is a fact
+  // that can be wrong, and this one was — it was hardcoded `false`.
   return (
-    <aside className="inspector" aria-label="Inspector" data-testid="inspector" data-overlay={overlay === true ? 'true' : 'false'}>
+    <aside className="inspector" aria-label="Inspector" data-testid="inspector">
       <div className="panel__head">
         <h2 className="section-title">Inspector</h2>
         <span className="panel__spacer" />

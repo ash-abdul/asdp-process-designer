@@ -2435,7 +2435,7 @@ review.
 | **Implementation** | *(this change)* |
 | **Boundary** | [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) §25, approved at `52ba323` |
 | **Verification** | `npm run verify` **green end to end, exit 0** — **872 pass / 872 · 0 fail · 0 skipped · 0 todo · 176 suites**; `check:arch` **186 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98 files / 1185 links** |
-| **Browser** | **`npm run test:e2e`: 27 passed / 27.** The **ten U2 tests pass UNCHANGED** — not one assertion was weakened, and that is what makes this slice presentation-only rather than merely described as such. **17 new tests** cover the shell, rail honesty, dark mode, density, the collapse order, RTL mirroring, semantic states without colour, the contextual panel, and Ask ASDP |
+| **Browser** | **`npm run test:e2e`: 29 passed / 29.** The **ten U2 tests pass UNCHANGED** — not one assertion was weakened, and that is what makes this slice presentation-only rather than merely described as such. **19 new tests** cover the shell, rail honesty, dark mode, density, the collapse order, RTL mirroring, semantic states without colour, the contextual panel, keyboard row selection, the shared refusal state, and Ask ASDP |
 | **Dependencies** | **None added.** Plain CSS custom properties, per **Y16**. Runtime dependencies unchanged at nine |
 | **Checker rules** | **None weakened.** The architecture checker gained no exemption; `check:arch:selftest` still proves every rule bites |
 | **Backend** | **Untouched.** No API, contract, migration or command changed |
@@ -2468,6 +2468,23 @@ no argument. Three tests hold the line: exported names are checked structurally 
 like a call path**, the module is checked to contain **no stub answer**, and a browser test records
 **every** request while the dock is opened, typed into and clicked — asserting **zero**.
 
+### 20.4.1 Six defects found by the review of this slice, all corrected
+
+An acceptance review of the diff, run before reporting, found six. They are
+recorded because what a review catches is more useful than the claim that one happened.
+
+| # | Defect | Correction |
+|---|---|---|
+| **1** | **A clickable table row that no keyboard could reach.** `<tr>` had `onClick` and nothing else. For a **Viewer** — a role whose rows contain no action buttons — clicking was the *only* way to select a source, so the contextual panel was mouse-only for exactly the role most likely to be reviewing | The row takes focus and answers **Enter** and **Space**. Asserted by a browser test that signs in as a Viewer and selects by keyboard |
+| **2** | **The shared `Refused` state was dead code.** It was written for **Y27** and never used; the upload refusal had its own bespoke markup | The upload refusal now uses it, so a refusal reads the same way everywhere it can happen. Two assertions added: *“a refusal is the system working”* and *“nothing was changed”* |
+| **3** | **`padding: var(--asdp-space-4)` inline, in seven places.** Precisely the one-off styling **Y16** forbids, in a slice whose purpose is to end it | A `.card__pad` token class |
+| **4** | **`AppShell` carried a `layoutOverride` escape hatch nothing used.** An override no test exercises is a way for the tested path and the real path to diverge silently | Removed. The layout is a pure function of the width, and the browser tests drive a real viewport |
+| **5** | **The inspector carried its own `overlay` flag, hardcoded `false`** — a second source of truth for a fact the shell already publishes, and it was **wrong** at narrow widths | Removed. Docked-versus-overlaid is the shell's decision, published once as `data-inspector` |
+| **6** | **A convoluted conditional spread for the selected row key**, and a needless template literal | Simplified to `selectedKey={selectedSourceId ?? selected?.id}` |
+
+**Defect 1 is the one worth remembering:** the affordance worked perfectly for whoever was testing it
+with a mouse, and was missing entirely for the role that has no other way in.
+
 ### 20.5 Deviations from the visual reference, and why
 
 **Each is a case where the repository or the available data won, exactly as §26.1 requires.**
@@ -2498,6 +2515,9 @@ like a call path**, the module is checked to contain **no stub answer**, and a b
   in both themes; no automated contrast assertion exists yet.
 - **One inspector, one entity.** The fixed section order is proved on a **source**; requirements,
   conflicts and gates have no inspector because they have no screen.
+- **Disabled rail entries are not tab-focusable.** Their reasons are in the accessible name and reach a
+  screen reader in browse mode, but not by tabbing. Making them focusable would put eleven dead stops
+  in the tab order; the trade is recorded rather than resolved.
 
 ---
 

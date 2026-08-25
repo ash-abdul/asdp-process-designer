@@ -91,7 +91,7 @@ function Body({ value }: { value: Narrowed }): ReactNode {
   }
   return (
     <Card title="Document" flush>
-      <div style={{ padding: 'var(--asdp-space-4)' }}>
+      <div className="card__pad">
         <SourceViewer
           text={value.text}
           ranges={value.ranges}
@@ -113,17 +113,15 @@ function Body({ value }: { value: Narrowed }): ReactNode {
 export function DocumentInspector({
   state,
   sourceName,
-  overlay,
   onClose,
 }: {
   state: Remote<DocumentPayload>;
   sourceName: string;
-  overlay: boolean;
   onClose: () => void;
 }): ReactNode {
   if (state.kind !== 'ready') {
     return (
-      <Inspector title={sourceName} overlay={overlay} onClose={onClose}>
+      <Inspector title={sourceName} onClose={onClose}>
         <p className="state__hint">Evidence and context appear once the document has loaded.</p>
       </Inspector>
     );
@@ -135,7 +133,7 @@ export function DocumentInspector({
   const rendered = [...value.text].length;
 
   return (
-    <Inspector title={sourceName} subtitle="Evidence and context" overlay={overlay} onClose={onClose}>
+    <Inspector title={sourceName} subtitle="Evidence and context" onClose={onClose}>
       <InspectorSection title="Identity">
         <InspectorRow label="Direction">
           <Chip>{value.direction.toUpperCase()}</Chip>
