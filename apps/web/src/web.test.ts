@@ -38,7 +38,18 @@ import {
   ROLES,
 } from './lib/dev-auth.ts';
 import { createClient, ApiError, ContractError } from './api/client.ts';
-import { ProjectList, SourceContent, HighlightList } from './api/contracts.ts';
+import {
+  authorityOf,
+  isSettableRank,
+  inventoryOrder,
+  parseStateOf,
+  outcomeOf,
+  ingestBody,
+  groupBySeverity,
+  blocksGate,
+  describeRule,
+} from './features/sources/source-model.ts';
+import { ProjectList, ProjectSummary, SourceContent, HighlightList, labelOf } from './api/contracts.ts';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -490,5 +501,171 @@ describe('U1 API client', () => {
     );
     const list = await highlights.get('/y', HighlightList);
     assert.equal(list.ranges[0]?.resolution, 'resolved');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U2 — sources: the four distinctions, DOM-free
+// ---------------------------------------------------------------------------
+
+describe('U2 authority ranking', () => {
+  test('UNRANKED IS NOT RANK ZERO', () => {
+    // The distinction the screen turns on. Rank 0 means nobody has decided;
+    // rendering it as "lowest" makes an undecided judgement look decided — the
+    // same class of error as content_unverified versus resolved.
+    assert.equal(authorityOf({ id: 's', filename: 'a', authorityRank: 0 }).kind, 'unranked');
+    assert.equal(authorityOf({ id: 's', filename: 'a' }).kind, 'unranked');
+    const ranked = authorityOf({ id: 's', filename: 'a', authorityRank: 3 });
+    assert.equal(ranked.kind, 'ranked');
+    assert.match(ranked.label, /Rank 3/);
+    assert.match(authorityOf({ id: 's', filename: 'a' }).label, /nobody has decided/);
+  });
+
+  test('rank 0 is NOT settable — it is a state, not a value a human picks', () => {
+    assert.equal(isSettableRank(0), false);
+    assert.equal(isSettableRank(1), true);
+    assert.equal(isSettableRank(100), true);
+    assert.equal(isSettableRank(101), false);
+    assert.equal(isSettableRank(2.5), false);
+    assert.equal(isSettableRank(-1), false);
+  });
+
+  test('inventory orders by authority descending, unranked LAST', () => {
+    // ADR-0012: highest authority first is the order a reviewer resolving a
+    // conflict needs. Unranked sorts last because it is undecided, not low.
+    const ordered = inventoryOrder([
+      { id: '1', filename: 'c.md' },
+      { id: '2', filename: 'a.md', authorityRank: 5 },
+      { id: '3', filename: 'b.md', authorityRank: 9 },
+      { id: '4', filename: 'd.md', authorityRank: 0 },
+    ]);
+    assert.deepEqual(ordered.map((s) => s.filename), ['b.md', 'a.md', 'c.md', 'd.md']);
+  });
+});
+
+describe('U2 parse state', () => {
+  test('A PARSE FAILURE IS A STATE, not a disappearance — and keeps its reason', () => {
+    const failed_ = parseStateOf({
+      id: 's', filename: 'x.pdf', status: 'parse_failed', parseError: 'no readable document part',
+    });
+    assert.equal(failed_.tone, 'failed');
+    assert.equal(failed_.detail, 'no readable document part');
+  });
+
+  test('a failure with no stated reason says so rather than inventing one', () => {
+    const state = parseStateOf({ id: 's', filename: 'x', status: 'parse_failed' });
+    assert.match(state.detail as string, /did not say why/);
+  });
+
+  test('the other states are distinct', () => {
+    assert.equal(parseStateOf({ id: 's', filename: 'x', status: 'parsed' }).tone, 'ok');
+    assert.equal(parseStateOf({ id: 's', filename: 'x', status: 'parsing' }).tone, 'pending');
+    assert.equal(parseStateOf({ id: 's', filename: 'x', status: 'superseded' }).tone, 'superseded');
+  });
+});
+
+describe('U2 upload', () => {
+  test('A DUPLICATE IS REPORTED AS A DUPLICATE, never as an upload', () => {
+    const dedup = outcomeOf({ source: { id: 'src-1' }, deduplicated: true });
+    assert.equal(dedup.kind, 'deduplicated');
+    const created = outcomeOf({ source: { id: 'src-2' }, unitCount: 7 });
+    assert.equal(created.kind, 'created');
+    assert.notEqual(dedup.kind, created.kind, 'the two outcomes must never collapse');
+  });
+
+  test('text and bytes are mutually exclusive, as the API requires', () => {
+    assert.throws(() => ingestBody({ filename: 'a.md' }), /either text or bytes/);
+    assert.throws(
+      () => ingestBody({ filename: 'a.md', text: 'x', bytes: new Uint8Array([1]) }),
+      /mutually exclusive/,
+    );
+  });
+
+  test('base64 round-trips bytes exactly, including non-ASCII', () => {
+    const bytes = new TextEncoder().encode('يجب تقديم الطلب — 🏛');
+    const body = ingestBody({ filename: 'ar.md', bytes });
+    const back = new Uint8Array(Buffer.from(body.contentBase64 as string, 'base64'));
+    assert.deepEqual([...back], [...bytes]);
+    assert.equal(new TextDecoder().decode(back), 'يجب تقديم الطلب — 🏛');
+  });
+
+  test('base64 handles a payload larger than one chunk', () => {
+    const bytes = new Uint8Array(0x8000 * 2 + 17).map((_, i) => i % 251);
+    const body = ingestBody({ filename: 'big.bin', bytes });
+    const back = new Uint8Array(Buffer.from(body.contentBase64 as string, 'base64'));
+    assert.equal(back.length, bytes.length);
+    assert.deepEqual([...back.slice(-5)], [...bytes.slice(-5)]);
+  });
+
+  test('optional fields are omitted rather than sent empty', () => {
+    const body = ingestBody({ filename: 'a.md', text: 'x', kind: '' });
+    assert.equal('kind' in body, false);
+    assert.equal('classification' in body, false);
+  });
+});
+
+describe('U2 validation findings', () => {
+  const findings = [
+    { ruleId: 'L0-ING-003', severity: 'warning' },
+    { ruleId: 'L0-ING-001', severity: 'error' },
+    { ruleId: 'L0-ING-009', severity: 'info' },
+    { ruleId: 'L0-ING-002', severity: 'error' },
+  ];
+
+  test('groups by severity with blocking first — the SERVER\'s severity', () => {
+    const groups = groupBySeverity(findings);
+    assert.deepEqual(groups.map((g) => g.severity), ['error', 'warning', 'info']);
+    assert.equal(groups[0]?.findings.length, 2);
+  });
+
+  test('BLOCKING IS DECIDED BY SEVERITY, never by the UI', () => {
+    assert.equal(blocksGate(findings), true);
+    assert.equal(blocksGate([{ ruleId: 'L0-ING-009', severity: 'info' }]), false);
+    assert.equal(blocksGate([{ ruleId: 'X', severity: 'blocking' }]), true);
+    assert.equal(blocksGate([]), false);
+  });
+
+  test('an unknown rule is shown by id — no description is invented', () => {
+    const catalogue = [{ id: 'L0-ING-001', description: 'A source must declare a classification' }];
+    assert.equal(describeRule('L0-ING-001', catalogue), 'A source must declare a classification');
+    assert.equal(describeRule('L0-ING-999', catalogue), undefined);
+  });
+
+  test('an unrecognised severity sorts last rather than being dropped', () => {
+    const groups = groupBySeverity([{ ruleId: 'A', severity: 'mystery' }, { ruleId: 'B', severity: 'error' }]);
+    assert.deepEqual(groups.map((g) => g.severity), ['error', 'mystery']);
+  });
+});
+
+describe('U2 project label tolerance', () => {
+  test('BOTH name shapes the API returns are accepted', () => {
+    // Found by U2's browser tests: creating a project with a string `name`
+    // stores `text` as a string, while an object name stores a record. U1
+    // accepted only the record, so a project created the other way made the
+    // entire list fail validation.
+    const asRecord = ProjectSummary.parse({
+      id: 'prj-1', key: 'alpha',
+      name: { primary: { lang: 'en', text: { en: 'Alpha' }, direction: 'ltr' }, translations: [] },
+    });
+    const asString = ProjectSummary.parse({
+      id: 'prj-2', key: 'beta',
+      name: { primary: { lang: 'en', text: 'Beta', direction: 'ltr' }, translations: [] },
+    });
+    assert.equal(labelOf(asRecord).text, 'Alpha');
+    assert.equal(labelOf(asString).text, 'Beta');
+  });
+
+  test('an Arabic label keeps its own direction', () => {
+    const arabic = ProjectSummary.parse({
+      id: 'prj-3', key: 'gamma',
+      name: { primary: { lang: 'ar', text: 'تجديد الرخصة', direction: 'rtl' }, translations: [] },
+    });
+    assert.equal(labelOf(arabic).direction, 'rtl');
+    assert.equal(labelOf(arabic).text, 'تجديد الرخصة');
+  });
+
+  test('a project with no name falls back to its key, never to blank', () => {
+    const bare = ProjectSummary.parse({ id: 'prj-4', key: 'delta' });
+    assert.equal(labelOf(bare).text, 'delta');
   });
 });

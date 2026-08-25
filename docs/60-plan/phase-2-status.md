@@ -2223,6 +2223,51 @@ and project names now render in their own direction.
 
 ---
 
+## 19. UI enablement U2 — implemented, **AWAITING ACCEPTANCE**
+
+> **NOT accepted.** **U3–U5 are not authorised.** Phase 2 stays closed; **P3 has not started.**
+
+**Boundary approved 2026-08-25** ([u2-proposal.md](u2-proposal.md), X1–X10), with
+**[ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)** recording the browser-testing
+decision **before** implementation.
+
+**U2 is the first slice in this application that writes.**
+
+| Step | Delivers | Commit |
+|---|---|---|
+| **U2-a** | Role list completed to all ten; **bidirectional** drift test | `8f7d37b` |
+| **U2-b–e** | Inventory, upload, authority ranking, L0 validation, and the browser suite | *(this change)* |
+
+| | |
+|---|---|
+| **Browser framework** | **Playwright, pinned**, driving the **system-installed Chrome** via `channel: 'chrome'`. **Nothing is downloaded** — not at install (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`, verified to leave no browser cache), not at run time. A missing browser is a **refusal with instructions** |
+| **Separation** | `npm run verify` is **unchanged** — deterministic, network-free, server-free. Browser tests run under **`npm run test:e2e`**, which migrates a fresh temporary database, starts both servers, and stops them |
+| **Verification** | `verify` **green, exit 0** — **838 pass · 0 fail · 0 skipped · 0 todo · 168 suites**; `check:arch` **168 files**; self-test **57 cases**; `check:docs` 97 files / 1082 links. **`test:e2e`: 10 passed** in 12.8 s |
+| **API gaps** | **None added.** G-a, G-b and G-c remain unimplemented; **U2 needed none**, and the optional `/meta` gap (**G-d**) was deliberately not filled |
+
+### 19.1 Three defects found during U2, all corrected
+
+| # | Defect | Correction |
+|---|---|---|
+| **1** | **The project-name contract accepted only one of the two shapes the API returns.** Creating a project with a string `name` stores `text` as a **string**; an object name stores a **record**. U1 accepted only the record, so a project created the other way made the **entire project list fail validation** | Both shapes accepted, with three regression tests. **Found by U2's browser tests**, which create projects the string way — a path U1 never exercised |
+| **2** | **`presentation-no-api` was a substring rule and produced a false positive.** `../../api/client.ts` from a nested feature is the **web's own** api directory. The rule now **resolves** the specifier and checks where it lands | Rule fixed; a self-test permits the web's own `api/`. **The rule was corrected, not weakened** |
+| **3** | **That rule's negative self-test had been passing for the wrong reason.** Its fixture used `../../api/…` from `apps/web/src/api`, which resolves to `apps/web/api/…` and **never left the presentation layer**. The substring rule matched it anyway | Fixture replaced with a specifier that genuinely escapes to `apps/api` |
+
+**Defect 3 is the one worth remembering:** a negative test that fires for the wrong reason is
+indistinguishable from one that works, until the rule beneath it gets more precise.
+
+### 19.2 What U2 does NOT claim
+
+- **Not U3–U5.** No evidence extraction, requirements, coverage, reconciliation or G1.
+- **Not images or PDF.** V2-PDF is blocked; image highlighting is a viewer capability U1 excluded.
+- **Not supersession.** The API accepts `supersedesSourceId`; there is no UI, because supersession
+  without a diff view invites mistakes.
+- **Not production authentication.** **F-U1-b** stands unchanged.
+- **No live model call.** U2 invokes no AI, by scope.
+
+
+---
+
 ## 15. Next step
 
 ### V0–V7, H4 and H5 are ACCEPTED. **Phase 2 is CLOSED — §16.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.

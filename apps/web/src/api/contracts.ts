@@ -23,7 +23,16 @@ import { HighlightRange } from '@asdp/schemas';
 export const BilingualLabel = z.object({
   primary: z.object({
     lang: z.string(),
-    text: z.record(z.string(), z.string()),
+    /**
+     * **Either a plain string or a per-language record**, and the API returns
+     * both: creating a project with a string `name` stores `"Debug project"`,
+     * while an object name stores `{ en: 'Debug project' }`.
+     *
+     * U1 accepted only the record form, so a project created the other way made
+     * the whole list fail validation. Found by U2's browser tests, which create
+     * projects the string way.
+     */
+    text: z.union([z.string(), z.record(z.string(), z.string())]),
     direction: z.enum(['ltr', 'rtl', 'neutral']),
   }),
   translations: z.array(z.unknown()).optional(),
@@ -41,8 +50,11 @@ export type ProjectSummary = z.infer<typeof ProjectSummary>;
 export function labelOf(project: ProjectSummary): { text: string; direction: 'ltr' | 'rtl' | 'neutral' } {
   const primary = project.name?.primary;
   if (primary === undefined) return { text: project.key, direction: 'ltr' };
-  const text = primary.text[primary.lang] ?? Object.values(primary.text)[0] ?? project.key;
-  return { text, direction: primary.direction };
+  const text =
+    typeof primary.text === 'string'
+      ? primary.text
+      : primary.text[primary.lang] ?? Object.values(primary.text)[0] ?? project.key;
+  return { text: text === '' ? project.key : text, direction: primary.direction };
 }
 
 export const ProjectList = z.array(ProjectSummary);
@@ -94,3 +106,55 @@ export const HighlightList = z.object({
   ranges: z.array(HighlightRange),
 });
 export type HighlightList = z.infer<typeof HighlightList>;
+
+// ---------------------------------------------------------------------------
+// U2 — sources, ingest, authority and validation
+// ---------------------------------------------------------------------------
+
+/**
+ * The ingest response.
+ *
+ * `deduplicated` is the field U2 turns on: identical bytes are one source, and
+ * the UI must report that as a duplicate rather than as an upload.
+ */
+export const IngestResponse = z.object({
+  source: SourceSummary,
+  unitCount: z.number().optional(),
+  deduplicated: z.boolean().optional(),
+});
+export type IngestResponse = z.infer<typeof IngestResponse>;
+
+/**
+ * A validation finding.
+ *
+ * `severity` is the rule catalogue's (ADR-0026) and is carried through
+ * unaltered — the UI groups by it and never reassigns it.
+ */
+export const FindingSchema = z.object({
+  id: z.string().optional(),
+  ruleId: z.string(),
+  severity: z.string().optional(),
+  message: z.string().optional(),
+  entityId: z.string().optional(),
+  entityType: z.string().optional(),
+});
+
+export const IntakeValidation = z.object({
+  runId: z.string().optional(),
+  findings: z.array(FindingSchema),
+  summary: z.unknown().optional(),
+});
+export type IntakeValidation = z.infer<typeof IntakeValidation>;
+
+export const RuleCatalogue = z.object({
+  total: z.number().optional(),
+  rules: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      severity: z.unknown().optional(),
+    }),
+  ),
+});
+export type RuleCatalogue = z.infer<typeof RuleCatalogue>;

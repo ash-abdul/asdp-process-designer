@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ASDP Process Designer — requirements-driven Camunda 8 process application generator",
+  "description": "ASDP Process Designer \u2014 requirements-driven Camunda 8 process application generator",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -29,7 +29,8 @@
     "start:worker": "node apps/api/dist/worker.js",
     "build:assets": "node tools/copy-assets.mjs",
     "dev:web": "vite --config apps/web/vite.config.ts apps/web",
-    "build:web": "vite build --config apps/web/vite.config.ts apps/web"
+    "build:web": "vite build --config apps/web/vite.config.ts apps/web",
+    "test:e2e": "node apps/web/e2e/preflight.mjs && playwright test --config apps/web/playwright.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

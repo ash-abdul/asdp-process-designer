@@ -48,3 +48,42 @@ mark.hl--counterflow { outline: 1px dotted currentColor; }
 .signin label { display: block; margin-top: 8px; }
 .signin input[type="text"], .signin input:not([type]) { width: 100%; padding: 6px; }
 .role { display: flex; gap: 6px; align-items: center; }
+
+/* U2 — sources. Minimal, but two things are not cosmetic:
+   an unranked source must not look like a ranked one, and a parse failure must
+   look like a state rather than a disappearance. */
+.upload { border: 1px solid #ccc; padding: 12px; margin-bottom: 16px; }
+.upload h3, .validation h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 8px; }
+.upload label { display: block; margin-top: 6px; font-size: 13px; }
+.upload input, .upload select, .upload textarea { width: 100%; padding: 5px; font: inherit; }
+.upload button { margin-top: 10px; }
+
+.inventory { list-style: none; padding: 0; margin: 0; }
+.inventory__item { border: 1px solid #ccc; padding: 8px; margin-bottom: 8px; }
+.inventory__item button[aria-current="true"] { font-weight: 600; }
+.inventory__name { font-weight: 600; }
+.inventory__meta { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.inventory__parse-error { border-inline-start: 4px solid #b00; background: #fff4f4; padding: 6px 10px; margin: 6px 0; font-size: 13px; }
+
+.chip--ok { border-color: #2a7; }
+.chip--failed { border-color: #b00; font-weight: 600; }
+.chip--pending { opacity: .7; }
+/* Undecided is not zero. It must read as a question, not as a low score. */
+.chip--unranked { border-style: dashed; font-style: italic; }
+.chip--ranked { border-color: #0b57d0; }
+
+.rank-form { border-top: 1px dashed #ccc; margin-top: 8px; padding-top: 8px; }
+.rank-form label { display: block; font-size: 13px; margin-top: 4px; }
+.rank-form input { width: 100%; padding: 4px; }
+
+.outcome { padding: 8px 10px; margin-top: 10px; font-size: 13px; }
+.outcome--ok { border-inline-start: 4px solid #2a7; background: #f2fff8; }
+.outcome--dedup { border-inline-start: 4px solid #b8860b; background: #fffbe9; }
+.outcome--refused { border-inline-start: 4px solid #b00; background: #fff4f4; }
+
+.validation { border: 1px solid #ccc; padding: 12px; margin-top: 16px; }
+.findings h4 { font-size: 12px; text-transform: uppercase; margin: 10px 0 4px; }
+.findings ul { margin: 0; padding-inline-start: 18px; }
+.findings--error, .findings--blocking { border-inline-start: 4px solid #b00; padding-inline-start: 10px; }
+.findings--warning { border-inline-start: 4px solid #b8860b; padding-inline-start: 10px; }
+.findings--info { border-inline-start: 4px solid #888; padding-inline-start: 10px; }

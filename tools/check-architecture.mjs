@@ -805,13 +805,19 @@ export function evaluateRules(files) {
     // --- ADR-0039: presentation boundaries ------------------------------
     if (normalisedPath.startsWith(PRESENTATION_DIR)) {
       for (const spec of imports) {
-        if (spec.startsWith('../../api/') || spec.includes('apps/api')) {
+        if (!spec.startsWith('.')) continue;
+        // RESOLVE the specifier rather than pattern-matching it. `../../api/…`
+        // from apps/web/src/features/sources is the WEB's api directory, not
+        // apps/api — a substring rule called that a violation, which would have
+        // meant weakening the rule or contorting the layout to satisfy it.
+        const resolved = posixJoin(posixDirname(normalisedPath), spec);
+        if (resolved.startsWith('apps/api/')) {
           violations.push({
             rule: 'presentation-no-api',
             file: f.path,
             detail:
-              'the presentation layer may not import apps/api; the contract between them is HTTP ' +
-              '(ADR-0039 §2)',
+              `'${spec}' resolves to ${resolved}: the presentation layer may not import apps/api, ` +
+              'because the contract between them is HTTP (ADR-0039 §2)',
           });
         }
       }
@@ -911,6 +917,23 @@ export function evaluateRules(files) {
 // ---------------------------------------------------------------------------
 // Repository scan
 // ---------------------------------------------------------------------------
+
+/** POSIX dirname over a repo-relative path. */
+function posixDirname(p) {
+  const i = p.lastIndexOf('/');
+  return i === -1 ? '' : p.slice(0, i);
+}
+
+/** POSIX join that resolves `.` and `..`, for import-specifier resolution. */
+function posixJoin(base, spec) {
+  const parts = base === '' ? [] : base.split('/');
+  for (const segment of spec.split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') parts.pop();
+    else parts.push(segment);
+  }
+  return parts.join('/');
+}
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
@@ -1117,8 +1140,19 @@ const SELF_TEST_CASES = [
   {
     name: 'the browser importing apps/api is rejected (ADR-0039)',
     rule: 'presentation-no-api',
+    // A specifier that GENUINELY escapes to apps/api. The earlier fixture used
+    // '../../api/...' from apps/web/src/api, which resolves to
+    // apps/web/api/... and never left the presentation layer — the old
+    // substring rule passed it for the wrong reason.
     file: { path: 'apps/web/src/api/leak.ts', pkg: '@asdp/web', cls: 'presentation',
-            text: `import { COMMANDS } from '../../api/src/commands.ts';\n` },
+            text: `import { COMMANDS } from '../../../api/src/commands.ts';\n` },
+  },
+  {
+    name: "the WEB's own api/ directory is permitted from a nested feature (ADR-0039)",
+    rule: 'presentation-no-api',
+    expectNone: true,
+    file: { path: 'apps/web/src/features/sources/Sources.tsx', pkg: '@asdp/web', cls: 'presentation',
+            text: `import { createClient } from '../../api/client.ts';\n` },
   },
   {
     name: 'a domain rule re-implemented in the browser is rejected (ADR-0039)',

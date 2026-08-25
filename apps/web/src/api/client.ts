@@ -66,28 +66,53 @@ export interface ClientOptions {
   readonly fetchImpl?: typeof fetch;
 }
 
-export function createClient(options: ClientOptions) {
+export interface ApiClient {
+  get<T>(path: string, schema: z.ZodType<T>): Promise<T>;
+  post<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T>;
+  put(path: string, body: unknown): Promise<void>;
+}
+
+export function createClient(options: ClientOptions): ApiClient {
   const doFetch = options.fetchImpl ?? fetch;
 
-  async function get<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  async function send<T>(
+    method: 'GET' | 'POST' | 'PUT',
+    path: string,
+    body: unknown,
+    schema: z.ZodType<T> | undefined,
+  ): Promise<T> {
     const res = await doFetch(`${options.baseUrl}${path}`, {
-      method: 'GET',
-      headers: { accept: 'application/json', ...options.headers() },
+      method,
+      headers: {
+        accept: 'application/json',
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...options.headers(),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
 
     const text = await res.text();
-    const body = text.length === 0 ? undefined : safeJson(text);
+    const payload = text.length === 0 ? undefined : safeJson(text);
 
     if (!res.ok) {
-      throw new ApiError(res.status, body, messageFor(res.status, body));
+      throw new ApiError(res.status, payload, messageFor(res.status, payload));
     }
+    if (schema === undefined) return undefined as T;
 
-    const parsed = schema.safeParse(body);
+    const parsed = schema.safeParse(payload);
     if (!parsed.success) throw new ContractError(path, parsed.error.issues);
     return parsed.data;
   }
 
-  return { get };
+  return {
+    get: (path, schema) => send('GET', path, undefined, schema),
+    post: (path, body, schema) => send('POST', path, body, schema),
+    // U2 writes that return a shape the UI does not consume. Validating a
+    // payload nothing reads would fail a request for a field it does not need.
+    put: async (path, body) => {
+      await send('PUT', path, body, undefined);
+    },
+  };
 }
 
 function safeJson(text: string): unknown {

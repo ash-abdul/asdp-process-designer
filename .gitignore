@@ -11,3 +11,7 @@ coverage/
 
 # Vite's browser bundle. Built on demand; never committed.
 apps/web/dist-web/
+
+# Playwright artefacts. Regenerated on demand; never committed.
+apps/web/test-results/
+apps/web/playwright-report/

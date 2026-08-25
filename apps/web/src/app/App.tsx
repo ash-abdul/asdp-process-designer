@@ -13,8 +13,9 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { createClient } from '../api/client.ts';
-import { ProjectList, SourceList, SourceContent, HighlightList, labelOf } from '../api/contracts.ts';
-import type { ProjectSummary, SourceSummary } from '../api/contracts.ts';
+import { ProjectList, SourceContent, HighlightList, labelOf } from '../api/contracts.ts';
+import { Sources } from '../features/sources/Sources.tsx';
+import type { ProjectSummary } from '../api/contracts.ts';
 import { devAuthHeaders, type DevIdentity } from '../lib/dev-auth.ts';
 import { DevSignIn } from './DevSignIn.tsx';
 import { SourceViewer } from '../source-viewer/SourceViewer.tsx';
@@ -50,7 +51,6 @@ function Workspace({
 
   const [projects, setProjects] = useState<Remote<readonly ProjectSummary[]>>(idle());
   const [projectId, setProjectId] = useState<string | undefined>(undefined);
-  const [sources, setSources] = useState<Remote<readonly SourceSummary[]>>(idle());
   const [sourceId, setSourceId] = useState<string | undefined>(undefined);
   const [document_, setDocument] = useState<Remote<{ content: unknown; highlights: unknown }>>(idle());
 
@@ -68,22 +68,6 @@ function Workspace({
   useEffect(() => {
     void loadProjects();
   }, [loadProjects]);
-
-  const loadSources = useCallback(
-    async (project: string): Promise<void> => {
-      setSources(loading());
-      setSourceId(undefined);
-      setDocument(idle());
-      try {
-        const list = await client.get(`/projects/${project}/sources`, SourceList);
-        setSources(ready(list.sources));
-      } catch (error) {
-        setSources(failed(error as Error));
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    },
-    [identity.subject, identity.roles.join(',')],
-  );
 
   const loadDocument = useCallback(
     async (project: string, source: string): Promise<void> => {
@@ -139,7 +123,8 @@ function Workspace({
                     aria-current={p.id === projectId ? 'true' : undefined}
                     onClick={() => {
                       setProjectId(p.id);
-                      void loadSources(p.id);
+                      setSourceId(undefined);
+                      setDocument(idle());
                     }}
                   >
                     {/* The name is bilingual, so it is rendered in ITS direction. */}
@@ -152,41 +137,24 @@ function Workspace({
           ) : null}
         </nav>
 
-        <nav className="pane pane--sources" aria-label="Sources">
-          <h2>Sources</h2>
-          {projectId === undefined ? (
+        {projectId === undefined ? (
+          <section className="pane pane--sources" aria-label="Sources">
+            <h2>Sources</h2>
             <Empty what="project selected" hint="Choose a project to see its sources." />
-          ) : null}
-          {sources.kind === 'loading' ? <Loading what="sources" /> : null}
-          {sources.kind === 'error' ? (
-            <Failed error={sources.error} retry={() => void loadSources(projectId as string)} />
-          ) : null}
-          {sources.kind === 'ready' && sources.value.length === 0 ? (
-            <Empty what="sources" hint="Ingest a document through the API; U1 does not upload." />
-          ) : null}
-          {sources.kind === 'ready' && sources.value.length > 0 ? (
-            <ul>
-              {sources.value.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    aria-current={s.id === sourceId ? 'true' : undefined}
-                    onClick={() => {
-                      setSourceId(s.id);
-                      void loadDocument(projectId as string, s.id);
-                    }}
-                  >
-                    <span dir={s.direction === 'rtl' ? 'rtl' : 'ltr'}>{s.filename}</span>
-                    {s.direction === undefined ? null : (
-                      <span className="chip">{s.direction.toUpperCase()}</span>
-                    )}
-                    {s.status === undefined ? null : <span className="chip">{s.status}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </nav>
+          </section>
+        ) : (
+          // U2 replaces U1's read-only pane. The VIEWER below is untouched.
+          <Sources
+            client={client}
+            projectId={projectId}
+            identity={identity}
+            {...(sourceId === undefined ? {} : { selectedSourceId: sourceId })}
+            onOpenSource={(id) => {
+              setSourceId(id);
+              void loadDocument(projectId, id);
+            }}
+          />
+        )}
 
         <section className="pane pane--document" aria-label="Document">
           <h2>Document</h2>
