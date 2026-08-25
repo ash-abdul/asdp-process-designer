@@ -55,7 +55,10 @@ export function AssistantDock({
     >
       <div className="panel__head">
         <span className="assistant__brand">
-          <span aria-hidden="true">✦</span> Ask ASDP
+          <span className="assistant__brand-glyph" aria-hidden="true">
+            ✦
+          </span>
+          Ask ASDP
         </span>
         <span className="panel__spacer" />
         <Button onClick={onCollapse} tone="subtle" small glyph="»" ariaLabel="Collapse Ask ASDP" testId="assistant-collapse">
@@ -65,8 +68,8 @@ export function AssistantDock({
 
       {/* Context is never hidden. A governed assistant states its scope. */}
       <div className="assistant__context" data-testid="assistant-context">
-        <strong>Context</strong>
-        <span>{context.label}</span>
+        <span className="assistant__context-label">Context</span>
+        <span className="assistant__context-value">{context.label}</span>
         <span className="table__sub">{context.detail}</span>
       </div>
 
@@ -75,14 +78,14 @@ export function AssistantDock({
         standing condition of this build, not an event that just happened.
       */}
       <div className="assistant__unavailable" role="status" data-testid="assistant-unavailable">
-        <strong>{state.message}</strong>
-        <span className="state__hint">{state.detail}</span>
         <span className="row">
           <StateBadge family="policy" value="blocked_by_policy" subject="Ask ASDP" testId="assistant-blocker" />
           <span className="state__hint">
             Blocked by <code>{state.blocker}</code>
           </span>
         </span>
+        <strong>{state.message}</strong>
+        <span className="state__hint">{state.detail}</span>
       </div>
 
       <section className="inspector__section">

@@ -84,6 +84,10 @@ export function DevSignIn({ origin, onSignIn }: { origin: string; onSignIn: (i: 
 
             <fieldset className="roles">
               <legend>Roles — all ten the API recognises</legend>
+              {/*
+                U2-a's defect was that five of the ten were missing, and a
+                bidirectional drift test now fails if that ever recurs.
+              */}
               {ROLES.map((role) => (
                 <label key={role} className="role">
                   <input type="checkbox" checked={roles.includes(role)} onChange={() => toggle(role)} />
@@ -101,7 +105,7 @@ export function DevSignIn({ origin, onSignIn }: { origin: string; onSignIn: (i: 
           </form>
         </Card>
 
-        <p className="state__hint">
+        <p className="signin__foot">
           Production requires OIDC (ADR-0027), whose adapter is not implemented. Ask ASDP is
           unavailable in this build — live AI enablement is pending (H3).
         </p>
@@ -117,8 +121,10 @@ function Brand(): ReactNode {
         ◈
       </span>
       <span>
-        <h1 style={{ fontSize: 'var(--asdp-text-xl)' }}>ASDP Process Designer</h1>
-        <span className="state__hint">Requirements-driven process engineering</span>
+        <h1 className="signin__title">ASDP Process Designer</h1>
+        <span className="signin__sub">
+          Evidence-backed requirements into governed, traceable Camunda artifacts
+        </span>
       </span>
     </div>
   );

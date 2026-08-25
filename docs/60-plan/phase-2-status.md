@@ -147,8 +147,8 @@ and `npm run verify` never invokes it.
 | | |
 |---|---|
 | Verified | **2026-08-25**, `npm run verify` **green end to end, exit 0**, with **U2 accepted**. Re-run independently at U2's acceptance on a clean tree, not read from a prior record |
-| Tests | **838 pass · 0 fail · 0 skipped · 0 todo** · 168 suites. **+20 tests, +5 suites since U1**; U1 added 24 over H5's 794 |
-| `check:arch` | passed — **168 source files** (the checker walks `.tsx` as well as `.ts` since U1) |
+| Tests | **878 pass · 0 fail · 0 skipped · 0 todo** · 177 suites. **+40 since U2**: 34 for the design foundation, 6 for the WCAG contrast audit |
+| `check:arch` | passed — **187 source files** (the checker walks `.tsx` as well as `.ts` since U1) |
 | `check:arch:selftest` | passed — **57 cases**. U1 added six for the four `presentation` rules; **U2 corrected one that had been passing for the wrong reason** — §19.1 defect 3 |
 | `check:docs` | passed — **97 files, 1084 links** |
 | `npm run verify` | **green end to end**, **server-free**, **network-free**, and it makes **no live provider call**. It does **not** invoke `test:e2e`, so browser availability can never gate the ordinary build ([ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) §4) |
@@ -2418,7 +2418,7 @@ density and responsive behaviour; and dark mode.
 
 **The acceptance bar, which is what makes it presentation-only rather than merely claimed to be:**
 **the existing 838 unit tests and 10 browser tests must pass UNCHANGED**, with no assertion
-weakened. New browser tests cover the new presentation behaviour, RTL mirroring, semantic states
+weakened. **Held through the refinement pass** (§20.4.2): 878 unit, 31 browser, the ten untouched. New browser tests cover the new presentation behaviour, RTL mirroring, semantic states
 without colour, navigation and collapse behaviour, density and responsiveness, dark mode, and
 **that Ask ASDP makes no network call**. No checker rule may be weakened; no dependency added.
 
@@ -2435,7 +2435,7 @@ review.
 | **Implementation** | *(this change)* |
 | **Boundary** | [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) §25, approved at `52ba323` |
 | **Verification** | `npm run verify` **green end to end, exit 0** — **872 pass / 872 · 0 fail · 0 skipped · 0 todo · 176 suites**; `check:arch` **186 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98 files / 1185 links** |
-| **Browser** | **`npm run test:e2e`: 29 passed / 29.** The **ten U2 tests pass UNCHANGED** — not one assertion was weakened, and that is what makes this slice presentation-only rather than merely described as such. **19 new tests** cover the shell, rail honesty, dark mode, density, the collapse order, RTL mirroring, semantic states without colour, the contextual panel, keyboard row selection, the shared refusal state, and Ask ASDP |
+| **Browser** | **`npm run test:e2e`: 31 passed / 31.** The **ten U2 tests pass UNCHANGED** — not one assertion was weakened, and that is what makes this slice presentation-only rather than merely described as such. **19 new tests** cover the shell, rail honesty, dark mode, density, the collapse order, RTL mirroring, semantic states without colour, the contextual panel, keyboard row selection, the shared refusal state, and Ask ASDP |
 | **Dependencies** | **None added.** Plain CSS custom properties, per **Y16**. Runtime dependencies unchanged at nine |
 | **Checker rules** | **None weakened.** The architecture checker gained no exemption; `check:arch:selftest` still proves every rule bites |
 | **Backend** | **Untouched.** No API, contract, migration or command changed |
@@ -2485,6 +2485,56 @@ recorded because what a review catches is more useful than the claim that one ha
 **Defect 1 is the one worth remembering:** the affordance worked perfectly for whoever was testing it
 with a mouse, and was missing entirely for the role that has no other way in.
 
+### 20.4.2 Visual refinement pass — **CHANGE requested, applied 2026-08-25**
+
+The first implementation was reviewed as *"technically strong but not yet visually accepted — still
+too close to a utilitarian engineering/admin console"*. **A refinement pass followed, visual only.**
+Architecture, behaviour, **Y1–Y28**, the semantic-state model, accessibility behaviour, RTL behaviour
+and every existing test were preserved, and the acceptance bar remained the proof: **the ten U2
+browser tests still pass untouched.**
+
+| Area | What changed |
+|---|---|
+| **Type** | A wider scale with weight tokens, body at 15px, headings at 17/22/28, a `2xs` micro-label step, tighter heading tracking, and a dedicated **reading** line-height for the document surface |
+| **Space and depth** | The 4px base rescaled at the upper end (18/26/36/52), larger radii, and **restrained depth**: one hairline border, one soft shadow, a tinted card header, and a pronounced shadow reserved for panels that float |
+| **The workspace header** | Was a thin utility strip; now a **deliberate header** — project mark, eyebrow label, name at heading scale, ASCII key beside it, the open source as a trail chip, actions at the far end |
+| **Tables** | Taller rows, roomier cells, a quieter sticky header, hover, and a selected state that is a tint **plus** an inline-edge marker rule; buttons in cells hug their label rather than stretching to the column |
+| **Forms** | 36px controls, a focus ring drawn in the accent, hover affordance, grouped sections, and the native file control brought into the design language |
+| **The source viewer** | The document is now a **sheet on the page** rather than content inside a titled card; 17px at 1.85 line-height on a 74ch measure shared with its summary line; softer highlight geometry, cloned across line breaks |
+| **The inspector** | A distinct title block, dividers between sections, and verification counts as **stat rows** — still reported separately per state, never as one total |
+| **Ask ASDP** | A brand glyph, a labelled context block, the refusal badge above the message, actions as bordered rows carrying epistemic level and determinism, bulleted governance notes, and the composer pinned to the foot |
+| **Sign-in** | Brought into the ASDP language: brand lockup with the product's one-line description, a restrained accent wash, a role grid with hover targets, the warning above the form |
+| **Rail** | A brand lockup with product name and descriptor, 38px items, an inline-edge marker on the active item, a pill for the slice token, a stacked identity block |
+
+**The direction was held, not decorated.** Navy rail, one accent hue, one restrained AI violet, no
+gradients beyond a single barely-there wash behind the sign-in panel, no glows, and no animation
+carrying meaning.
+
+#### Two defects the refinement pass itself introduced, both caught before reporting
+
+| # | Defect | How it surfaced |
+|---|---|---|
+| **1** | **Removing the project key from the link's visible text removed it from the ACCESSIBLE NAME**, breaking the helper that finds a project by key — and with it all ten U2 tests. The key was restored as an `aria-label` while staying out of the visible text | **The existing tests failed.** A project is identified by its key, so removing it from the name *should* break ten tests. A regression test now pins it |
+| **2** | **A viewport media query could not see the assistant taking 366px from the workspace**, so opening Ask ASDP squeezed the inventory until its Authority column scrolled out of sight while the window was still 1600px wide | Found by **looking at the screenshot**. Fixed with a **container query** on the workspace, which responds to the space the screen actually has rather than to the window |
+
+### 20.4.3 WCAG contrast, computed rather than assumed
+
+**The approved foundation said *"contrast verified rather than assumed"*, and it had been assumed** —
+chosen by eye and recorded as a limitation. `design/contrast.ts` now computes it, and the test asserts
+it over **the real token file the browser resolves**, not a copy that could drift from it.
+
+| | |
+|---|---|
+| **Combinations measured** | **90** — 45 pairs × 2 themes: body, muted and faint text on three surfaces; links, primary buttons and focus rings; the AI accent; the rail in both themes; meaningful borders; the development-auth warning; document text **under each highlight state**; and **every semantic tone as both badge text and badge border**, generated from the vocabulary so a new state is covered automatically |
+| **Result** | **0 failures.** Text pairs meet **4.5:1**; UI boundaries and focus rings meet **3:1**. Tightest measurement **3.07:1** against a 3:1 requirement |
+| **What it refuses to do** | **It never changes a colour to make a check pass.** A failing pair fails the test **by name, with its measured ratio**, because the alternative is quietly reassigning a colour whose meaning is fixed by the semantic vocabulary |
+| **What it found immediately** | A **translucent** `#rrggbbaa` border token in the dark theme. Contrast against a translucent colour depends on what is behind it, so the validator refuses it rather than guessing a backdrop. The token is now opaque, and opacity is a standing constraint on any colour in a checked pair |
+| **Guard against a vacuous pass** | A second test asserts the audit measures **≥90 combinations across both themes** and covers every tone as text **and** as a border. A validator that measured nothing would pass silently — the same class of defect as U2's negative self-test that fired for the wrong reason |
+
+**Limitation withdrawn:** *"contrast was not machine-verified"* no longer applies. What remains
+unmeasured is the contrast of **content the server supplies**: a highlight under document text is
+checked, but the document's own text is not styled by these tokens.
+
 ### 20.5 Deviations from the visual reference, and why
 
 **Each is a case where the repository or the available data won, exactly as §26.1 requires.**
@@ -2511,8 +2561,6 @@ with a mouse, and was missing entirely for the role that has no other way in.
   is the real mechanism; there is no control because there is nothing to translate into.
 - **The rail's future entries are not keyboard-focusable**, being disabled buttons. Their reasons are
   in the accessible name and are reachable by a screen reader in browse mode, but not by tabbing.
-- **Contrast was not machine-verified.** Token pairs were chosen for contrast and reviewed visually
-  in both themes; no automated contrast assertion exists yet.
 - **One inspector, one entity.** The fixed section order is proved on a **source**; requirements,
   conflicts and gates have no inspector because they have no screen.
 - **Disabled rail entries are not tab-focusable.** Their reasons are in the accessible name and reach a

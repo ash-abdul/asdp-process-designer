@@ -42,7 +42,7 @@ export function Inspector({
           </Button>
         )}
       </div>
-      <div className="inspector__section">
+      <div className="inspector__title">
         <h3>{title}</h3>
         {subtitle === undefined ? null : <p className="table__sub">{subtitle}</p>}
       </div>

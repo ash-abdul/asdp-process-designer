@@ -8,6 +8,18 @@
  * Colour is the THIRD channel of any semantic state. The glyph and the border
  * treatment come from `semantics.ts`, and the test suite proves the states stay
  * distinguishable with the colour removed.
+ *
+ * ## Every colour here is opaque, and that is a constraint, not a coincidence
+ *
+ * `contrast.ts` computes WCAG AA over this file — the real one the browser
+ * resolves, not a copy — and it REFUSES a translucent colour rather than
+ * guessing what sits behind it. So a token used in a checked pair must be a
+ * solid hex. The first thing the validator found was an `#rrggbbaa` border that
+ * had been sitting here unmeasured.
+ *
+ * Values were then chosen to MEET the threshold rather than adjusted to satisfy
+ * a test: nothing here trades a semantic meaning for a ratio. Where a tone had
+ * to move, it moved within its own hue.
  */
 
 :root {
@@ -16,62 +28,78 @@
   --asdp-font-ar: "Geeza Pro", "Segoe UI Arabic", "Noto Naskh Arabic", "Al Bayan", var(--asdp-font-ui);
   --asdp-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
+  --asdp-text-2xs: 11px;
   --asdp-text-xs: 12px;
   --asdp-text-sm: 13px;
-  --asdp-text-md: 14px;
-  --asdp-text-lg: 16px;
-  --asdp-text-xl: 20px;
-  --asdp-text-2xl: 24px;
-  --asdp-text-3xl: 32px;
+  --asdp-text-md: 15px;
+  --asdp-text-lg: 17px;
+  --asdp-text-xl: 22px;
+  --asdp-text-2xl: 28px;
+  --asdp-text-3xl: 34px;
+
+  --asdp-weight-regular: 400;
+  --asdp-weight-medium: 500;
+  --asdp-weight-semibold: 600;
+  --asdp-weight-bold: 700;
 
   /* Set for the TALLER of the two scripts, so Arabic diacritics never clip. */
-  --asdp-leading-tight: 1.45;
+  --asdp-leading-tight: 1.35;
+  --asdp-leading-snug: 1.5;
   --asdp-leading-body: 1.65;
+  --asdp-leading-reading: 1.85;
+
+  --asdp-tracking-label: 0.07em;
+  --asdp-tracking-tight: -0.011em;
 
   /* --- space: 4px base (Y15) -------------------------------------------- */
   --asdp-space-1: 4px;
   --asdp-space-2: 8px;
   --asdp-space-3: 12px;
-  --asdp-space-4: 16px;
-  --asdp-space-5: 24px;
-  --asdp-space-6: 32px;
-  --asdp-space-7: 48px;
+  --asdp-space-4: 18px;
+  --asdp-space-5: 26px;
+  --asdp-space-6: 36px;
+  --asdp-space-7: 52px;
 
-  --asdp-radius-sm: 4px;
-  --asdp-radius-md: 6px;
-  --asdp-radius-lg: 10px;
+  --asdp-radius-sm: 5px;
+  --asdp-radius-md: 8px;
+  --asdp-radius-lg: 12px;
+  --asdp-radius-xl: 16px;
   --asdp-border: 1px;
   --asdp-border-strong: 2px;
 
-  --asdp-motion-fast: 120ms;
-  --asdp-motion-base: 200ms;
+  --asdp-motion-fast: 110ms;
+  --asdp-motion-base: 190ms;
+  --asdp-ease: cubic-bezier(0.2, 0, 0.13, 1);
 
   /* --- shell geometry ---------------------------------------------------- */
-  --asdp-rail-w: 216px;
-  --asdp-rail-w-icons: 60px;
-  --asdp-inspector-w: 340px;
-  --asdp-assistant-w: 320px;
+  --asdp-rail-w: 236px;
+  --asdp-rail-w-icons: 64px;
+  --asdp-inspector-w: 372px;
+  --asdp-assistant-w: 366px;
+  --asdp-header-h: 60px;
+  --asdp-row-h: 30px;
 
   /* --- neutral ramp: light ---------------------------------------------- */
   --asdp-n-0: #ffffff;
-  --asdp-n-50: #f7f8fa;
-  --asdp-n-100: #eef0f4;
-  --asdp-n-200: #e2e5ec;
-  --asdp-n-300: #ccd2dd;
-  --asdp-n-400: #a6afbf;
-  --asdp-n-500: #7a8496;
-  --asdp-n-600: #58616f;
-  --asdp-n-700: #3d4550;
-  --asdp-n-800: #262c35;
-  --asdp-n-900: #151a21;
+  --asdp-n-50: #f6f7f9;
+  --asdp-n-100: #eef0f5;
+  --asdp-n-200: #e4e7ee;
+  --asdp-n-300: #d2d8e3;
+  --asdp-n-400: #a7b0c0;
+  --asdp-n-500: #7c8698;
+  --asdp-n-600: #55607a;
+  --asdp-n-700: #3a4459;
+  --asdp-n-800: #212a3c;
+  --asdp-n-900: #0f1523;
 
-  /* The rail is dark in BOTH themes: it is the product's constant (visual ref). */
-  --asdp-rail-bg: #101a2e;
-  --asdp-rail-bg-hover: #1b2740;
-  --asdp-rail-fg: #c9d3e6;
+  /* The rail is dark in BOTH themes: it is the product's constant surface. */
+  --asdp-rail-bg: #0d1526;
+  --asdp-rail-bg-hover: #17223a;
+  --asdp-rail-fg: #c5d0e4;
   --asdp-rail-fg-strong: #ffffff;
-  --asdp-rail-fg-muted: #6d7d99;
-  --asdp-rail-active: #2b3f6b;
+  --asdp-rail-fg-muted: #7d8aa3;
+  --asdp-rail-active: #24365e;
+  --asdp-rail-line: #1d2942;
 
   /* --- surfaces --------------------------------------------------------- */
   --asdp-bg: var(--asdp-n-50);
@@ -79,130 +107,146 @@
   --asdp-surface-sunken: var(--asdp-n-100);
   --asdp-surface-raised: var(--asdp-n-0);
   --asdp-line: var(--asdp-n-200);
-  --asdp-line-strong: var(--asdp-n-300);
+  --asdp-line-strong: #858ea0;
+  --asdp-line-soft: var(--asdp-n-100);
   --asdp-fg: var(--asdp-n-900);
   --asdp-fg-muted: var(--asdp-n-600);
-  --asdp-fg-faint: var(--asdp-n-500);
+  --asdp-fg-faint: #5f6a7d;
 
   /* --- accent: one hue for selection, focus and primary action ---------- */
-  --asdp-accent: #3a4fd8;
-  --asdp-accent-hover: #2f41b8;
+  --asdp-accent: #3040c4;
+  --asdp-accent-hover: #26349f;
   --asdp-accent-fg: #ffffff;
-  --asdp-accent-soft: #eaedfd;
+  --asdp-accent-soft: #e9ecfb;
+  --asdp-accent-line: #b9c2f4;
   --asdp-focus: #1f6feb;
 
   /* --- AI accent: restrained violet, deliberately NOT the accent -------- */
-  --asdp-ai: #6b4fd8;
-  --asdp-ai-soft: #f0ecfe;
-  --asdp-ai-line: #cdc0f7;
+  --asdp-ai: #6941d4;
+  --asdp-ai-soft: #f0ecfd;
+  --asdp-ai-line: #8f74e0;
 
   /* --- semantic tones (Y14). One per `tone` in semantics.ts ------------- */
-  --asdp-tone-ok: #1a7f52;
-  --asdp-tone-ok-soft: #e8f7ef;
-  --asdp-tone-caution: #96601a;
-  --asdp-tone-caution-soft: #fdf3e2;
-  --asdp-tone-danger: #b3261e;
+  --asdp-tone-ok: #16794c;
+  --asdp-tone-ok-soft: #e6f6ee;
+  --asdp-tone-caution: #8a5a10;
+  --asdp-tone-caution-soft: #fdf2e0;
+  --asdp-tone-danger: #b1241c;
   --asdp-tone-danger-soft: #fdeceb;
-  --asdp-tone-neutral: var(--asdp-n-600);
-  --asdp-tone-neutral-soft: var(--asdp-n-100);
-  --asdp-tone-muted: var(--asdp-n-500);
-  --asdp-tone-muted-soft: var(--asdp-n-100);
-  --asdp-tone-pending: #4a6b8a;
-  --asdp-tone-pending-soft: #eaf1f8;
-  --asdp-tone-fact: #1f5f8b;
+  --asdp-tone-neutral: #55607a;
+  --asdp-tone-neutral-soft: #eef1f6;
+  --asdp-tone-muted: #5f6a7d;
+  --asdp-tone-muted-soft: #eef0f5;
+  --asdp-tone-pending: #2f5f87;
+  --asdp-tone-pending-soft: #e8f0f8;
+  --asdp-tone-fact: #1a5c86;
   --asdp-tone-fact-soft: #e7f1f8;
-  --asdp-tone-ai: var(--asdp-ai);
-  --asdp-tone-ai-soft: var(--asdp-ai-soft);
-  --asdp-tone-approved: #1a7f52;
-  --asdp-tone-approved-soft: #e8f7ef;
-  --asdp-tone-undecided: var(--asdp-n-500);
+  --asdp-tone-ai: #6941d4;
+  --asdp-tone-ai-soft: #f0ecfd;
+  --asdp-tone-approved: #16794c;
+  --asdp-tone-approved-soft: #e6f6ee;
+  --asdp-tone-undecided: #5f6a7d;
   --asdp-tone-undecided-soft: transparent;
-  --asdp-tone-unknown: #7a3fb5;
-  --asdp-tone-unknown-soft: #f5ecfb;
+  --asdp-tone-unknown: #6d2b9c;
+  --asdp-tone-unknown-soft: #f4ebfb;
 
   /* --- development authentication: never subtle (F-U1-b) ---------------- */
-  --asdp-dev-bg: #7a1f1f;
+  --asdp-dev-bg: #8a1c22;
   --asdp-dev-fg: #ffffff;
+  --asdp-dev-line: #b0333a;
 
   /* --- highlights: verification states, and they must NOT look alike ---- */
-  --asdp-hl-resolved: #fff2a8;
+  --asdp-hl-resolved: #fdf0a8;
   --asdp-hl-unverified: #e6e9ef;
-  --asdp-hl-drifted: #ffd9d6;
+  --asdp-hl-drifted: #fdd8d4;
 
-  --asdp-shadow-sm: 0 1px 2px rgba(16, 26, 46, 0.06);
-  --asdp-shadow-md: 0 2px 8px rgba(16, 26, 46, 0.10);
-  --asdp-shadow-lg: 0 8px 28px rgba(16, 26, 46, 0.18);
+  /* Restrained depth: two soft steps and one for panels that float. */
+  --asdp-shadow-sm: 0 1px 2px rgba(15, 21, 35, 0.05), 0 1px 1px rgba(15, 21, 35, 0.03);
+  --asdp-shadow-md: 0 2px 4px rgba(15, 21, 35, 0.05), 0 6px 16px -6px rgba(15, 21, 35, 0.12);
+  --asdp-shadow-lg: 0 12px 40px -8px rgba(15, 21, 35, 0.22);
 }
 
 /* --- dark: the same token NAMES, different values ---------------------- */
 :root[data-theme="dark"] {
-  --asdp-bg: #0d1220;
-  --asdp-surface: #151c2c;
-  --asdp-surface-sunken: #101725;
-  --asdp-surface-raised: #1b2334;
-  --asdp-line: #26314a;
-  --asdp-line-strong: #37456380;
-  --asdp-fg: #e7ecf6;
-  --asdp-fg-muted: #a3b0c8;
-  --asdp-fg-faint: #7b89a3;
+  --asdp-bg: #0b111f;
+  --asdp-surface: #131b2b;
+  --asdp-surface-sunken: #0f1725;
+  --asdp-surface-raised: #1a2334;
+  --asdp-line: #232e45;
+  --asdp-line-strong: #5b6a8a;
+  --asdp-line-soft: #1b2333;
+  --asdp-fg: #e8edf7;
+  --asdp-fg-muted: #a7b4cc;
+  --asdp-fg-faint: #8592ab;
 
-  --asdp-rail-bg: #0a1120;
-  --asdp-rail-bg-hover: #16203a;
-  --asdp-rail-fg: #b9c5dc;
-  --asdp-rail-active: #24365e;
+  --asdp-rail-bg: #080e1a;
+  --asdp-rail-bg-hover: #141d31;
+  --asdp-rail-fg: #c5d0e4;
+  --asdp-rail-active: #22335a;
+  --asdp-rail-line: #182137;
 
-  --asdp-accent: #7b8cff;
-  --asdp-accent-hover: #93a1ff;
-  --asdp-accent-fg: #0d1220;
+  --asdp-accent: #8f9dff;
+  --asdp-accent-hover: #a7b2ff;
+  --asdp-accent-fg: #0b111f;
   --asdp-accent-soft: #1e2748;
-  --asdp-focus: #7fa8ff;
+  --asdp-accent-line: #3b4a86;
+  --asdp-focus: #7fb0ff;
 
-  --asdp-ai: #a08cff;
+  --asdp-ai: #ab97ff;
   --asdp-ai-soft: #221d3d;
-  --asdp-ai-line: #3f3470;
+  --asdp-ai-line: #7b68c9;
 
-  --asdp-tone-ok: #4dd39a;
-  --asdp-tone-ok-soft: #12291f;
-  --asdp-tone-caution: #e2ab5e;
-  --asdp-tone-caution-soft: #2b2113;
-  --asdp-tone-danger: #ff8a80;
-  --asdp-tone-danger-soft: #2e1615;
-  --asdp-tone-neutral: #a3b0c8;
-  --asdp-tone-neutral-soft: #1c2436;
-  --asdp-tone-muted: #7b89a3;
-  --asdp-tone-muted-soft: #1a2131;
-  --asdp-tone-pending: #8fb4d9;
-  --asdp-tone-pending-soft: #16222f;
-  --asdp-tone-fact: #7fbde8;
-  --asdp-tone-fact-soft: #12222e;
-  --asdp-tone-approved: #4dd39a;
-  --asdp-tone-approved-soft: #12291f;
-  --asdp-tone-undecided: #8b98b0;
+  --asdp-tone-ok: #57d69f;
+  --asdp-tone-ok-soft: #10281e;
+  --asdp-tone-caution: #e6b169;
+  --asdp-tone-caution-soft: #2a2013;
+  --asdp-tone-danger: #ff9a90;
+  --asdp-tone-danger-soft: #2d1615;
+  --asdp-tone-neutral: #a7b4cc;
+  --asdp-tone-neutral-soft: #1b2334;
+  --asdp-tone-muted: #8592ab;
+  --asdp-tone-muted-soft: #19212f;
+  --asdp-tone-pending: #93b9de;
+  --asdp-tone-pending-soft: #14202d;
+  --asdp-tone-fact: #86c2ea;
+  --asdp-tone-fact-soft: #11212d;
+  --asdp-tone-ai: #ab97ff;
+  --asdp-tone-ai-soft: #221d3d;
+  --asdp-tone-approved: #57d69f;
+  --asdp-tone-approved-soft: #10281e;
+  --asdp-tone-undecided: #8592ab;
   --asdp-tone-undecided-soft: transparent;
-  --asdp-tone-unknown: #c79bec;
+  --asdp-tone-unknown: #cba4ee;
   --asdp-tone-unknown-soft: #241a30;
 
-  --asdp-dev-bg: #8c2626;
+  --asdp-dev-bg: #8f2229;
+  --asdp-dev-line: #c04a51;
 
-  --asdp-hl-resolved: #6a5a12;
+  --asdp-hl-resolved: #5f5210;
   --asdp-hl-unverified: #2a3345;
-  --asdp-hl-drifted: #5a2320;
+  --asdp-hl-drifted: #58211f;
 
-  --asdp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --asdp-shadow-md: 0 2px 10px rgba(0, 0, 0, 0.45);
-  --asdp-shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
+  --asdp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --asdp-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  --asdp-shadow-lg: 0 14px 44px -10px rgba(0, 0, 0, 0.62);
 }
 
 /*
- * Compact density: spacing and body size only.
+ * Compact density: spacing and type size only.
  * It never removes information — Y15.
  */
 :root[data-density="compact"] {
   --asdp-text-md: 13px;
   --asdp-text-sm: 12px;
+  --asdp-text-lg: 15px;
+  --asdp-text-xl: 19px;
+  --asdp-text-2xl: 23px;
   --asdp-space-2: 6px;
-  --asdp-space-3: 8px;
-  --asdp-space-4: 12px;
-  --asdp-space-5: 16px;
-  --asdp-space-6: 24px;
+  --asdp-space-3: 9px;
+  --asdp-space-4: 13px;
+  --asdp-space-5: 18px;
+  --asdp-space-6: 26px;
+  --asdp-leading-body: 1.5;
+  --asdp-row-h: 22px;
+  --asdp-header-h: 50px;
 }

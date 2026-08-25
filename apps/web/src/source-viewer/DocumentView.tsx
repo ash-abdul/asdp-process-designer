@@ -19,7 +19,6 @@ import { SourceViewer } from './SourceViewer.tsx';
 import { countByResolution, brokenRanges, type HighlightRange, type TextDirection } from './highlight-model.ts';
 import { Loading, Empty, Failed } from '../components/states.tsx';
 import { Button } from '../components/ui/Button.tsx';
-import { Card } from '../components/ui/Card.tsx';
 import { StateBadge, Chip } from '../components/ui/Badge.tsx';
 import { Inspector, InspectorSection } from '../components/shell/Inspector.tsx';
 import { InspectorRow } from '../components/ui/Card.tsx';
@@ -89,17 +88,16 @@ function Body({ value }: { value: Narrowed }): ReactNode {
   if (value.text.length === 0) {
     return <Empty what="text" hint="This source has no extracted text — it may have failed to parse." />;
   }
+  // The document is a SHEET on the page, not content inside a titled card. A
+  // card header above a centred reading column left a wide empty band beside the
+  // text and made the page feel like a form rather than something to read.
   return (
-    <Card title="Document" flush>
-      <div className="card__pad">
-        <SourceViewer
-          text={value.text}
-          ranges={value.ranges}
-          documentDirection={value.direction}
-          {...(value.language === undefined ? {} : { language: value.language })}
-        />
-      </div>
-    </Card>
+    <SourceViewer
+      text={value.text}
+      ranges={value.ranges}
+      documentDirection={value.direction}
+      {...(value.language === undefined ? {} : { language: value.language })}
+    />
   );
 }
 
@@ -156,17 +154,24 @@ export function DocumentInspector({
       </InspectorSection>
 
       <InspectorSection title="Evidence">
+        {/*
+          resolved and content_unverified are reported as SEPARATE numbers. One
+          combined "12 highlights" figure is the conflation ADR-0038 forbids, and
+          a single total is the easiest way to commit it by accident.
+        */}
         {counts.map((c) => (
-          <InspectorRow key={c.resolution} label={<StateBadge family="verification" value={c.resolution} />}>
+          <div className="inspector__stat" key={c.resolution}>
             <span className="count">{c.count}</span>
-          </InspectorRow>
+            <StateBadge family="verification" value={c.resolution} />
+          </div>
         ))}
         {counts.length === 0 ? <p className="state__hint">No highlights on this document.</p> : null}
         {broken.length > 0 ? (
-          <InspectorRow label={<StateBadge family="verification" value="broken" />}>
+          <div className="inspector__stat">
             <span className="count">{broken.length}</span>
-            <span className="table__sub"> — listed above the text, never painted over it</span>
-          </InspectorRow>
+            <StateBadge family="verification" value="broken" />
+            <span className="table__sub">listed above the text, never painted over it</span>
+          </div>
         ) : null}
       </InspectorSection>
 

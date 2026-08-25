@@ -453,3 +453,39 @@ test('a refused upload uses the shared refusal state, and says nothing was store
   await expect(refused).toContainText(/A refusal is the system working/i);
   await expect(refused).toContainText(/Nothing was changed/i);
 });
+
+test('a project is findable by its KEY, which lives in the accessible name', async ({ page }) => {
+  // Found in the refinement pass: the key was removed from the project link's
+  // visible text because it ran together with the name — and that removed it from
+  // the accessible name too, breaking every test that finds a project by key. A
+  // project is identified by its key; it stays in the name, visible or not.
+  const project = await newProject();
+  await signIn(page, ['BusinessAnalyst']);
+
+  const link = page.getByRole('button', { name: new RegExp(project.key) });
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute('aria-label', new RegExp(project.key));
+  await link.click();
+  await expect(page.getByTestId('project-bar')).toContainText(project.key);
+});
+
+test('the refined workspace header carries project identity at heading scale', async ({ page }) => {
+  const project = await newProject();
+  await ingest(project.id, 'brd-en.md', EN);
+  await signIn(page, ['BusinessAnalyst'], project.key);
+
+  const bar = page.getByTestId('project-bar');
+  await expect(bar).toContainText('Project');
+  await expect(bar).toContainText(project.key);
+  // A header, not a thin strip: it is taller than a single line of body text.
+  const height = await bar.evaluate((el) => el.getBoundingClientRect().height);
+  expect(height).toBeGreaterThan(48);
+
+  // The project name is set at a larger size than body text.
+  const nameSize = await page
+    .locator('.projectbar__name')
+    .first()
+    .evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
+  const bodySize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.body).fontSize));
+  expect(nameSize).toBeGreaterThan(bodySize);
+});

@@ -115,12 +115,12 @@ export function Sources({
         {inventory.kind === 'ready' ? (
           <span className="row" data-testid="inventory-counts">
             {/* A count is never shown without its undecided partner (Y8). */}
-            <Chip title="Sources with an authority rank a human has set">
+            <span className="metric" title="Sources with an authority rank a human has set">
               <span className="count">{ranked}</span> ranked
-            </Chip>
-            <Chip title="Nobody has decided these yet. Not low authority — undecided.">
+            </span>
+            <span className="metric" title="Nobody has decided these yet. Not low authority — undecided.">
               <span className="count">{unranked}</span> unranked
-            </Chip>
+            </span>
           </span>
         ) : null}
       </header>
@@ -580,7 +580,9 @@ function UploadForm({
         </Field>
 
         <div className="dropzone">
-          <span aria-hidden="true">⬆</span>
+          <span className="dropzone__glyph" aria-hidden="true">
+            ⬆
+          </span>
           <Field id="up-file" label="Choose a file">
             <input
               id="up-file"

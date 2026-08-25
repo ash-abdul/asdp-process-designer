@@ -36,7 +36,10 @@ export function Rail({
         <span className="rail__mark" aria-hidden="true">
           ◈
         </span>
-        {icons ? null : <span>ASDP</span>}
+        <span className="rail__brand-text">
+          <span className="rail__brand-name">ASDP</span>
+          <span className="rail__brand-sub">Process Designer</span>
+        </span>
       </div>
 
       <p className="rail__section">Workspaces</p>

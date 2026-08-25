@@ -122,6 +122,7 @@ function Workspace({
           <ProjectBar
             {...(projectLabel === undefined ? {} : { projectName: projectLabel.text })}
             {...(projectLabel === undefined ? {} : { projectDirection: projectLabel.direction === 'rtl' ? 'rtl' : 'ltr' })}
+            {...(projectLabel?.language === undefined ? {} : { projectLanguage: projectLabel.language })}
             {...(project === undefined ? {} : { projectKey: project.key })}
             {...(sourceName === undefined ? {} : { sourceName })}
           >
@@ -300,6 +301,16 @@ function ProjectChooser({
                       className="table__link"
                       onClick={() => onChoose(p)}
                       data-testid={`open-project-${p.id}`}
+                      /*
+                       * The key is in the ACCESSIBLE NAME but not in the visible
+                       * text: it has its own column, and repeating it inline ran
+                       * the two together as one string. It must stay in the name —
+                       * a project is identified by its key, and that is how both a
+                       * screen-reader user and the browser suite find one. Removing
+                       * it from the name broke ten tests, which is the correct
+                       * response to removing an identifier people navigate by.
+                       */
+                      aria-label={`${label.text} — ${p.key}`}
                     >
                       {/* The name is bilingual, so it is rendered in ITS direction. */}
                       <span
@@ -307,8 +318,7 @@ function ProjectChooser({
                         {...(label.language === undefined ? {} : { lang: label.language })}
                       >
                         {label.text}
-                      </span>{' '}
-                      <span className="id">{p.key}</span>
+                      </span>
                     </button>
                   );
                 },

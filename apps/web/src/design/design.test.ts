@@ -22,6 +22,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   VOCABULARY,
@@ -46,6 +47,16 @@ import {
 } from './appearance.ts';
 import { BREAKPOINTS, collapseStage, layoutFor } from './responsive.ts';
 import * as assistant from '../assistant/assistant-model.ts';
+import {
+  audit,
+  contrastRatio,
+  describeFailure,
+  luminance,
+  parseHex,
+  parseTokens,
+  resolve,
+  type TokenSet,
+} from './contrast.ts';
 
 const FAMILIES: readonly SemanticFamily[] = [
   'severity',
@@ -355,5 +366,81 @@ describe('Y22 / H3 — the assistant cannot ask anything', () => {
     assert.match(all, /evidence/);
     assert.match(all, /no approve/);
     assert.match(all, /never presented as accuracy/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Y14 — contrast, computed rather than assumed
+// ---------------------------------------------------------------------------
+
+describe('WCAG AA contrast over the real token file', () => {
+  // The stylesheet the browser resolves is the one under test. A duplicate
+  // palette in TypeScript could drift from it; this cannot.
+  const css = readFileSync(new URL('../../src/design/tokens.css', import.meta.url), 'utf8');
+  const tones = [...new Set(VOCABULARY.map((s) => s.tone))];
+
+  test('every declared token combination meets its WCAG AA requirement, in BOTH themes', () => {
+    const failures = audit(css, tones).filter((m) => !m.passes);
+    assert.deepEqual(
+      failures.map(describeFailure),
+      [],
+      `${failures.length} token combination(s) fail WCAG AA:\n  ${failures.map(describeFailure).join('\n  ')}`,
+    );
+  });
+
+  test('the audit actually covers something — a vacuous pass is a defect too', () => {
+    // A test that measures nothing passes. This is the guard against that.
+    const measurements = audit(css, tones);
+    assert.ok(measurements.length >= 90, `only ${measurements.length} combinations measured`);
+    assert.equal(new Set(measurements.map((m) => m.theme)).size, 2, 'both themes must be measured');
+    // Every semantic tone is covered as text AND as a border.
+    for (const tone of tones) {
+      const forTone = measurements.filter((m) => m.foreground === `--asdp-tone-${tone}`);
+      assert.ok(forTone.some((m) => m.requirement === 'text'), `${tone} is not checked as text`);
+      assert.ok(forTone.some((m) => m.requirement === 'ui'), `${tone} is not checked as a border`);
+    }
+  });
+
+  test('the contrast maths matches the WCAG reference values', () => {
+    // Black on white is exactly 21:1; a colour against itself is exactly 1:1.
+    assert.equal(Math.round(contrastRatio(parseHex('#000000'), parseHex('#ffffff'))), 21);
+    assert.equal(contrastRatio(parseHex('#777777'), parseHex('#777777')), 1);
+    // A known WCAG example: #767676 on white is the classic 4.54:1 boundary.
+    const boundary = contrastRatio(parseHex('#767676'), parseHex('#ffffff'));
+    assert.ok(boundary >= 4.5 && boundary < 4.6, `expected ~4.54, got ${boundary}`);
+    assert.equal(luminance(parseHex('#000000')), 0);
+    assert.equal(Math.round(luminance(parseHex('#ffffff'))), 1);
+  });
+
+  test('a translucent token is REFUSED rather than approximated', () => {
+    // Contrast against a translucent colour depends on what is behind it, so a
+    // guessed backdrop would produce a number nobody could rely on.
+    assert.throws(() => parseHex('#37456380'), /not an opaque hex colour/);
+    assert.throws(() => parseHex('transparent'), /not an opaque hex colour/);
+  });
+
+  test('a token missing from the dark block is checked against its light value', () => {
+    const [light, dark] = parseTokens(css);
+    assert.ok(light !== undefined && dark !== undefined);
+    assert.equal(light.theme, 'light');
+    assert.equal(dark.theme, 'dark');
+    // Dark inherits everything it does not override — the cascade, as the browser
+    // resolves it. A token the dark block forgets is the bug worth catching.
+    assert.ok(dark.values.size >= light.values.size);
+    assert.notEqual(resolve(light, '--asdp-bg'), resolve(dark, '--asdp-bg'));
+  });
+
+  test('var() chains resolve, and a circular one is refused', () => {
+    const fake: TokenSet = {
+      theme: 'light',
+      values: new Map([
+        ['--a', 'var(--b)'],
+        ['--b', '#123456'],
+        ['--loop', 'var(--loop)'],
+      ]),
+    };
+    assert.equal(resolve(fake, '--a'), '#123456');
+    assert.throws(() => resolve(fake, '--loop'), /circular/);
+    assert.throws(() => resolve(fake, '--missing'), /not defined/);
   });
 });
