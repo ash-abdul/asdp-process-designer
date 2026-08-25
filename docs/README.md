@@ -1,7 +1,7 @@
 # ASDP Process Designer — Documentation Index
 
 > **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V7 all accepted; Phase 2 NOT closed — H4 blocks it** · **Version:** 2.7 · **Updated:** 2026-08-24
-> **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0 · **Phase 2 is CLOSED / ACCEPTED** (§16). **UI enablement U1 and U2 are ACCEPTED** (§18, §19); **U3–U5 are NOT authorised.** **P3 has not started and has no approved boundary.**
+> **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0 · **Phase 2 is CLOSED / ACCEPTED** (§16). **UI enablement U1, U2 and the design foundation D-U2.5 are ACCEPTED** (§18, §19, §20.7); the design system is the **baseline** for later UI slices (§20.8). **U3–U5 are NOT authorised.** **P3 has not started and has no approved boundary.**
 
 All documents are versioned specifications, not notes. Where a document and an ADR appear to
 disagree, **the ADR wins** and the document is a defect.
@@ -108,7 +108,7 @@ for the module you are building.
 | [h5-proposal.md](60-plan/h5-proposal.md) | **H5 boundary — durable identity generation.** Closes limitation **78**: every surrogate id comes from a per-process counter, so the first write after a restart collides. **APPROVED, implemented and ACCEPTED 2026-08-24.** Decisions **M1–M9** |
 | [ui-enablement-proposal.md](60-plan/ui-enablement-proposal.md) | **`apps/web` boundary — the smallest usable browser application over the accepted P1/P2 backend.** Addresses the undelivered P1/P2 UI capabilities recorded in [roadmap.md](60-plan/roadmap.md) §0.3. **BOUNDARY APPROVED 2026-08-25 (W1–W13). U1 and U2 ACCEPTED; U3–U5 NOT authorised.** [ADR-0039](adr/ADR-0039-react-presentation-layer.md) records the React/Vite adoption |
 | [u2-proposal.md](60-plan/u2-proposal.md) | **U2 boundary — sources: intake, inventory, authority ranking and L0 validation.** The first UI slice that writes. **APPROVED, implemented and ACCEPTED 2026-08-25.** Decisions **X1–X10**; browser testing recorded in [ADR-0040](adr/ADR-0040-browser-testing-pinned-browser.md) |
-| [ui-design-foundation-proposal.md](60-plan/ui-design-foundation-proposal.md) | **UI/UX design foundation — shell, tokens, components, semantic states, evidence and AI presentation, accessibility, RTL, and the governed **Ask ASDP** contextual assistant's UX architecture.** **APPROVED 2026-08-25** — decisions **Y1–Y28** with a **Y12** clarification, plus an approved **visual reference** (§26) and the **D-U2.5** implementation boundary (§25). The assistant remains a **disabled shell** — implementing it needs **H3** |
+| [ui-design-foundation-proposal.md](60-plan/ui-design-foundation-proposal.md) | **UI/UX design foundation — shell, tokens, components, semantic states, evidence and AI presentation, accessibility, RTL, and the governed **Ask ASDP** contextual assistant's UX architecture.** **APPROVED, implemented and ACCEPTED 2026-08-25** — decisions **Y1–Y28** with a **Y12** clarification, an approved **visual reference** (§26), and **D-U2.5** accepted at `99de2a7` after a visual review. **The accepted design system is the baseline for every later UI slice.** The assistant remains a **disabled shell** — implementing it needs **H3** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 

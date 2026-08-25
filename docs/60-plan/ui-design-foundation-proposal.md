@@ -1,6 +1,9 @@
-# ASDP UI/UX Design Foundation — Boundary · ✅ **APPROVED**
+# ASDP UI/UX Design Foundation — Boundary · ✅ **APPROVED · IMPLEMENTED · ACCEPTED**
 
-> ## **STATUS: APPROVED 2026-08-25. Y1–Y28 approved, with one clarification to Y12 (§24.1).**
+> ## **STATUS: APPROVED, IMPLEMENTED and ACCEPTED — 2026-08-25.** Y1–Y28 approved with one
+> clarification to Y12 (§24.1); **D-U2.5 accepted at `99de2a7` after a visual review**, recorded in
+> [phase-2-status.md](phase-2-status.md) **§20.7**. **The accepted design system is the baseline for
+> every subsequent UI slice — §20.8 there.**
 > **D-U2.5 is APPROVED as the implementation boundary** — §25, and **only** §25. It is
 > **presentation-only**: it delivers no capability, and **U3 is still not authorised.**
 > **A visual reference was supplied and approved** — four mockup screens, §26. The reference
@@ -711,12 +714,12 @@ Restated because these are the items that would be quietly lost first:
 
 ---
 
-## 25. The implementation boundary — **D-U2.5** · **APPROVED · IMPLEMENTED · AWAITING ACCEPTANCE**
+## 25. The implementation boundary — **D-U2.5** · **APPROVED · IMPLEMENTED · ACCEPTED**
 
-> **Approved 2026-08-25** at `52ba323`. **Implemented** in the commit that follows it, and
-> **NOT ACCEPTED** — acceptance needs a visual review and an explicit decision. The implementation
-> record, its verification, its deviations from the visual reference and its remaining limitations
-> are in [phase-2-status.md](phase-2-status.md) **§20.4–§20.6**.
+> **Approved 2026-08-25** at `52ba323`, **implemented** at `90d9297` + `c42f99e` + `99de2a7`, and
+> **ACCEPTED 2026-08-25** at `99de2a7` after a visual review. The acceptance record, its
+> verification, the deviations from the visual reference, the remaining limitations and the
+> **baseline it establishes** are in [phase-2-status.md](phase-2-status.md) **§20.4–§20.8**.
 
 
 **Proposed name: D-U2.5 — “the design foundation, demonstrated on what already exists”.** Deliberately

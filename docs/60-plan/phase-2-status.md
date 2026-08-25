@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED 2026-08-25 (§18), U2 ACCEPTED 2026-08-25 (§19). U3–U5 are NOT authorised.** · **Version:** 8.1 · **Updated:** 2026-08-25
-> **Checkpoint:** §0 · **Commit:** **U2 ACCEPTED** — `8f7d37b` + `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
+> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3–U5 are NOT authorised.** · **Version:** 8.2 · **Updated:** 2026-08-25
+> **Checkpoint:** §0 · **Commit:** **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -84,8 +84,20 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 > closed off localhost by construction, and is **never** the production authentication solution.
 > Production requires OIDC ([ADR-0027](../adr/ADR-0027-abstract-oidc-identity.md)), unimplemented.
 >
+> **D-U2.5 IS ACCEPTED — 2026-08-25** (§20.7), at `99de2a7`, **after a visual review.** The design
+> foundation (**Y1–Y28**, with the **Y12** clarification) and its application to U1 and U2 are both
+> accepted. It delivered **no capability**: the proof that it was presentation-only is that **the ten
+> U2 browser tests passed UNCHANGED**, with no assertion weakened.
+>
+> **THE ACCEPTED DESIGN SYSTEM IS THE BASELINE FOR EVERY SUBSEQUENT UI SLICE — §20.8.** Tokens,
+> components, the semantic-state vocabulary, WCAG AA contrast, responsive and RTL behaviour,
+> accessibility rules, the Ask ASDP interaction model and the Modern AI Engineering direction are
+> **settled**. A slice that needs to change one of them is making an architectural change and needs
+> its own approval.
+>
 > **U3–U5 MUST NOT START.** W13 approved U1→U5 **as a sequence**, not as authorisation; each slice
-> needs its own boundary approved, as U1's and U2's were.
+> needs its own boundary approved, as U1's, U2's and D-U2.5's each were. **The next permitted action
+> is to PROPOSE the U3 boundary.**
 >
 > **Open and explicitly NON-blocking:** **H6** (limitation 79), **H7** (limitation 80), **H8**
 > (limitation 81), **H1**/**H2** (limitations 43/44), **H3** (limitation 62, which blocks every live
@@ -109,14 +121,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements. It **spans** roadmap **P1 + P2**, and **closing it did NOT close them**: P1 and P2 carry user-facing commitments this repository has not delivered — **§17**, [roadmap.md](roadmap.md) §0 |
-| **Current slice** | **None. U2 is ACCEPTED** — 2026-08-25, §19. **U3 is NOT authorised.** **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
-| **Previously** | **U1 ACCEPTED** — 2026-08-25, §18, against decisions **W1–W13** |
-| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 · U1 · U2 — the whole approved Phase 2 slice sequence, both hardening slices, and the first two UI enablement slices.** U2 accepted 2026-08-25 (`0b7b700` + `8f7d37b` + `c93e05b`); U1 accepted 2026-08-25 (`da95b56` + `5882bb2` + `d4785c1`). H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
-| **Commit** | **U2 `0b7b700` + `8f7d37b` + `c93e05b`.** U1 `da95b56` + `5882bb2` + `d4785c1`. H5 `2d04ab1` + `0ba13b7`. H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Current slice** | **None. D-U2.5 is ACCEPTED** — 2026-08-25, §20.7, at `99de2a7` after a visual review. **U3 is NOT authorised.** **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U2 accepted §19; U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
+| **Previously** | **U2 ACCEPTED** — 2026-08-25, §19, against decisions **X1–X10** |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 · U1 · U2 · D-U2.5 — the whole approved Phase 2 slice sequence, both hardening slices, the first two UI enablement slices, and the design foundation.** D-U2.5 accepted 2026-08-25 (`52ba323` + `90d9297` + `c42f99e` + `99de2a7`) after a **visual review**; U2 accepted 2026-08-25 (`0b7b700` + `8f7d37b` + `c93e05b`); U1 accepted 2026-08-25 (`da95b56` + `5882bb2` + `d4785c1`). H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | **D-U2.5 `52ba323` + `90d9297` + `c42f99e` + `99de2a7`.** U2 `0b7b700` + `8f7d37b` + `c93e05b`. U1 `da95b56` + `5882bb2` + `d4785c1`. H5 `2d04ab1` + `0ba13b7`. H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
 | **Phase 2 closure** | ## **CLOSED — ACCEPTED 2026-08-24**, §16. Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*, plus K8's clarification that durable multi-project G1 must survive a restart. **Both satisfied and proved by execution.** Limitations 77 and 78 closed. Everything still open — H1, H2, H3, H6, H7, H8, V2-PDF, V4b-eval, ADR-0037 — is **off the path to G1**, was non-blocking at closure, and **remains open and unresolved** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **D-U2.5 — the design foundation, demonstrated on what already exists.** The **UI/UX design foundation is APPROVED** 2026-08-25 (**Y1–Y28**, with the **Y12** clarification), together with a **supplied visual reference** and the **D-U2.5** implementation boundary — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), §20 below. D-U2.5 is **presentation-only**: it delivers **no capability**. **U3 is still NOT authorised** and must not start. The other open sequencing options — H3 and live-AI enablement, or P3 — remain **UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **NONE. D-U2.5 is accepted and nothing is approved to follow it.** The next slice **in the approved sequence** is **U3** — the requirements workspace, **W13** — and it is **NOT authorised**: §11 of [CLAUDE.md](../../CLAUDE.md) requires its boundary to be **proposed and approved** first, as U1's, U2's and D-U2.5's each were. **The only permitted next action is to propose the U3 boundary.** **The accepted design system is the baseline for U3 and every UI slice after it** — §20.8. The other open sequencing options — H3 and live-AI enablement, or P3 — remain **UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -136,6 +148,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | **U1** — `apps/web`, development sign-in, project and source selection, the source viewer, server-provided highlighting in both directions | `da95b56` + `5882bb2` + `d4785c1` | **Accepted** — 2026-08-25, §18. Boundary **W1–W13**; [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) recorded **before** any UI code. Accepted for **mechanics, governance and RTL/LTR correctness, explicitly not for visual or UX design** |
 | **U2** — sources: inventory, upload, authority ranking, L0 validation; **the first slice that writes** | `0b7b700` + `8f7d37b` + `c93e05b` | **Accepted** — 2026-08-25, §19, after an independent review. Boundary **X1–X10**; [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) recorded **before** implementation. Three defects found and corrected (§19.1). Accepted for **mechanics, governance and the journey, explicitly not for visual or UX design** |
+| **D-U2.5** — the design foundation, demonstrated on U1 and U2. **Presentation-only: no capability** | `52ba323` + `90d9297` + `c42f99e` + `99de2a7` | **Accepted** — 2026-08-25, §20.7, **after a visual review**. Boundary **Y1–Y28** with the **Y12** clarification and an approved four-screen visual reference. Eight defects found and corrected across two review passes (§20.4.1, §20.4.2). **The ten U2 browser tests passed unchanged throughout**, which is what makes it presentation-only |
 
 **V0–V3 added no runtime dependency after V0.** Runtime dependencies stood at seven through V7, H4
 and H5; **U1 added two** — `react` and `react-dom`, both pinned exactly — for a total of **nine**.
@@ -2361,9 +2374,11 @@ indistinguishable from one that works, until the rule beneath it gets more preci
 
 ---
 
-## 20. UI/UX design foundation and **D-U2.5** — **APPROVED 2026-08-25**
+## 20. UI/UX design foundation and **D-U2.5** — **ACCEPTED 2026-08-25**
 
-> **The foundation is APPROVED. D-U2.5 is APPROVED as its implementation boundary.**
+> ## **D-U2.5 IS ACCEPTED — 2026-08-25, at `99de2a7`, after a visual review.**
+> The foundation (**Y1–Y28**) and its implementation are both accepted. **The accepted design
+> system is the BASELINE for every subsequent UI slice — §20.8.**
 > **U3 is NOT authorised. P3 has not started. H3 is unresolved and no live provider call is
 > permitted.** Discharges **F-U2-b** (§19.3).
 
@@ -2422,17 +2437,16 @@ weakened. **Held through the refinement pass** (§20.4.2): 878 unit, 31 browser,
 without colour, navigation and collapse behaviour, density and responsiveness, dark mode, and
 **that Ask ASDP makes no network call**. No checker rule may be weakened; no dependency added.
 
-**D-U2.5 is NOT accepted.** Acceptance is a separate explicit decision and requires a visual
-review.
+**Acceptance was a separate explicit decision, taken 2026-08-25 after a visual review — §20.7.**
 
-### 20.4 D-U2.5 — implemented, **AWAITING ACCEPTANCE**
+### 20.4 D-U2.5 — the implementation
 
-> **NOT accepted.** Acceptance needs a **visual review** and an explicit decision. **U3 is not
-> authorised, P3 has not started, H3 is unresolved**, and **no live provider call was made**.
+> **ACCEPTED 2026-08-25** — §20.7. **U3 is not authorised, P3 has not started, H3 is unresolved**,
+> and **no live provider call was made**.
 
 | | |
 |---|---|
-| **Implementation** | *(this change)* |
+| **Implementation** | `90d9297` (the foundation applied) + `c42f99e` (six review corrections) + `99de2a7` (the visual refinement pass and the contrast audit) |
 | **Boundary** | [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) §25, approved at `52ba323` |
 | **Verification** | `npm run verify` **green end to end, exit 0** — **872 pass / 872 · 0 fail · 0 skipped · 0 todo · 176 suites**; `check:arch` **186 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98 files / 1185 links** |
 | **Browser** | **`npm run test:e2e`: 31 passed / 31.** The **ten U2 tests pass UNCHANGED** — not one assertion was weakened, and that is what makes this slice presentation-only rather than merely described as such. **19 new tests** cover the shell, rail honesty, dark mode, density, the collapse order, RTL mirroring, semantic states without colour, the contextual panel, keyboard row selection, the shared refusal state, and Ask ASDP |
@@ -2535,6 +2549,49 @@ it over **the real token file the browser resolves**, not a copy that could drif
 unmeasured is the contrast of **content the server supplies**: a highlight under document text is
 checked, but the document's own text is not styled by these tokens.
 
+### 20.7 Acceptance
+
+| | |
+|---|---|
+| **Accepted** | **2026-08-25**, on an explicit decision, **after a visual review of the running application** |
+| **Accepted at** | **`99de2a7`** |
+| **Boundary** | [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) — **Y1–Y28** with the **Y12** clarification (§24.1 there), §25's **D-U2.5** scope, and the four-screen visual reference (§26). Approved at `52ba323` |
+| **Implementation** | `90d9297` + `c42f99e` + `99de2a7` |
+| **Verification at acceptance** | `npm run verify` **green end to end, exit 0** — **878 pass / 878 · 0 fail · 0 skipped · 0 todo · 177 suites**; `check:arch` **187 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98 files / 1188 links**. **`npm run test:e2e`: 31 passed / 31** |
+| **The bar that made it presentation-only** | **The ten U2 browser tests passed UNCHANGED throughout** — `u2-sources.spec.ts` has an empty diff across the entire slice, and no assertion was weakened. This is the evidence, not the claim |
+| **Review** | **Two review passes before acceptance, eight defects found and corrected** — six in the first (§20.4.1) and two introduced by the refinement pass itself (§20.4.2). The visual review was the user's own |
+| **Dependencies** | **None added.** Plain CSS custom properties, per **Y16**. Runtime dependencies unchanged at nine |
+| **Checker rules** | **None weakened.** No exemption was added, and the self-test still proves every rule bites |
+| **Backend** | **Untouched.** No API, contract, migration, command or domain behaviour changed |
+
+**What acceptance CLAIMS:** a durable visual and interaction foundation, applied to the functionality
+U1 and U2 already delivered, with **WCAG AA contrast computed over the real token file** (§20.4.3).
+
+**What it does NOT claim:** any new capability — D-U2.5 delivered none; **U3**, which is not
+authorised; any model quality — **no live model has ever been called**, and **Ask ASDP is an inert
+shell** because **H3 / limitation 62** is unresolved.
+
+### 20.8 The accepted baseline for every subsequent UI slice
+
+**This is the load-bearing consequence of acceptance.** The following are now the **baseline**, not a
+starting point to be re-litigated per slice. A slice that needs to change one of them is making an
+**architectural** change and needs its own approval:
+
+| Baseline | Where it lives |
+|---|---|
+| **The approved design system and token layer** | `apps/web/src/design/tokens.css` — the only place a colour, size or space is defined. **Plain CSS custom properties; no UI library, no CSS framework, no CSS-in-JS** (**Y16**) |
+| **The component inventory**, and *no component carries a domain rule* | `apps/web/src/components/` — **Y17**, enforced by the architecture checker |
+| **The semantic-state vocabulary** — seven families, three channels per state | `apps/web/src/design/semantics.ts`. **Colour is never the only channel**, and the test proves the states stay distinguishable with it removed |
+| **WCAG AA contrast** over every declared token pair, in both themes | `apps/web/src/design/contrast.ts`. A new token combination is added to the declared pairs, **not** exempted |
+| **Responsive behaviour and the collapse order** | `apps/web/src/design/responsive.ts`. **Governance information collapses last, and the status strip never hides** |
+| **RTL/LTR behaviour** | Logical properties only; direction is **per-segment and server-decided**; identifiers stay LTR and ASCII |
+| **Accessibility** | **W8** plus D-U2.5's additions: never colour alone, accessible names carrying direction and language, keyboard-operable rows, reasons in text beside disabled controls |
+| **The Ask ASDP interaction model** | `apps/web/src/assistant/`. Persistent, collapsible, context-bound, evidence-first, **no write control of any kind**, and **inert until H3 is resolved** |
+| **The Modern AI Engineering visual direction** | Navy rail, one accent hue, one restrained AI violet, engineering-tool density, **AI present without dominating**. No decorative gradients or visual effects |
+
+**U3 inherits all of it.** Its boundary proposal should say which screens it adds — not which of these
+it intends to redecide.
+
 ### 20.5 Deviations from the visual reference, and why
 
 **Each is a case where the repository or the available data won, exactly as §26.1 requires.**
@@ -2571,7 +2628,7 @@ checked, but the document's own text is not styled by these tokens.
 
 ## 15. Next step
 
-### V0–V7, H4, H5, U1 and U2 are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3–U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
+### V0–V7, H4, H5, U1, U2 and D-U2.5 are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3–U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
 
 | | |
 |---|---|
@@ -2593,6 +2650,7 @@ PDF engine import — so the V2-PDF block remains mechanical rather than remembe
 
 | **U1 — `apps/web` and the source viewer** | **ACCEPTED / COMPLETE**, 2026-08-25 — §18. Boundary **W1–W13**; [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) recorded before any UI code. Two follow-ups: **F-U1-a DISCHARGED** by ADR-0040, **F-U1-b STANDING**. Accepted for **mechanics, governance and RTL/LTR correctness, explicitly not visual or UX design** |
 | **U2 — sources: intake, inventory, authority, L0 validation** | **ACCEPTED / COMPLETE**, 2026-08-25 — §19, after an independent review. **The first slice that writes.** Boundary **X1–X10**; [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) recorded before implementation. Three defects found and corrected (§19.1); follow-ups **F-U2-a** and **F-U2-b** recorded (§19.3). Accepted for **mechanics, governance and the journey, explicitly not visual or UX design** |
+| **D-U2.5 — the design foundation, demonstrated on U1 and U2** | **ACCEPTED / COMPLETE**, 2026-08-25 — §20.7, after a visual review. **Presentation-only: no capability.** Boundary **Y1–Y28** with the **Y12** clarification. Eight defects found across two review passes; the ten U2 browser tests passed **unchanged** throughout. **The accepted design system is the baseline for every later UI slice** — §20.8 |
 | **U3 / U4 / U5 — requirements workspace, coverage, reconciliation and G1 in the browser** | **NOT AUTHORISED.** W13 approved U1→U5 as a **sequence**, which is not authorisation. **U3 must not start.** **F-U2-b** asks for a UI/UX design foundation to be approved first — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), **PROPOSED / NOT APPROVED**. U4 needs API gap **G-a**, U5 needs **G-b**; both are approved and unbuilt |
 | **V6 — conflicts, precedence and reconciliation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §9, reviewed in §9.10. Decisions **Q1–Q9**; `L1-CONF-*` and slot-scoped comparison approved at acceptance. **Accepted for mechanics and governance, explicitly not semantic correctness** — §9.8 |
 
