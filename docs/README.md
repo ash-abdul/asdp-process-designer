@@ -1,7 +1,7 @@
 # ASDP Process Designer — Documentation Index
 
 > **Status:** Phase 0 approved · Phase 1 complete · **Phase 2 V0–V7 all accepted; Phase 2 NOT closed — H4 blocks it** · **Version:** 2.7 · **Updated:** 2026-08-24
-> **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0 · **Phase 2 is CLOSED / ACCEPTED** (§16). **P3 has not started and has no approved boundary.**
+> **Current checkpoint:** [phase-2-status.md](60-plan/phase-2-status.md) §0 · **Phase 2 is CLOSED / ACCEPTED** (§16). **UI enablement U1 and U2 are ACCEPTED** (§18, §19); **U3–U5 are NOT authorised.** **P3 has not started and has no approved boundary.**
 
 All documents are versioned specifications, not notes. Where a document and an ADR appear to
 disagree, **the ADR wins** and the document is a defect.
@@ -93,11 +93,11 @@ for the module you are building.
 
 | Document | Purpose |
 |---|---|
-| [roadmap.md](60-plan/roadmap.md) | Phases P0–P9 with exit criteria. **§0 reconciles the roadmap against what was actually built (2026-08-25): roadmap P1/P2 are NOT fully delivered — the source viewer, requirements workspace and coverage dashboard exist as APIs only.** §1 preserves the original v1.0 commitments unedited |
+| [roadmap.md](60-plan/roadmap.md) | Phases P0–P9 with exit criteria. **§0 reconciles the roadmap against what was actually built (2026-08-25): roadmap P1/P2 are NOT fully delivered.** §0.3/§0.4 corrected the same day — **`apps/web` and the source viewer now exist** (U1, U2); the **requirements workspace** and **coverage dashboard** remain API-only. §1 preserves the original v1.0 commitments unedited |
 | [phase-0-tasks.md](60-plan/phase-0-tasks.md) | Phase 0 breakdown and the six spikes |
 | [phase-1-status.md](60-plan/phase-1-status.md) | Phase 1 implementation status, defects found, deferrals |
 | [phase-2-plan.md](60-plan/phase-2-plan.md) | Phase 2 objective, slices V0–V7, approved V2 boundary, acceptance criteria |
-| [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — **PHASE 2 CLOSED / ACCEPTED 2026-08-24** (§16). V0–V7, H4 and H5 accepted. Closure validates mechanics, governance, traceability and durable multi-project G1; it makes **no claim about real AI or model quality** — no live model has been called. V4b-eval deferred; V2-PDF blocked |
+| [phase-2-status.md](60-plan/phase-2-status.md) | Phase 2 implementation status — **PHASE 2 CLOSED / ACCEPTED 2026-08-24** (§16). V0–V7, H4 and H5 accepted; **UI enablement U1 (§18) and U2 (§19) accepted 2026-08-25, which does not reopen Phase 2 or close roadmap P1/P2**. Closure validates mechanics, governance, traceability and durable multi-project G1; it makes **no claim about real AI or model quality** — no live model has been called. V4b-eval deferred; V2-PDF blocked |
 | [v3-proposal.md](60-plan/v3-proposal.md) | V3 design record — multimodal and structural intake. **Approved, implemented and accepted** |
 | [v4-proposal.md](60-plan/v4-proposal.md) | V4 boundary — **V4a accepted**; V4b split out to its own record. Decisions **E1–E5**, with **E2 resolved** |
 | [v4b-proposal.md](60-plan/v4b-proposal.md) | V4b boundary — **V4b-core approved, implemented and ACCEPTED**, **V4b-eval deferred** pending a credential and permitted material. Decisions **F1–F5** |
@@ -106,8 +106,8 @@ for the module you are building.
 | [v7-proposal.md](60-plan/v7-proposal.md) | V7 boundary — the human requirements workspace and **G1**. **APPROVED 2026-08-23; implemented and ACCEPTED 2026-08-24.** Decisions **U1–U10** |
 | [h4-proposal.md](60-plan/h4-proposal.md) | **H4 boundary — project-scoped requirement identity.** Closed limitation **77**: a second project in the same database could not reach G1. **APPROVED, implemented and ACCEPTED 2026-08-24.** Decisions **K1–K8** — K1–K6 and K8 approved, **K7 refused** |
 | [h5-proposal.md](60-plan/h5-proposal.md) | **H5 boundary — durable identity generation.** Closes limitation **78**: every surrogate id comes from a per-process counter, so the first write after a restart collides. **APPROVED, implemented and ACCEPTED 2026-08-24.** Decisions **M1–M9** |
-| [ui-enablement-proposal.md](60-plan/ui-enablement-proposal.md) | **`apps/web` boundary — the smallest usable browser application over the accepted P1/P2 backend.** Addresses the undelivered P1/P2 UI capabilities recorded in [roadmap.md](60-plan/roadmap.md) §0.3. **BOUNDARY APPROVED 2026-08-25 (W1–W13); ONLY U1 authorised.** [ADR-0039](adr/ADR-0039-react-presentation-layer.md) records the React/Vite adoption |
-| [u2-proposal.md](60-plan/u2-proposal.md) | **U2 boundary — sources: intake, inventory, authority ranking and L0 validation.** The first UI slice that writes. **BOUNDARY APPROVED 2026-08-25.** Decisions **X1–X10**; browser testing recorded in [ADR-0040](adr/ADR-0040-browser-testing-pinned-browser.md) |
+| [ui-enablement-proposal.md](60-plan/ui-enablement-proposal.md) | **`apps/web` boundary — the smallest usable browser application over the accepted P1/P2 backend.** Addresses the undelivered P1/P2 UI capabilities recorded in [roadmap.md](60-plan/roadmap.md) §0.3. **BOUNDARY APPROVED 2026-08-25 (W1–W13). U1 and U2 ACCEPTED; U3–U5 NOT authorised.** [ADR-0039](adr/ADR-0039-react-presentation-layer.md) records the React/Vite adoption |
+| [u2-proposal.md](60-plan/u2-proposal.md) | **U2 boundary — sources: intake, inventory, authority ranking and L0 validation.** The first UI slice that writes. **APPROVED, implemented and ACCEPTED 2026-08-25.** Decisions **X1–X10**; browser testing recorded in [ADR-0040](adr/ADR-0040-browser-testing-pinned-browser.md) |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 

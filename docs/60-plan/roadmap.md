@@ -1,7 +1,7 @@
 # Implementation Roadmap
 
-> **Status:** Approved (Phase 0) · **Version:** 1.1 — **reconciliation note added 2026-08-25; §1 is
-> unchanged** · **Updated:** 2026-08-25
+> **Status:** Approved (Phase 0) · **Version:** 1.2 — **reconciliation note added 2026-08-25 and
+> corrected the same day for UI enablement; §1 is unchanged** · **Updated:** 2026-08-25
 > **Related:** [phase-0-tasks.md](phase-0-tasks.md), [mvp-scope.md](../00-product/mvp-scope.md),
 > [phase-2-status.md](phase-2-status.md) §17, [phase-2-plan.md](phase-2-plan.md)
 
@@ -57,23 +57,33 @@ trigger.** They are open commitments of this roadmap.
 
 | Roadmap commitment | Phase | Actual status |
 |---|---|---|
-| **Source viewer with RTL-safe highlighting** | P1 | **API only.** `GET …/content`, `…/units`, `…/highlights` exist and compute direction-aware highlight segments server-side. **No rendering surface exists** |
+| **Source viewer with RTL-safe highlighting** | P1 | ~~**API only.** … **No rendering surface exists**~~ — **SUPERSEDED 2026-08-25. It renders.** `GET …/content`, `…/units` and `…/highlights` compute direction-aware segments server-side, and **U1** renders them in the browser with correct LTR and RTL behaviour ([phase-2-status.md](phase-2-status.md) §18). **U2** added source intake, inventory, authority ranking and L0 validation (§19). **P1 is not thereby closed** — see §0.4 |
 | **Requirements workspace** | P2 | **API only.** The full review command surface exists. **No workspace exists** |
 | **Coverage dashboard** | P2 | **API only.** `GET …/frame-coverage` and `…/g1/readiness` exist. **No dashboard exists** |
 | **A real bilingual 40-page BRD + screenshots + legacy BPMN** (P1 exit) | P1 | **Not done.** Every corpus is synthetic |
 | **"On a real BRD"** (P2 exit) | P2 | **Not done.** Every corpus is synthetic |
 | **Degradation ladder exercised end to end against the private-endpoint adapter** (P2 exit) | P2 | **Partial.** The adapter exists with a deliberately reduced capability set and the ladder is exercised in CI; **all transports are injected stubs** |
-| **`apps/web` React SPA** ([module-map.md](../10-architecture/module-map.md), [technology-stack.md](../10-architecture/technology-stack.md)) | — | **Does not exist.** No frontend of any kind; the checker's `presentation` class has never been declared by any package |
+| **`apps/web` React SPA** ([module-map.md](../10-architecture/module-map.md), [technology-stack.md](../10-architecture/technology-stack.md)) | — | ~~**Does not exist.** No frontend of any kind; the checker's `presentation` class has never been declared by any package~~ — **SUPERSEDED 2026-08-25. It exists**, created by **U1** ([phase-2-status.md](phase-2-status.md) §18) and extended by **U2** (§19). It is the first package to declare the checker's `presentation` class. The original statement is kept so the gap it recorded stays legible |
 
 **No live model has ever been called, in any slice.** Every evaluation figure in this repository is a
 synthetic corpus against an authored stub.
 
 ### 0.4 Status of the undelivered work
 
-> **UNPLANNED · BOUNDARY NOT YET APPROVED.**
+> **Corrected 2026-08-25.** When §0.3 was written, **every** item in it was unplanned with no
+> approved boundary. **Two have since been delivered under approved boundaries** — the `apps/web`
+> SPA and the source viewer, by **U1** and **U2** ([phase-2-status.md](phase-2-status.md) §18–§19).
+> **The rest remain UNPLANNED · BOUNDARY NOT YET APPROVED.**
 
-The items in §0.3 have **no approved implementation phase, no slice, no boundary and no schedule**.
-They are recorded here so they are not lost, and **naming them here assigns no scope**. §11 of
+| Item | Status |
+|---|---|
+| **`apps/web` SPA** · **source viewer** | **DELIVERED and ACCEPTED** — U1 and U2, 2026-08-25, each on an approved boundary with its ADR recorded first ([ADR-0039](../adr/ADR-0039-react-presentation-layer.md), [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)) |
+| **Requirements workspace** · **coverage dashboard** | **Still API only.** They are **U3** and **U4**, and **neither is authorised** |
+| **Real-BRD validation** · **the degradation ladder against a live private endpoint** | **Still not done.** Both need approved material; any live call additionally needs **H3** |
+
+**Delivering two rendering surfaces does not close roadmap P1 or P2.** The remaining items have
+**no approved implementation phase, no slice, no boundary and no schedule**. They are recorded here
+so they are not lost, and **naming them here assigns no scope**. §11 of
 [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any of them may begin.
 
 Two constraints already apply to them and are **not** lifted by this reconciliation:

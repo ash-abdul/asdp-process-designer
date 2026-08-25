@@ -1,6 +1,18 @@
-# U2 — Sources: Intake, Inventory, Authority and L0 Validation · ⚠️ PROPOSED, NOT APPROVED
+# U2 — Sources: Intake, Inventory, Authority and L0 Validation · ✅ APPROVED · IMPLEMENTED · **ACCEPTED**
 
-> **Status: BOUNDARY APPROVED 2026-08-25. X1–X10 approved.**
+> **Status: BOUNDARY APPROVED 2026-08-25 (X1–X10) · IMPLEMENTED · ACCEPTED 2026-08-25.**
+> **U2 IS ACCEPTED** — implementation `8f7d37b` (U2-a) + `c93e05b` (U2-b–e), recorded in
+> [phase-2-status.md](phase-2-status.md) **§19**. Verified **838/838** tests, exit 0, and **10/10**
+> browser tests. Three defects were found and corrected during the slice (§19.1), and two
+> non-blocking follow-ups were recorded at acceptance (**F-U2-a**, **F-U2-b** — §19.3).
+>
+> **Document history, preserved deliberately:** this file was written as a **proposal** and its
+> title carried *“⚠️ PROPOSED, NOT APPROVED”*. The body below is the **proposal as written**, still
+> phrased as a proposal — *“proposed scope”*, *“recommendation”*, *“approve, amend or reject”* — and
+> it is **not rewritten in hindsight**, so what was asked for stays distinguishable from what was
+> decided. Only this status block records the decisions. The title label was corrected at
+> acceptance, on 2026-08-25, because a document whose own status block said **APPROVED** while its
+> heading said **NOT APPROVED** is a defect in the record.
 > **X10 approved** — automated browser/E2E testing is introduced **before** U2 implementation, on a
 > **pre-provisioned browser that is never downloaded**, recorded in
 > **[ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)**.
@@ -9,7 +21,10 @@
 > surely as an unknown one.
 > **X1–X5 and X7–X9 approved as proposed**, including using the existing APIs **without** adding the
 > optional `/meta` surface.
-> **U3–U5 remain unauthorised. Acceptance of U2 is a separate decision.**
+> **U3–U5 remain unauthorised**, and each needs its own boundary proposed and approved, per §11 of
+> [CLAUDE.md](../../CLAUDE.md). **F-U2-b** additionally asks that a **UI/UX design foundation** be
+> approved before U3 — `ui-design-foundation-proposal.md`,
+> **PROPOSED / NOT APPROVED**.
 > **Version:** 0.1 · **Written:** 2026-08-25 · **Against commit:** `63bbe47`
 > **Within:** the approved UI enablement boundary —
 > [ui-enablement-proposal.md](ui-enablement-proposal.md) §15.1, slice **U2**

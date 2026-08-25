@@ -1,13 +1,13 @@
 # Phase 2 — Implementation Status
 
-> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. · **Version:** 8.0 · **Updated:** 2026-08-24
-> **Checkpoint:** §0 · **Commit:** **PHASE 2 CLOSED** — recorded here, on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
+> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED 2026-08-25 (§18), U2 ACCEPTED 2026-08-25 (§19). U3–U5 are NOT authorised.** · **Version:** 8.1 · **Updated:** 2026-08-25
+> **Checkpoint:** §0 · **Commit:** **U2 ACCEPTED** — `8f7d37b` + `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
 ---
 
-## 0. Checkpoint — 2026-08-24
+## 0. Checkpoint — 2026-08-25
 
 The single place to read to know where this project stands. Everything below is
 traceable to a commit or an approved decision; nothing here is reconstructed.
@@ -36,10 +36,11 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 > question opens with **V4b-eval**, which is blocked by **H3**.
 >
 > **AND IT IS NOT A PRODUCT MILESTONE.** Implementation Phase 2 spans roadmap **P1 + P2**, and
-> **closing it did not close them** — **§17**. There is **no user interface of any kind**: the source
-> viewer, requirements workspace and coverage dashboard exist **as APIs only**, and `apps/web` does
-> not exist. Those commitments are **UNDELIVERED and UNPLANNED — no approved boundary**
-> ([roadmap.md](roadmap.md) §0).
+> **closing it did not close them** — **§17**. At closure there was **no user interface of any kind**.
+> **That sentence is now out of date and is corrected here rather than deleted:** `apps/web` **exists**
+> (U1, §18) and **the source viewer and source intake now render** (U1 and U2, §18–§19). The
+> **requirements workspace** and **coverage dashboard** are still **APIs only** — they are U3 and U4,
+> and **neither is authorised**. Roadmap P1 and P2 stay open ([roadmap.md](roadmap.md) §0).
 >
 > **H4 IS ACCEPTED — 2026-08-24.** Boundary `ce15d9d` (**K1–K6** and **K8**; **K7 refused**),
 > implementation `193d295`, corrections `5a5504b`. **Limitation 77 is CLOSED:** two projects in
@@ -49,9 +50,42 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 > **Limitation 78 is CLOSED:** identifiers survive a restart and multiple instances, and **durable
 > multi-project G1 works across an application restart** — §5.14.
 >
-> **NO PHASE 2 CLOSURE BLOCKER REMAINS ON THE RECORD. PHASE 2 IS STILL NOT CLOSED**, because closure
-> is a **separate, explicit decision** and it has not been taken. Do not infer it from the absence of
-> blockers. §11 of [CLAUDE.md](../../CLAUDE.md) applies: report and stop.
+> **NO PHASE 2 CLOSURE BLOCKER REMAINS ON THE RECORD, and closure was then taken as a separate,
+> explicit decision — §16.** The sentence that stood here read *“PHASE 2 IS STILL NOT CLOSED”*. It was
+> true when written on 2026-08-24, went stale the moment the decision was taken hours later, and is
+> **corrected 2026-08-25** rather than deleted, so the sequence stays legible. §11 of
+> [CLAUDE.md](../../CLAUDE.md) still governs everything after it: **acceptance is always a separate
+> decision, and it is never inferred from a green run.**
+>
+> ## **UI ENABLEMENT — U1 ACCEPTED, U2 ACCEPTED. U3–U5 ARE NOT AUTHORISED.**
+>
+> **U1 IS ACCEPTED — 2026-08-25** (§18). Boundary `da95b56` (**W1–W13**),
+> [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) `5882bb2`, implementation `d4785c1`.
+> `apps/web` **exists** and is the first package ever to declare the checker's `presentation` class.
+> Read-only: development sign-in → project → source → viewer → server-provided highlighting, correct
+> in **both** reading directions.
+>
+> **U2 IS ACCEPTED — 2026-08-25** (§19) — **the first slice in this application that writes.**
+> Boundary `0b7b700` (**X1–X10**), [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)
+> `0b7b700`, implementation `8f7d37b` (U2-a) + `c93e05b` (U2-b–e). Verified **838/838 tests, exit 0**,
+> plus **10/10 browser tests** against a **system-installed Chrome that was never downloaded**.
+> Accepted for **mechanics, governance and the journey — explicitly not for visual or UX design**,
+> which has no approved foundation yet (§19.2).
+>
+> **UI enablement does NOT reopen Phase 2**, whose closure stands unchanged (§16), and it does **not**
+> close roadmap P1 or P2 (§17). It is delivering the P1/P2 **rendering surfaces** §17.3 recorded as
+> undelivered — the source viewer (U1) and source intake (U2).
+>
+> **F-U1-a is DISCHARGED** — the browser/E2E framework decision was taken as
+> [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md), **before** U2 rather than before U3,
+> because X10-A brought it forward (§18.1).
+> **F-U1-b STANDS, unchanged and permanently:** development header authentication is
+> **localhost/development-only**, lets a caller assert its own identity *and its own roles*, fails
+> closed off localhost by construction, and is **never** the production authentication solution.
+> Production requires OIDC ([ADR-0027](../adr/ADR-0027-abstract-oidc-identity.md)), unimplemented.
+>
+> **U3–U5 MUST NOT START.** W13 approved U1→U5 **as a sequence**, not as authorisation; each slice
+> needs its own boundary approved, as U1's and U2's were.
 >
 > **Open and explicitly NON-blocking:** **H6** (limitation 79), **H7** (limitation 80), **H8**
 > (limitation 81), **H1**/**H2** (limitations 43/44), **H3** (limitation 62, which blocks every live
@@ -75,14 +109,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements. It **spans** roadmap **P1 + P2**, and **closing it did NOT close them**: P1 and P2 carry user-facing commitments this repository has not delivered — **§17**, [roadmap.md](roadmap.md) §0 |
-| **Current slice** | **None. PHASE 2 IS CLOSED** — 2026-08-24, §16. H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
-| **Previously** | **V6 ACCEPTED / COMPLETE** — 2026-08-23 against decisions **Q1–Q9**, §9.10 |
-| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 — the whole approved Phase 2 slice sequence, plus both hardening slices.** H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
-| **Commit** | **H5 `2d04ab1` + `0ba13b7`.** H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
+| **Current slice** | **None. U2 is ACCEPTED** — 2026-08-25, §19. **U3 is NOT authorised.** **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
+| **Previously** | **U1 ACCEPTED** — 2026-08-25, §18, against decisions **W1–W13** |
+| **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 · U1 · U2 — the whole approved Phase 2 slice sequence, both hardening slices, and the first two UI enablement slices.** U2 accepted 2026-08-25 (`0b7b700` + `8f7d37b` + `c93e05b`); U1 accepted 2026-08-25 (`da95b56` + `5882bb2` + `d4785c1`). H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
+| **Commit** | **U2 `0b7b700` + `8f7d37b` + `c93e05b`.** U1 `da95b56` + `5882bb2` + `d4785c1`. H5 `2d04ab1` + `0ba13b7`. H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
 | **Phase 2 closure** | ## **CLOSED — ACCEPTED 2026-08-24**, §16. Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*, plus K8's clarification that durable multi-project G1 must survive a restart. **Both satisfied and proved by execution.** Limitations 77 and 78 closed. Everything still open — H1, H2, H3, H6, H7, H8, V2-PDF, V4b-eval, ADR-0037 — is **off the path to G1**, was non-blocking at closure, and **remains open and unresolved** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **NONE. Phase 2 is closed, the roadmap is reconciled (§17), and nothing is approved to follow it.** The open decision is **what to sequence next** — the undelivered P1/P2 UI capabilities, H3 and live-AI enablement, or P3 — and **all three are UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **NONE. U2 is accepted and nothing is approved to follow it.** The next governance decision is the **UI/UX design foundation** — proposed at `ui-design-foundation-proposal.md`, **PROPOSED / NOT APPROVED**, requested before U3 so that U3–U5 and a later P3 Specification Studio do not need a fundamental redesign. **U3 must not start** until both that foundation and a U3 boundary are approved. The other open sequencing options — H3 and live-AI enablement, or P3 — remain **UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -100,18 +134,25 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **H4** — project-scoped requirement identity, migration 013, the one allocator | `ce15d9d` + `193d295` + `5a5504b` | **Accepted** — 2026-08-24, §5.13. Boundary `ce15d9d` (K1–K6, K8; **K7 refused**); implementation `193d295`; corrections `5a5504b` after an independent review. Accepted for **mechanics and governance, explicitly not semantic quality and explicitly not across a restart** — §5.13.1 |
 | **V7** — the human requirements workspace, human-originated L3, clarification questions, and **G1** | `7bfa440` + `f38ef06` + `96f84e4` + `7e50303` | **Accepted** — 2026-08-24, §10, reviewed in §10.10. **G1 is reachable end to end.** Accepted for **mechanics and governance, explicitly not model quality** — §10.7 |
 
-**V0–V3 added no runtime dependency after V0.** Dependencies stand at seven.
+| **U1** — `apps/web`, development sign-in, project and source selection, the source viewer, server-provided highlighting in both directions | `da95b56` + `5882bb2` + `d4785c1` | **Accepted** — 2026-08-25, §18. Boundary **W1–W13**; [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) recorded **before** any UI code. Accepted for **mechanics, governance and RTL/LTR correctness, explicitly not for visual or UX design** |
+| **U2** — sources: inventory, upload, authority ranking, L0 validation; **the first slice that writes** | `0b7b700` + `8f7d37b` + `c93e05b` | **Accepted** — 2026-08-25, §19, after an independent review. Boundary **X1–X10**; [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) recorded **before** implementation. Three defects found and corrected (§19.1). Accepted for **mechanics, governance and the journey, explicitly not for visual or UX design** |
 
-### Verification of the current working tree — V0–V7, H4 and H5 accepted, green
+**V0–V3 added no runtime dependency after V0.** Runtime dependencies stood at seven through V7, H4
+and H5; **U1 added two** — `react` and `react-dom`, both pinned exactly — for a total of **nine**.
+**U2 added no runtime dependency**: `@playwright/test` is pinned and is a **development** dependency,
+and `npm run verify` never invokes it.
+
+### Verification of the current working tree — V0–V7, H4, H5, U1 and U2 accepted, green
 
 | | |
 |---|---|
-| Verified | **2026-08-24**, `npm run verify` **green end to end, exit 0**, with **H4 and H5 both accepted** |
-| Tests | **794 pass · 0 fail · 0 skipped · 0 todo** · 158 suites. **+12 tests, +3 suites — the H5 acceptance suite** (`h5-durable-identity.test.ts`); H4's suite added 13 before it |
-| `check:arch` | passed — **155 source files** |
-| `check:arch:selftest` | passed — **50 cases** (43 before H5; the new `durable-id-generator` rule carries **six** — two rejecting, four permitting) |
-| `check:docs` | passed — **93 files, 989 links** |
-| `npm run verify` | **green end to end**, and it makes **no live provider call** |
+| Verified | **2026-08-25**, `npm run verify` **green end to end, exit 0**, with **U2 accepted**. Re-run independently at U2's acceptance on a clean tree, not read from a prior record |
+| Tests | **838 pass · 0 fail · 0 skipped · 0 todo** · 168 suites. **+20 tests, +5 suites since U1**; U1 added 24 over H5's 794 |
+| `check:arch` | passed — **168 source files** (the checker walks `.tsx` as well as `.ts` since U1) |
+| `check:arch:selftest` | passed — **57 cases**. U1 added six for the four `presentation` rules; **U2 corrected one that had been passing for the wrong reason** — §19.1 defect 3 |
+| `check:docs` | passed — **97 files, 1084 links** |
+| `npm run verify` | **green end to end**, **server-free**, **network-free**, and it makes **no live provider call**. It does **not** invoke `test:e2e`, so browser availability can never gate the ordinary build ([ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) §4) |
+| `npm run test:e2e` | **10 passed in 11.6 s.** Preflight reported *“Google Chrome 151.0.7922.174 (system-installed; nothing downloaded)”*. A **separate, explicitly invoked** capability, exactly as **A7** treats live AI evaluation |
 | Durability | Verified by execution: sources, text, units, images, evidence **and AI interactions** survive a full service restart, and anchors minted before it still resolve after it. Since **H5** (§5.14), **identifiers survive a restart too** — so **project A can reach G1, the application can restart, and project B can then reach G1 in the same database** |
 | Migrations | `001_governance` … `007_evidence_confidence` · `008_requirements` · `009_reconciliation` · `010_requirement_review` · `011_validation_run` · `012_slot_policy_block` · **`013_requirement_project_scope`** |
 | `eval:baseline` | `PROFILE_SOURCE`, **synthetic** corpus: schema 100%, reproducibility 100%, label agreement 100%, **not usable for a routing decision** |
@@ -193,6 +234,9 @@ traces to a numbered limitation or an approved decision.
 | **H6** — a domain error thrown inside a transaction is flattened to `503` | **Confirmed and reproduced 2026-08-24 while analysing H4. Recorded, not started.** Limitation **79** | `PgliteDatabase.transaction` re-maps every escaping error through `mapDriverError`, so a modelling defect reads as an infrastructure outage. Proposed as **K7** and **NOT APPROVED for H4** — a separate concern, not required to fix limitation 77. **Must not be implemented in the H4 boundary** |
 | **H7** — `order by at, id` mis-orders past 9 999 | **Found and verified 2026-08-24 while analysing H5. Recorded, not started.** Limitation **80** | `id` is `text`, so the four-digit pad overflows and `aud-10000` sorts before `aud-9999`. A V0 defect, latent because no prefix has reached 10 000. **Outside the H5 boundary. NOT a Phase 2 closure blocker** |
 | **H8** — ordering inferred from the identifier | **Found 2026-08-24 while analysing H5. Recorded, not started.** Limitation **81** | Four tables order by `(timestamp, id)`, using the id as a proxy for insertion order. The fix is a monotonic insertion column, which would decouple ordering from identifier design. **Outside the H5 boundary. NOT a Phase 2 closure blocker** |
+| **UI/UX design foundation** — no approved visual or interaction foundation exists | **PROPOSED, NOT APPROVED** — `ui-design-foundation-proposal.md`. Recorded as **F-U2-b**, §19.3 | U1 and U2 established the journey, not a design system. U3–U5 and a later **P3 Specification Studio** would otherwise be built on ad-hoc styling and then need a fundamental redesign. **Requested before U3.** It also carries the **Ask ASDP** contextual-assistant UX architecture, which is **design only** — implementing it needs **H3** resolved first |
+| **F-U1-b** — development header authentication | **STANDING, permanent** — §18.1 | It lets a caller assert its own identity **and its own roles**, and fails closed off localhost by construction. **U2 writes**, which makes this more material, not less. It must never be relaxed, widened or made configurable, and it is **never** the production solution. Production requires OIDC ([ADR-0027](../adr/ADR-0027-abstract-oidc-identity.md)), unimplemented |
+| **F-U2-a** — the no-download guarantee is structural today, conventional after an upgrade | **OPEN, not a defect today** — §19.3 | The pinned Playwright packages carry **no install script**, so `npm ci` cannot fetch a browser. If an upgrade reintroduces one, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` must be **recorded in the repository** rather than in prose. Check at any Playwright version bump |
 | **H3** — AI prompt/response payloads not retained | **Proposed, not approved.** Limitation **62**, §5.12 | **Blocks every live provider call**, and therefore V4b-eval. [ADR-0032](../adr/ADR-0032-retain-everything.md) requires retention; migration 006 stores metadata only. Raise **before** the first live call — an unretained payload is unrecoverable |
 | **H1 / H2** — provenance hardening | **Proposed, not approved.** Limitations **43**, **44**, §5.12 | V3 acceptance was explicitly not held on either. Small, mechanical, still unapproved |
 | **ADR-0037** — binary document extraction | **PROPOSED — HELD.** The only open ADR | Gates **V2-PDF**. `@embedpdf/pdfium` is not installed and the checker rule `pdf-engine-not-approved` fails the build on any PDF engine import |
@@ -2125,12 +2169,29 @@ that roadmap P1 or P2 delivered their product or UI milestones.**
 
 ### 17.3 Undelivered P1/P2 commitments — **UNPLANNED · BOUNDARY NOT YET APPROVED**
 
-Enumerated in [roadmap.md](roadmap.md) §0.3. In summary: the **source viewer**, **requirements
-workspace** and **coverage dashboard** exist **as APIs only** and have **no rendering surface**;
-**real-BRD validation** was never performed; the **degradation ladder** has never run against a live
-private endpoint; and **`apps/web`** does not exist.
+Enumerated in [roadmap.md](roadmap.md) §0.3. In summary, **as this section stood when written on
+2026-08-25 before UI enablement began**: the **source viewer**, **requirements workspace** and
+**coverage dashboard** exist **as APIs only** and have **no rendering surface**; **real-BRD
+validation** was never performed; the **degradation ladder** has never run against a live private
+endpoint; and **`apps/web`** does not exist.
 
-**None of it has an approved boundary, a slice, or a schedule.** Recording it assigns no scope.
+**None of it had an approved boundary, a slice, or a schedule.** Recording it assigned no scope.
+
+#### Corrected 2026-08-25 — two of those items have since been delivered
+
+The paragraph above is kept as written so the divergence stays legible. **Two of its items are no
+longer true**, and the correction is recorded here rather than by editing them away:
+
+| Item | State now |
+|---|---|
+| **`apps/web` does not exist** | **Superseded. It exists** — created by **U1**, ACCEPTED 2026-08-25 (§18), and it is the first package ever to declare the checker's `presentation` class |
+| **Source viewer has no rendering surface** | **Superseded. It renders** — **U1** (§18), with server-provided highlighting correct in both reading directions. **U2** (§19) added source intake, inventory, authority ranking and L0 validation |
+| **Requirements workspace · coverage dashboard** | **Still API only.** They are **U3** and **U4**, and **neither is authorised** |
+| **Real-BRD validation · the degradation ladder against a live endpoint** | **Still not done.** Both need approved material and, for any live call, **H3** |
+
+**Roadmap P1 and P2 remain open.** U1 and U2 deliver two of their rendering surfaces; they do not
+close either phase, and §0.5's statement that this reconciliation does not reopen P1 or P2 is
+unaffected.
 
 ### 17.4 How the divergence happened
 
@@ -2207,11 +2268,13 @@ documents:
 
 ### 18.1 Non-blocking follow-up decisions, recorded at acceptance
 
-**Neither blocks U1's acceptance. Both are binding on what comes after it.**
+**Neither blocked U1's acceptance. Both are binding on what comes after it.** **F-U1-a is now
+DISCHARGED** (2026-08-25, by [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)).
+**F-U1-b STANDS and is permanent** — it is a constraint, not a task, and nothing in U2 relaxed it.
 
 | # | Decision | Status |
 |---|---|---|
-| **F-U1-a** | **An automated browser / E2E testing framework must be decided BEFORE the UI reaches workflows where browser-level interaction is material.** U1's browser behaviour was verified by driving the running application and recording what was observed — reproducible by a person, **not by CI**. That is adequate for a read-only viewer and **is not adequate for a workflow that writes**. [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) records why none was adopted: Playwright and Cypress download browser binaries over the network, which conflicts with the deterministic, network-free posture **A7** requires. **Adopting one is a dependency decision under A4 and needs its own approval** | **OPEN.** Due before the first slice whose acceptance depends on browser-level interaction — on current sequencing, **U3** |
+| **F-U1-a** | **An automated browser / E2E testing framework must be decided BEFORE the UI reaches workflows where browser-level interaction is material.** U1's browser behaviour was verified by driving the running application and recording what was observed — reproducible by a person, **not by CI**. That is adequate for a read-only viewer and **is not adequate for a workflow that writes**. [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) records why none was adopted: Playwright and Cypress download browser binaries over the network, which conflicts with the deterministic, network-free posture **A7** requires. **Adopting one is a dependency decision under A4 and needs its own approval** | **DISCHARGED 2026-08-25** by **[ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)**, approved at `0b7b700` — **before U2 rather than before U3**, because **X10-A** deliberately brought the decision forward on the grounds that U2 is the first slice that **writes**. Playwright is pinned, drives the **system-installed** Chrome via `channel: 'chrome'`, and **downloads nothing**; a missing browser is a **refusal with instructions**. `npm run verify` is unchanged and stays deterministic, network-free and server-free |
 | **F-U1-b** | **Development header authentication is localhost/development-only and must NEVER be treated as the authentication solution for any shared or remotely accessible environment.** It lets a caller assert its own identity **and its own roles**. It fails closed off localhost by construction, and that guard must not be relaxed, widened or made configurable. Production requires OIDC ([ADR-0027](../adr/ADR-0027-abstract-oidc-identity.md)), whose adapter is not implemented and whose deferral trigger is [phase-2-plan.md](phase-2-plan.md) §6.1 | **STANDING.** Not a task; a constraint that holds until OIDC exists |
 
 **One defect found by the work itself.** The first run of the project list failed with a
@@ -2223,9 +2286,24 @@ and project names now render in their own direction.
 
 ---
 
-## 19. UI enablement U2 — implemented, **AWAITING ACCEPTANCE**
+## 19. UI enablement U2 — **ACCEPTED 2026-08-25**
 
-> **NOT accepted.** **U3–U5 are not authorised.** Phase 2 stays closed; **P3 has not started.**
+> **U2 is ACCEPTED.** **U3–U5 are NOT authorised** — each needs its own boundary proposed and
+> approved, per §11 of [CLAUDE.md](../../CLAUDE.md). Phase 2 stays closed; **P3 has not started.**
+> **No live provider call is permitted** while **H3 / limitation 62** stands.
+
+### 19.0 Acceptance
+
+| | |
+|---|---|
+| **Accepted** | **2026-08-25** |
+| **Implementation** | **`8f7d37b`** (U2-a) + **`c93e05b`** (U2-b–e) |
+| **Boundary** | `0b7b700` — [u2-proposal.md](u2-proposal.md), **X1–X10** |
+| **ADR** | `0b7b700` — [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md), recorded **before** implementation |
+| **Verification at acceptance** | `npm run verify` **green end to end, exit 0** — **838 pass / 838 · 0 fail · 0 skipped · 0 todo · 168 suites**; `check:arch` **168 files**; `check:arch:selftest` **57 cases**; `check:docs` **97 files / 1084 links**. **`npm run test:e2e`: 10 passed / 10** in 11.6 s, preflight *“Google Chrome 151.0.7922.174 (system-installed; nothing downloaded)”*. **Re-run at acceptance on a clean tree**, not carried over from the implementation commit |
+| **Review** | An **independent review recommended ACCEPT**. Acceptance is nonetheless a **separate explicit decision**, taken here — a review recommendation is not an acceptance, and neither is a green run |
+| **Backend** | **Untouched by the UI.** The only non-`apps/web` changes are the architecture checker's `presentation-no-api` rule and its self-test fixture (§19.1 defects 2 and 3) |
+| **Dependencies** | **No runtime dependency added.** `@playwright/test` **1.62.1**, pinned exactly, **development only**; `npm run verify` never invokes it |
 
 **Boundary approved 2026-08-25** ([u2-proposal.md](u2-proposal.md), X1–X10), with
 **[ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)** recording the browser-testing
@@ -2236,7 +2314,7 @@ decision **before** implementation.
 | Step | Delivers | Commit |
 |---|---|---|
 | **U2-a** | Role list completed to all ten; **bidirectional** drift test | `8f7d37b` |
-| **U2-b–e** | Inventory, upload, authority ranking, L0 validation, and the browser suite | *(this change)* |
+| **U2-b–e** | Inventory, upload, authority ranking, L0 validation, and the browser suite | `c93e05b` |
 
 | | |
 |---|---|
@@ -2263,14 +2341,29 @@ indistinguishable from one that works, until the rule beneath it gets more preci
 - **Not supersession.** The API accepts `supersedesSourceId`; there is no UI, because supersession
   without a diff view invites mistakes.
 - **Not production authentication.** **F-U1-b** stands unchanged.
-- **No live model call.** U2 invokes no AI, by scope.
+- **No live model call.** U2 invokes no AI, by scope. **H3 / limitation 62 is unresolved**, so no
+  live provider call is permitted from anywhere, including the UI.
+- **Not a visual or UX design.** U2's screens are functional and accessible; **no design system,
+  design tokens or interaction foundation has been approved**. Accepting U2 accepts the **journey and
+  its governance**, not its appearance — see
+  `ui-design-foundation-proposal.md`, **PROPOSED / NOT APPROVED**.
+
+### 19.3 Non-blocking follow-ups recorded at U2's acceptance
+
+**None blocks U2's acceptance. Each is binding on what comes after it.**
+
+| # | Follow-up | Status |
+|---|---|---|
+| **F-U2-a** | **The no-download guarantee is currently structural, and a Playwright upgrade could make it merely conventional.** Today the pinned Playwright packages carry **no install script at all** (`hasInstallScript` is false for `@playwright/test`, `playwright` and `playwright-core` in `package-lock.json`), so `npm ci` has **no hook from which to fetch a browser**. If a future upgrade reintroduces a browser-downloading install script, that structural guarantee disappears and the environment-variable route becomes load-bearing — at which point it must be **recorded in the repository** (an `.npmrc` entry or the `test:e2e` script), not in prose. [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)'s enforcement list was corrected at U2's acceptance for exactly this reason: it claimed an environment variable was recorded in two places where it appears **nowhere in the repository** | **OPEN.** Check at any Playwright version bump. **Not a defect today** — verified 2026-08-25: no `ms-playwright` browser cache exists on a machine where the suite passes |
+| **F-U2-b** | **A UI/UX design foundation must be approved before U3.** U1 and U2 established the journey; U3–U5 and a later **P3 Specification Studio** will add a requirements workspace, coverage, reconciliation and eventually a canvas. Establishing shell, navigation, tokens, states and evidence/AI presentation **after** those screens exist means redesigning them | **REQUESTED at U2's acceptance; the proposal is to be written as `ui-design-foundation-proposal.md`, PROPOSED / NOT APPROVED.** Nothing may be implemented from it without approval |
+| **F-U1-b** | **Unchanged and permanent.** Development header authentication stays localhost/development-only. U2 **writes**, which makes this more material, not less: the header lets a caller assert its own roles, so it must never reach a shared environment | **STANDING** — §18.1 |
 
 
 ---
 
 ## 15. Next step
 
-### V0–V7, H4 and H5 are ACCEPTED. **Phase 2 is CLOSED — §16.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
+### V0–V7, H4, H5, U1 and U2 are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3–U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
 
 | | |
 |---|---|
@@ -2290,6 +2383,9 @@ indistinguishable from one that works, until the rule beneath it gets more preci
 `@embedpdf/pdfium` is still not installed, and `pdf-engine-not-approved` still fails the build on any
 PDF engine import — so the V2-PDF block remains mechanical rather than remembered.
 
+| **U1 — `apps/web` and the source viewer** | **ACCEPTED / COMPLETE**, 2026-08-25 — §18. Boundary **W1–W13**; [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) recorded before any UI code. Two follow-ups: **F-U1-a DISCHARGED** by ADR-0040, **F-U1-b STANDING**. Accepted for **mechanics, governance and RTL/LTR correctness, explicitly not visual or UX design** |
+| **U2 — sources: intake, inventory, authority, L0 validation** | **ACCEPTED / COMPLETE**, 2026-08-25 — §19, after an independent review. **The first slice that writes.** Boundary **X1–X10**; [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) recorded before implementation. Three defects found and corrected (§19.1); follow-ups **F-U2-a** and **F-U2-b** recorded (§19.3). Accepted for **mechanics, governance and the journey, explicitly not visual or UX design** |
+| **U3 / U4 / U5 — requirements workspace, coverage, reconciliation and G1 in the browser** | **NOT AUTHORISED.** W13 approved U1→U5 as a **sequence**, which is not authorisation. **U3 must not start.** **F-U2-b** asks for a UI/UX design foundation to be approved first — `ui-design-foundation-proposal.md`, **PROPOSED / NOT APPROVED**. U4 needs API gap **G-a**, U5 needs **G-b**; both are approved and unbuilt |
 | **V6 — conflicts, precedence and reconciliation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §9, reviewed in §9.10. Decisions **Q1–Q9**; `L1-CONF-*` and slot-scoped comparison approved at acceptance. **Accepted for mechanics and governance, explicitly not semantic correctness** — §9.8 |
 
 **V0–V7, H4 and H5 are ACCEPTED. The approved Phase 2 exit condition — *"Phase 2 ends when G1 can be

@@ -1,11 +1,19 @@
-# UI Enablement (`apps/web`) — Boundary · ✅ APPROVED · **U1 ONLY**
+# UI Enablement (`apps/web`) — Boundary · ✅ APPROVED · **U1 AND U2 ACCEPTED**
 
-> **Status: BOUNDARY APPROVED 2026-08-25. W1–W13 approved. U1 IS ACCEPTED (`d4785c1`, 2026-08-25).**
-> **U2–U5 remain NOT authorised.** U2's boundary must be proposed and approved before it begins,
-> per §11 of [CLAUDE.md](../../CLAUDE.md). U1's acceptance is recorded in
-> [phase-2-status.md](phase-2-status.md) §18, with two **non-blocking follow-up decisions**
-> (§18.1): a browser/E2E framework must be decided before browser-level interaction is material,
-> and development header authentication stays localhost-only, permanently.
+> **Status: BOUNDARY APPROVED 2026-08-25. W1–W13 approved.**
+> **U1 IS ACCEPTED** (`d4785c1`, 2026-08-25) — [phase-2-status.md](phase-2-status.md) §18.
+> **U2 IS ACCEPTED** (`8f7d37b` + `c93e05b`, 2026-08-25) — §19, on its own approved boundary
+> [u2-proposal.md](u2-proposal.md) (**X1–X10**) with
+> [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md).
+> **U3–U5 remain NOT authorised.** W13 approved U1→U5 as a **sequence**, which is not
+> authorisation; each boundary must be proposed and approved before it begins, per §11 of
+> [CLAUDE.md](../../CLAUDE.md), as U1's and U2's were.
+> **The two U1 follow-ups (§18.1): F-U1-a is DISCHARGED** by
+> [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md), taken before U2 rather than before
+> U3; **F-U1-b STANDS permanently** — development header authentication is localhost-only and is
+> never the production authentication solution.
+> **F-U2-b** asks for a **UI/UX design foundation** before U3 —
+> `ui-design-foundation-proposal.md`, **PROPOSED / NOT APPROVED**.
 > **React + Vite adoption is recorded in [ADR-0039](../adr/ADR-0039-react-presentation-layer.md)**,
 > approved before any UI code was written.
 > **Version:** 1.0 · **Approved:** 2026-08-25 · **Against commit:** `773c82c`
@@ -38,7 +46,7 @@
 | **W10** | The three API gaps (§2.2) | **G-a APPROVED · G-b APPROVED · G-c DEFERRED** — hardcoded role mapping with an **automated drift test**. **G-a and G-b may be built only by the slice that first needs them; U1 needs neither** |
 | **W11** | Acceptance criteria (§13) | **APPROVED** |
 | **W12** | Required tests (§14) | **APPROVED** |
-| **W13** | Slices and sequence, U1 → U5 (§15) | **APPROVED as a sequence. ONLY U1 IS AUTHORISED** |
+| **W13** | Slices and sequence, U1 → U5 (§15) | **APPROVED as a sequence.** U1 **accepted** 2026-08-25; U2 **accepted** 2026-08-25 on its own boundary ([u2-proposal.md](u2-proposal.md), X1–X10). **U3–U5 are NOT authorised** |
 | **W14** | Out of scope (§16) | Unchanged |
 
 ### 0.1 U1's approved acceptance boundary
@@ -46,8 +54,10 @@
 > **Development sign-in → project selection → source selection → source viewer → server-provided
 > evidence highlighting with correct English/LTR and Arabic/RTL behaviour.**
 
-**Nothing else. U2–U5 must not be implemented.** G-a and G-b are approved but **out of U1**, because
-U1 needs neither.
+**Nothing else.** G-a and G-b are approved but **out of U1**, because U1 needs neither.
+
+**As at 2026-08-25: U1 is accepted, and U2 has since been approved, implemented and accepted on its
+own boundary. U3–U5 must not be implemented.**
 
 ---
 
