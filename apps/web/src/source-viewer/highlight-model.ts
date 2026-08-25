@@ -164,6 +164,27 @@ export function brokenRanges(ranges: readonly HighlightRange[]): readonly Highli
 }
 
 /**
+ * How many ranges sit in each verification state — **D-U2.5, for the inspector**.
+ *
+ * A count, in the order the states appear, so the inspector can report
+ * `resolved` and `content_unverified` **as separate numbers**. Collapsing them
+ * into one *"12 highlights"* figure is precisely the conflation
+ * [ADR-0038](../../../../docs/adr/ADR-0038-target-versus-content-verification.md)
+ * forbids, and a single total is the easiest way to commit it by accident.
+ *
+ * Pure arithmetic over the server's own `resolution` values: it reads no text,
+ * computes no geometry and changes nothing about how a highlight is painted.
+ */
+export function countByResolution(
+  ranges: readonly HighlightRange[],
+): readonly { readonly resolution: HighlightRange['resolution']; readonly count: number }[] {
+  const order: readonly HighlightRange['resolution'][] = ['resolved', 'content_unverified', 'drifted'];
+  return order
+    .map((resolution) => ({ resolution, count: ranges.filter((r) => r.resolution === resolution).length }))
+    .filter((c) => c.count > 0);
+}
+
+/**
  * The accessible name for a highlighted piece.
  *
  * **W8: a highlight is never identified by colour alone.** This is what a screen

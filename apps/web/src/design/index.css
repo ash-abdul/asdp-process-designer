@@ -1,0 +1,10 @@
+/*
+ * The single stylesheet entry point — Y16.
+ *
+ * Four layers, in order: tokens, base, shell, components. Nothing outside
+ * `design/` defines a colour, a size or a space.
+ */
+@import './tokens.css';
+@import './base.css';
+@import './shell.css';
+@import './components.css';

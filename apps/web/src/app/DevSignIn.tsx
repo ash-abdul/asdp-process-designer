@@ -7,14 +7,21 @@
  * this screen:
  *
  * - **refuses to operate off localhost**, visibly, with no weaker fallback;
- * - is **labelled as development authentication** here and in the shell banner;
+ * - is **labelled as development authentication** here and in the shell;
  * - says plainly that it is **not** the production architecture.
  *
  * See [ADR-0039](../../../../docs/adr/ADR-0039-react-presentation-layer.md) §6.
+ *
+ * **D-U2.5 restyled it and changed nothing else.** All ten roles are still
+ * selectable — U2-a's defect was that five were missing, and a bidirectional
+ * drift test now fails if that ever recurs — and the warning is, if anything,
+ * louder than before (**F-U1-b**).
  */
 
 import { useState, type ReactNode } from 'react';
 import { ROLES, isDevelopmentOrigin, type DevIdentity, type DevRole } from '../lib/dev-auth.ts';
+import { Button } from '../components/ui/Button.tsx';
+import { Card, Field } from '../components/ui/Card.tsx';
 
 export function DevSignIn({ origin, onSignIn }: { origin: string; onSignIn: (i: DevIdentity) => void }): ReactNode {
   const [subject, setSubject] = useState('u-analyst');
@@ -24,65 +31,95 @@ export function DevSignIn({ origin, onSignIn }: { origin: string; onSignIn: (i: 
   if (!permitted) {
     return (
       <main className="signin" role="alert">
-        <h1>Development authentication is refused here</h1>
-        <p>
-          This build uses <strong>development authentication</strong>, which is permitted only
-          against a localhost origin. The current origin is <code>{origin}</code>.
-        </p>
-        <p>
-          This is deliberate and not recoverable from the browser. Development authentication lets a
-          caller assert its own identity <em>and its own roles</em>; it is <strong>not</strong> the
-          production authentication architecture, which requires OIDC.
-        </p>
+        <div className="signin__panel">
+          <Brand />
+          <Card title="Refused">
+            <h1>Development authentication is refused here</h1>
+            <p>
+              This build uses <strong>development authentication</strong>, which is permitted only
+              against a localhost origin. The current origin is <code className="id">{origin}</code>.
+            </p>
+            <p>
+              This is deliberate and not recoverable from the browser. Development authentication lets
+              a caller assert its own identity <em>and its own roles</em>; it is <strong>not</strong>{' '}
+              the production authentication architecture, which requires OIDC.
+            </p>
+          </Card>
+        </div>
       </main>
     );
   }
 
   const toggle = (role: DevRole): void =>
-    setRoles((current) =>
-      current.includes(role) ? current.filter((r) => r !== role) : [...current, role],
-    );
+    setRoles((current) => (current.includes(role) ? current.filter((r) => r !== role) : [...current, role]));
 
   return (
     <main className="signin">
-      <h1>ASDP — development sign-in</h1>
+      <div className="signin__panel">
+        <Brand />
 
-      <p className="dev-warning" role="note">
-        <strong>Development authentication.</strong> You are choosing your own identity and roles.
-        Anyone can do the same. This is for local development only and is <strong>not</strong> the
-        production authentication architecture.
-      </p>
+        <p className="dev-warning" role="note">
+          <strong>Development authentication.</strong> You are choosing your own identity and roles.
+          Anyone can do the same. This is for local development only and is <strong>not</strong> the
+          production authentication architecture.
+        </p>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (subject.trim().length > 0 && roles.length > 0) onSignIn({ subject: subject.trim(), roles });
-        }}
-      >
-        <label htmlFor="subject">Subject</label>
-        <input
-          id="subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          autoComplete="off"
-          required
-        />
+        <Card title="Sign in">
+          <form
+            className="form-grid"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (subject.trim().length > 0 && roles.length > 0) onSignIn({ subject: subject.trim(), roles });
+            }}
+          >
+            <Field id="subject" label="Subject" hint="Sent as x-asdp-subject. Any value; it is not verified.">
+              <input
+                id="subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                autoComplete="off"
+                required
+              />
+            </Field>
 
-        <fieldset>
-          <legend>Roles</legend>
-          {ROLES.map((role) => (
-            <label key={role} className="role">
-              <input type="checkbox" checked={roles.includes(role)} onChange={() => toggle(role)} />
-              {role}
-            </label>
-          ))}
-        </fieldset>
+            <fieldset className="roles">
+              <legend>Roles — all ten the API recognises</legend>
+              {ROLES.map((role) => (
+                <label key={role} className="role">
+                  <input type="checkbox" checked={roles.includes(role)} onChange={() => toggle(role)} />
+                  {role}
+                </label>
+              ))}
+            </fieldset>
 
-        <button type="submit" disabled={subject.trim().length === 0 || roles.length === 0}>
-          Sign in
-        </button>
-        {roles.length === 0 ? <p className="state__hint">Choose at least one role.</p> : null}
-      </form>
+            <div className="row">
+              <Button type="submit" tone="primary" glyph="→" disabled={subject.trim().length === 0 || roles.length === 0}>
+                Sign in
+              </Button>
+              {roles.length === 0 ? <span className="state__hint">Choose at least one role.</span> : null}
+            </div>
+          </form>
+        </Card>
+
+        <p className="state__hint">
+          Production requires OIDC (ADR-0027), whose adapter is not implemented. Ask ASDP is
+          unavailable in this build — live AI enablement is pending (H3).
+        </p>
+      </div>
     </main>
+  );
+}
+
+function Brand(): ReactNode {
+  return (
+    <div className="signin__brand">
+      <span className="rail__mark" aria-hidden="true">
+        ◈
+      </span>
+      <span>
+        <h1 style={{ fontSize: 'var(--asdp-text-xl)' }}>ASDP Process Designer</h1>
+        <span className="state__hint">Requirements-driven process engineering</span>
+      </span>
+    </div>
   );
 }

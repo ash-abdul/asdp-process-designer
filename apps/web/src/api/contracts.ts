@@ -46,15 +46,30 @@ export const ProjectSummary = z.object({
 });
 export type ProjectSummary = z.infer<typeof ProjectSummary>;
 
-/** The label to show, with the direction it must be shown in. */
-export function labelOf(project: ProjectSummary): { text: string; direction: 'ltr' | 'rtl' | 'neutral' } {
+/**
+ * The label to show, with the direction **and the language** it must be shown in.
+ *
+ * The language is the API's own `primary.lang`, carried through so the rendered
+ * element can declare `lang` as well as `dir`. Both matter: `dir` decides layout,
+ * `lang` decides font selection and how a screen reader pronounces it — and U1
+ * already set the precedent that an accessible name carries both.
+ */
+export function labelOf(project: ProjectSummary): {
+  text: string;
+  direction: 'ltr' | 'rtl' | 'neutral';
+  language?: string;
+} {
   const primary = project.name?.primary;
   if (primary === undefined) return { text: project.key, direction: 'ltr' };
   const text =
     typeof primary.text === 'string'
       ? primary.text
       : primary.text[primary.lang] ?? Object.values(primary.text)[0] ?? project.key;
-  return { text: text === '' ? project.key : text, direction: primary.direction };
+  return {
+    text: text === '' ? project.key : text,
+    direction: primary.direction,
+    ...(primary.lang === '' ? {} : { language: primary.lang }),
+  };
 }
 
 export const ProjectList = z.array(ProjectSummary);

@@ -1,0 +1,208 @@
+/*
+ * ASDP design tokens — Y9, Y13, Y14, Y15, Y16.
+ *
+ * PLAIN CSS CUSTOM PROPERTIES. No framework, no CSS-in-JS, no library (Y16,
+ * approved). Every colour, size and space in this application resolves to a
+ * token defined here, in both light and dark.
+ *
+ * Colour is the THIRD channel of any semantic state. The glyph and the border
+ * treatment come from `semantics.ts`, and the test suite proves the states stay
+ * distinguishable with the colour removed.
+ */
+
+:root {
+  /* --- type: three families, Arabic-first metrics (Y13) ------------------ */
+  --asdp-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --asdp-font-ar: "Geeza Pro", "Segoe UI Arabic", "Noto Naskh Arabic", "Al Bayan", var(--asdp-font-ui);
+  --asdp-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --asdp-text-xs: 12px;
+  --asdp-text-sm: 13px;
+  --asdp-text-md: 14px;
+  --asdp-text-lg: 16px;
+  --asdp-text-xl: 20px;
+  --asdp-text-2xl: 24px;
+  --asdp-text-3xl: 32px;
+
+  /* Set for the TALLER of the two scripts, so Arabic diacritics never clip. */
+  --asdp-leading-tight: 1.45;
+  --asdp-leading-body: 1.65;
+
+  /* --- space: 4px base (Y15) -------------------------------------------- */
+  --asdp-space-1: 4px;
+  --asdp-space-2: 8px;
+  --asdp-space-3: 12px;
+  --asdp-space-4: 16px;
+  --asdp-space-5: 24px;
+  --asdp-space-6: 32px;
+  --asdp-space-7: 48px;
+
+  --asdp-radius-sm: 4px;
+  --asdp-radius-md: 6px;
+  --asdp-radius-lg: 10px;
+  --asdp-border: 1px;
+  --asdp-border-strong: 2px;
+
+  --asdp-motion-fast: 120ms;
+  --asdp-motion-base: 200ms;
+
+  /* --- shell geometry ---------------------------------------------------- */
+  --asdp-rail-w: 216px;
+  --asdp-rail-w-icons: 60px;
+  --asdp-inspector-w: 340px;
+  --asdp-assistant-w: 320px;
+
+  /* --- neutral ramp: light ---------------------------------------------- */
+  --asdp-n-0: #ffffff;
+  --asdp-n-50: #f7f8fa;
+  --asdp-n-100: #eef0f4;
+  --asdp-n-200: #e2e5ec;
+  --asdp-n-300: #ccd2dd;
+  --asdp-n-400: #a6afbf;
+  --asdp-n-500: #7a8496;
+  --asdp-n-600: #58616f;
+  --asdp-n-700: #3d4550;
+  --asdp-n-800: #262c35;
+  --asdp-n-900: #151a21;
+
+  /* The rail is dark in BOTH themes: it is the product's constant (visual ref). */
+  --asdp-rail-bg: #101a2e;
+  --asdp-rail-bg-hover: #1b2740;
+  --asdp-rail-fg: #c9d3e6;
+  --asdp-rail-fg-strong: #ffffff;
+  --asdp-rail-fg-muted: #6d7d99;
+  --asdp-rail-active: #2b3f6b;
+
+  /* --- surfaces --------------------------------------------------------- */
+  --asdp-bg: var(--asdp-n-50);
+  --asdp-surface: var(--asdp-n-0);
+  --asdp-surface-sunken: var(--asdp-n-100);
+  --asdp-surface-raised: var(--asdp-n-0);
+  --asdp-line: var(--asdp-n-200);
+  --asdp-line-strong: var(--asdp-n-300);
+  --asdp-fg: var(--asdp-n-900);
+  --asdp-fg-muted: var(--asdp-n-600);
+  --asdp-fg-faint: var(--asdp-n-500);
+
+  /* --- accent: one hue for selection, focus and primary action ---------- */
+  --asdp-accent: #3a4fd8;
+  --asdp-accent-hover: #2f41b8;
+  --asdp-accent-fg: #ffffff;
+  --asdp-accent-soft: #eaedfd;
+  --asdp-focus: #1f6feb;
+
+  /* --- AI accent: restrained violet, deliberately NOT the accent -------- */
+  --asdp-ai: #6b4fd8;
+  --asdp-ai-soft: #f0ecfe;
+  --asdp-ai-line: #cdc0f7;
+
+  /* --- semantic tones (Y14). One per `tone` in semantics.ts ------------- */
+  --asdp-tone-ok: #1a7f52;
+  --asdp-tone-ok-soft: #e8f7ef;
+  --asdp-tone-caution: #96601a;
+  --asdp-tone-caution-soft: #fdf3e2;
+  --asdp-tone-danger: #b3261e;
+  --asdp-tone-danger-soft: #fdeceb;
+  --asdp-tone-neutral: var(--asdp-n-600);
+  --asdp-tone-neutral-soft: var(--asdp-n-100);
+  --asdp-tone-muted: var(--asdp-n-500);
+  --asdp-tone-muted-soft: var(--asdp-n-100);
+  --asdp-tone-pending: #4a6b8a;
+  --asdp-tone-pending-soft: #eaf1f8;
+  --asdp-tone-fact: #1f5f8b;
+  --asdp-tone-fact-soft: #e7f1f8;
+  --asdp-tone-ai: var(--asdp-ai);
+  --asdp-tone-ai-soft: var(--asdp-ai-soft);
+  --asdp-tone-approved: #1a7f52;
+  --asdp-tone-approved-soft: #e8f7ef;
+  --asdp-tone-undecided: var(--asdp-n-500);
+  --asdp-tone-undecided-soft: transparent;
+  --asdp-tone-unknown: #7a3fb5;
+  --asdp-tone-unknown-soft: #f5ecfb;
+
+  /* --- development authentication: never subtle (F-U1-b) ---------------- */
+  --asdp-dev-bg: #7a1f1f;
+  --asdp-dev-fg: #ffffff;
+
+  /* --- highlights: verification states, and they must NOT look alike ---- */
+  --asdp-hl-resolved: #fff2a8;
+  --asdp-hl-unverified: #e6e9ef;
+  --asdp-hl-drifted: #ffd9d6;
+
+  --asdp-shadow-sm: 0 1px 2px rgba(16, 26, 46, 0.06);
+  --asdp-shadow-md: 0 2px 8px rgba(16, 26, 46, 0.10);
+  --asdp-shadow-lg: 0 8px 28px rgba(16, 26, 46, 0.18);
+}
+
+/* --- dark: the same token NAMES, different values ---------------------- */
+:root[data-theme="dark"] {
+  --asdp-bg: #0d1220;
+  --asdp-surface: #151c2c;
+  --asdp-surface-sunken: #101725;
+  --asdp-surface-raised: #1b2334;
+  --asdp-line: #26314a;
+  --asdp-line-strong: #37456380;
+  --asdp-fg: #e7ecf6;
+  --asdp-fg-muted: #a3b0c8;
+  --asdp-fg-faint: #7b89a3;
+
+  --asdp-rail-bg: #0a1120;
+  --asdp-rail-bg-hover: #16203a;
+  --asdp-rail-fg: #b9c5dc;
+  --asdp-rail-active: #24365e;
+
+  --asdp-accent: #7b8cff;
+  --asdp-accent-hover: #93a1ff;
+  --asdp-accent-fg: #0d1220;
+  --asdp-accent-soft: #1e2748;
+  --asdp-focus: #7fa8ff;
+
+  --asdp-ai: #a08cff;
+  --asdp-ai-soft: #221d3d;
+  --asdp-ai-line: #3f3470;
+
+  --asdp-tone-ok: #4dd39a;
+  --asdp-tone-ok-soft: #12291f;
+  --asdp-tone-caution: #e2ab5e;
+  --asdp-tone-caution-soft: #2b2113;
+  --asdp-tone-danger: #ff8a80;
+  --asdp-tone-danger-soft: #2e1615;
+  --asdp-tone-neutral: #a3b0c8;
+  --asdp-tone-neutral-soft: #1c2436;
+  --asdp-tone-muted: #7b89a3;
+  --asdp-tone-muted-soft: #1a2131;
+  --asdp-tone-pending: #8fb4d9;
+  --asdp-tone-pending-soft: #16222f;
+  --asdp-tone-fact: #7fbde8;
+  --asdp-tone-fact-soft: #12222e;
+  --asdp-tone-approved: #4dd39a;
+  --asdp-tone-approved-soft: #12291f;
+  --asdp-tone-undecided: #8b98b0;
+  --asdp-tone-undecided-soft: transparent;
+  --asdp-tone-unknown: #c79bec;
+  --asdp-tone-unknown-soft: #241a30;
+
+  --asdp-dev-bg: #8c2626;
+
+  --asdp-hl-resolved: #6a5a12;
+  --asdp-hl-unverified: #2a3345;
+  --asdp-hl-drifted: #5a2320;
+
+  --asdp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --asdp-shadow-md: 0 2px 10px rgba(0, 0, 0, 0.45);
+  --asdp-shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
+}
+
+/*
+ * Compact density: spacing and body size only.
+ * It never removes information — Y15.
+ */
+:root[data-density="compact"] {
+  --asdp-text-md: 13px;
+  --asdp-text-sm: 12px;
+  --asdp-space-2: 6px;
+  --asdp-space-3: 8px;
+  --asdp-space-4: 12px;
+  --asdp-space-5: 16px;
+  --asdp-space-6: 24px;
+}

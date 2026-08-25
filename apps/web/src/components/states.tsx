@@ -12,26 +12,77 @@
  * 3. **A 503 is reported honestly.** Limitation 79 / H6 means a domain error
  *    thrown inside a transaction still surfaces as `503 database unavailable`.
  *    Rewriting that in the client would hide a recorded defect.
+ *
+ * **Y27 adds a fourth state: REFUSAL, and it is not an error.** A permission
+ * refusal, an egress refusal and a duplicate are three different outcomes and
+ * they read differently. A refusal is the system working, so it is styled as a
+ * caution rather than a failure — and it always quotes the server rather than
+ * paraphrasing it.
  */
 
 import type { ReactNode } from 'react';
 import { ApiError, ContractError } from '../api/client.ts';
+import { Button } from './ui/Button.tsx';
 
-export function Loading({ what }: { what: string }): ReactNode {
+export function Loading({ what, lines }: { what: string; lines?: number }): ReactNode {
+  // A skeleton that matches the eventual layout, not a spinner where a count
+  // will be (Y27). The live region carries the words for a screen reader.
+  const count = lines ?? 3;
   return (
-    <p className="state state--loading" role="status" aria-live="polite">
-      Loading {what}…
-    </p>
+    <div className="state state--loading" role="status" aria-live="polite">
+      <span>Loading {what}…</span>
+      <span aria-hidden="true" className="stack" style={{ gap: '6px', marginBlockStart: '6px' }}>
+        {Array.from({ length: count }, (_, i) => (
+          <span key={i} className="skeleton" style={{ inlineSize: `${100 - i * 12}%` }} />
+        ))}
+      </span>
+    </div>
   );
 }
 
 export function Empty({ what, hint }: { what: string; hint: string }): ReactNode {
   return (
     <div className="state state--empty">
-      <p>
+      <p className="state__title">
+        <span aria-hidden="true">○</span>
         <strong>No {what} yet.</strong>
       </p>
+      {/* An empty state carries its reason. "None" and "none yet decided" differ. */}
       <p className="state__hint">{hint}</p>
+    </div>
+  );
+}
+
+/**
+ * A refusal — **Y27**.
+ *
+ * The server's own words, and its rule id or policy where it gave one. Never a
+ * paraphrase: a refusal the UI has reworded is a refusal the user cannot look up.
+ */
+export function Refused({
+  what,
+  reason,
+  rule,
+  testId,
+}: {
+  what: string;
+  reason: string;
+  rule?: string;
+  testId?: string;
+}): ReactNode {
+  return (
+    <div className="state state--refusal" role="alert" {...(testId === undefined ? {} : { 'data-testid': testId })}>
+      <p className="state__title">
+        <span aria-hidden="true">⊘</span>
+        <strong>Refused — {what}</strong>
+      </p>
+      <p>{reason}</p>
+      {rule === undefined ? null : (
+        <p className="state__hint">
+          Rule <code>{rule}</code>
+        </p>
+      )}
+      <p className="state__hint">A refusal is the system working. Nothing was changed.</p>
     </div>
   );
 }
@@ -93,15 +144,18 @@ export function Failed({ error, retry }: { error: Error; retry?: () => void }): 
   const { title, advice, detail } = describe(error);
   return (
     <div className="state state--error" role="alert">
-      <p>
+      <p className="state__title">
+        <span aria-hidden="true">✕</span>
         <strong>{title}</strong>
       </p>
       <p>{advice}</p>
       {detail === undefined ? null : <p className="state__detail">{detail}</p>}
       {retry === undefined ? null : (
-        <button type="button" onClick={retry}>
-          Try again
-        </button>
+        <span className="row">
+          <Button onClick={retry} glyph="↻">
+            Try again
+          </Button>
+        </span>
       )}
     </div>
   );

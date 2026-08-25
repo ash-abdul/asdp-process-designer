@@ -1,0 +1,290 @@
+/*
+ * The shell — Y3 and Y26.
+ *
+ * Four regions over a project bar and a status strip. The regions are
+ * STRUCTURAL: screens choose their content, never whether a region exists.
+ *
+ * The collapse order is fixed (Y26) and the invariant is that what collapses is
+ * chrome, never state. The status strip is never hidden at any width.
+ */
+
+.shell {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "rail projectbar"
+    "rail work"
+    "rail statusstrip";
+  height: 100%;
+  min-height: 100vh;
+}
+
+/* --- the rail: dark in both themes ------------------------------------- */
+.rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  gap: var(--asdp-space-2);
+  inline-size: var(--asdp-rail-w);
+  padding: var(--asdp-space-3) var(--asdp-space-2);
+  background: var(--asdp-rail-bg);
+  color: var(--asdp-rail-fg);
+  border-inline-end: var(--asdp-border) solid #0000;
+  overflow-y: auto;
+}
+.shell[data-rail="icons"] .rail { inline-size: var(--asdp-rail-w-icons); }
+.shell[data-rail="icons"] .rail__label,
+.shell[data-rail="icons"] .rail__section,
+.shell[data-rail="icons"] .rail__slice { display: none; }
+
+.rail__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--asdp-space-2);
+  padding: var(--asdp-space-2);
+  color: var(--asdp-rail-fg-strong);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.rail__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 28px; block-size: 28px;
+  border-radius: var(--asdp-radius-md);
+  background: linear-gradient(140deg, var(--asdp-accent), var(--asdp-ai));
+  color: #fff;
+  font-size: var(--asdp-text-sm);
+}
+.rail__section {
+  padding: var(--asdp-space-3) var(--asdp-space-2) var(--asdp-space-1);
+  font-size: var(--asdp-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--asdp-rail-fg-muted);
+}
+.rail__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.rail__item {
+  display: flex;
+  align-items: center;
+  gap: var(--asdp-space-2);
+  inline-size: 100%;
+  padding: var(--asdp-space-2);
+  border: 0;
+  border-radius: var(--asdp-radius-md);
+  background: none;
+  color: var(--asdp-rail-fg);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.rail__item:hover:not(:disabled) { background: var(--asdp-rail-bg-hover); color: var(--asdp-rail-fg-strong); }
+.rail__item[aria-current="page"] {
+  background: var(--asdp-rail-active);
+  color: var(--asdp-rail-fg-strong);
+  font-weight: 650;
+  /* Not colour alone: the active item carries a marker rule as well. */
+  box-shadow: inset 3px 0 0 0 var(--asdp-accent);
+}
+[dir="rtl"] .rail__item[aria-current="page"] { box-shadow: inset -3px 0 0 0 var(--asdp-accent); }
+
+/* Future entries are visibly unavailable, never merely dimmed. */
+.rail__item:disabled {
+  cursor: not-allowed;
+  color: var(--asdp-rail-fg-muted);
+  opacity: 1;
+}
+.rail__glyph { inline-size: 1.25em; text-align: center; flex: none; }
+.rail__label {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail__slice {
+  flex: none;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px var(--asdp-space-1);
+  border: 1px dashed currentColor;
+  border-radius: var(--asdp-radius-sm);
+}
+.rail__foot { margin-block-start: auto; display: flex; flex-direction: column; gap: var(--asdp-space-2); }
+.rail__identity {
+  display: flex; align-items: center; gap: var(--asdp-space-2);
+  min-inline-size: 0;
+  padding: var(--asdp-space-2);
+  border-radius: var(--asdp-radius-md);
+  background: var(--asdp-rail-bg-hover);
+  font-size: var(--asdp-text-sm);
+}
+.rail__avatar {
+  display: grid; place-items: center;
+  inline-size: 28px; block-size: 28px; flex: none;
+  border-radius: 50%;
+  background: var(--asdp-accent); color: var(--asdp-accent-fg);
+  font-size: var(--asdp-text-xs); font-weight: 700;
+}
+.rail__controls { display: flex; gap: var(--asdp-space-1); flex-wrap: wrap; }
+
+/* --- the project bar --------------------------------------------------- */
+.projectbar {
+  grid-area: projectbar;
+  display: flex;
+  align-items: center;
+  gap: var(--asdp-space-3);
+  padding: var(--asdp-space-2) var(--asdp-space-4);
+  background: var(--asdp-surface);
+  border-block-end: var(--asdp-border) solid var(--asdp-line);
+  flex-wrap: wrap;
+}
+.projectbar__context { display: flex; align-items: center; gap: var(--asdp-space-2); min-inline-size: 0; }
+.projectbar__glyph { color: var(--asdp-fg-faint); }
+.projectbar__name { font-weight: 650; }
+.projectbar__sep { color: var(--asdp-line-strong); }
+.projectbar__spacer { flex: 1 1 auto; }
+
+/* --- the working area: main + inspector + assistant ------------------- */
+.work {
+  grid-area: work;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-block-size: 0;
+  overflow: hidden;
+}
+.workspace {
+  min-inline-size: 0;
+  overflow: auto;
+  padding: var(--asdp-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--asdp-space-4);
+}
+.workspace__head { display: flex; align-items: flex-start; gap: var(--asdp-space-3); flex-wrap: wrap; }
+.workspace__head p { color: var(--asdp-fg-muted); font-size: var(--asdp-text-sm); }
+.workspace__spacer { flex: 1 1 auto; }
+
+.inspector, .assistant {
+  inline-size: var(--asdp-inspector-w);
+  flex: none;
+  overflow: auto;
+  background: var(--asdp-surface);
+  border-inline-start: var(--asdp-border) solid var(--asdp-line);
+  padding: var(--asdp-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--asdp-space-3);
+}
+.assistant { inline-size: var(--asdp-assistant-w); }
+
+/* Overlay mode: the panel floats over the workspace instead of taking a column. */
+.shell[data-inspector="overlay"] .inspector,
+.shell[data-assistant="overlay"] .assistant {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 30;
+  box-shadow: var(--asdp-shadow-lg);
+  max-inline-size: min(92vw, 420px);
+}
+
+.panel__head { display: flex; align-items: center; gap: var(--asdp-space-2); }
+.panel__head h2, .panel__head h3 { font-size: var(--asdp-text-md); }
+.panel__spacer { flex: 1 1 auto; }
+
+/* The collapsed assistant: a slim persistent tab, never gone. */
+.assistant-tab {
+  flex: none;
+  inline-size: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--asdp-space-2);
+  padding: var(--asdp-space-3) 0;
+  background: var(--asdp-surface);
+  border-inline-start: var(--asdp-border) solid var(--asdp-line);
+}
+.assistant-tab__button {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  border: var(--asdp-border) solid var(--asdp-ai-line);
+  background: var(--asdp-ai-soft);
+  color: var(--asdp-ai);
+  border-radius: var(--asdp-radius-md);
+  padding: var(--asdp-space-3) var(--asdp-space-1);
+  font: inherit;
+  font-size: var(--asdp-text-xs);
+  cursor: pointer;
+}
+
+/* --- the status strip: never hidden, at any width (Y26) --------------- */
+.statusstrip {
+  grid-area: statusstrip;
+  display: flex;
+  align-items: center;
+  gap: var(--asdp-space-4);
+  padding: var(--asdp-space-2) var(--asdp-space-4);
+  background: var(--asdp-surface-sunken);
+  border-block-start: var(--asdp-border) solid var(--asdp-line);
+  font-size: var(--asdp-text-xs);
+  color: var(--asdp-fg-muted);
+  flex-wrap: wrap;
+}
+.statusstrip__item { display: flex; align-items: center; gap: var(--asdp-space-1); }
+
+/* --- narrow: the rail becomes a drawer, the panes overlay ------------ */
+.shell[data-rail="drawer"] { grid-template-columns: 1fr; grid-template-areas: "projectbar" "work" "statusstrip"; }
+.shell[data-rail="drawer"] .rail {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 40;
+  inline-size: min(80vw, var(--asdp-rail-w));
+  box-shadow: var(--asdp-shadow-lg);
+}
+.shell[data-rail="drawer"] .rail[hidden] { display: none; }
+
+.overlay-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(13, 18, 32, 0.42);
+  border: 0;
+}
+
+/*
+ * A workspace split into a primary collection and a contextual side panel.
+ *
+ * The Sources screen uses this rather than the shell's inspector region, because
+ * its side panel owns write state (the upload form and the rank form) that
+ * belongs with the screen rather than with the shell. Visually it is the mockup's
+ * right-hand panel; structurally it stays inside the workspace, so the shell's
+ * inspector region remains free for the document view.
+ */
+.worksplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--asdp-space-4);
+  align-items: start;
+}
+.worksplit__main, .worksplit__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--asdp-space-4);
+  min-inline-size: 0;
+}
+@media (max-width: 1200px) {
+  .worksplit { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The identity block stacks its two lines; they are not one run of text. */
+.rail__identity .rail__label { display: flex; flex-direction: column; gap: 0; line-height: 1.3; }
+.rail__identity .table__sub { color: var(--asdp-rail-fg-muted); }
+.rail__identity .table__primary { color: var(--asdp-rail-fg-strong); }
+
+/* The rail's development-auth badge is compact; the full statement lives on the
+ * sign-in screen and in the status strip, both of which are always reachable. */
+.rail .dev-badge { align-items: flex-start; line-height: 1.35; }

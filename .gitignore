@@ -15,3 +15,6 @@ apps/web/dist-web/
 # Playwright artefacts. Regenerated on demand; never committed.
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Local development database and blobs, created by .claude/launch.json.
+.asdp-dev/

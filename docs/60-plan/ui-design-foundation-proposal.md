@@ -711,7 +711,13 @@ Restated because these are the items that would be quietly lost first:
 
 ---
 
-## 25. The smallest recommended implementation boundary — **D-U2.5**
+## 25. The implementation boundary — **D-U2.5** · **APPROVED · IMPLEMENTED · AWAITING ACCEPTANCE**
+
+> **Approved 2026-08-25** at `52ba323`. **Implemented** in the commit that follows it, and
+> **NOT ACCEPTED** — acceptance needs a visual review and an explicit decision. The implementation
+> record, its verification, its deviations from the visual reference and its remaining limitations
+> are in [phase-2-status.md](phase-2-status.md) **§20.4–§20.6**.
+
 
 **Proposed name: D-U2.5 — “the design foundation, demonstrated on what already exists”.** Deliberately
 **not** U3: it delivers **no new capability**, so it cannot be confused with progress on the journey.

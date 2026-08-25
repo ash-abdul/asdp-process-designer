@@ -2425,6 +2425,80 @@ without colour, navigation and collapse behaviour, density and responsiveness, d
 **D-U2.5 is NOT accepted.** Acceptance is a separate explicit decision and requires a visual
 review.
 
+### 20.4 D-U2.5 — implemented, **AWAITING ACCEPTANCE**
+
+> **NOT accepted.** Acceptance needs a **visual review** and an explicit decision. **U3 is not
+> authorised, P3 has not started, H3 is unresolved**, and **no live provider call was made**.
+
+| | |
+|---|---|
+| **Implementation** | *(this change)* |
+| **Boundary** | [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) §25, approved at `52ba323` |
+| **Verification** | `npm run verify` **green end to end, exit 0** — **872 pass / 872 · 0 fail · 0 skipped · 0 todo · 176 suites**; `check:arch` **186 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98 files / 1185 links** |
+| **Browser** | **`npm run test:e2e`: 27 passed / 27.** The **ten U2 tests pass UNCHANGED** — not one assertion was weakened, and that is what makes this slice presentation-only rather than merely described as such. **17 new tests** cover the shell, rail honesty, dark mode, density, the collapse order, RTL mirroring, semantic states without colour, the contextual panel, and Ask ASDP |
+| **Dependencies** | **None added.** Plain CSS custom properties, per **Y16**. Runtime dependencies unchanged at nine |
+| **Checker rules** | **None weakened.** The architecture checker gained no exemption; `check:arch:selftest` still proves every rule bites |
+| **Backend** | **Untouched.** No API, contract, migration or command changed |
+
+**What was built** — the seventeen approved items: the token layer (`design/tokens.css`, light and
+dark, with a compact density); base typography with **Arabic-first metrics** and **logical properties
+only**; `AppShell` with four structural regions; the persistent dark rail; the project context bar;
+the workspace layout; the contextual inspector; the status strip that is **never hidden at any
+width**; reusable `Button`, `Card`, `Field`, `DataTable`, `Badge`/`StateBadge`, `Chip` and `Reason`;
+**four** feedback states including **refusal as a first-class state**; the redesigned sources and
+intake experience; the redesigned source viewer with an evidence inspector; existing highlighting
+**unchanged**; RTL/LTR behaviour; accessibility; density and responsive behaviour; and dark mode.
+
+**The semantic vocabulary is now data, not styling** — `design/semantics.ts` defines seven families
+and, for every state, **three independent channels**: a glyph, a border treatment, and a colour. The
+test that matters is not *"every state has a colour"* but *"delete the colour and every state in a
+family is still distinguishable"*, and it is asserted over the whole vocabulary. `content_unverified`
+and `resolved` are proved to differ in glyph, label **and** shape ([ADR-0038](../adr/ADR-0038-target-versus-content-verification.md)).
+
+**The rail declares the whole product and cannot lie about it.** Only **Sources** is available; every
+other entry is a **disabled control whose accessible name says “Not built”** and names the slice that
+would deliver it. A **bidirectional drift test** asserts the available entries equal the implemented
+workspaces — so a rail entry can never come to imply a capability this build lacks. **No Overview
+dashboard was built**, because the reference's readiness metrics have no API behind them and inventing
+them was forbidden (§20.2).
+
+**Ask ASDP is a dock that cannot do anything.** No `fetch`, no client, no handler that could reach
+one; the composer and every action are present and **disabled**; `availability()` is a constant with
+no argument. Three tests hold the line: exported names are checked structurally so **no export reads
+like a call path**, the module is checked to contain **no stub answer**, and a browser test records
+**every** request while the dock is opened, typed into and clicked — asserting **zero**.
+
+### 20.5 Deviations from the visual reference, and why
+
+**Each is a case where the repository or the available data won, exactly as §26.1 requires.**
+
+| # | Deviation | Why |
+|---|---|---|
+| **1** | **No Home/dashboard screen.** The rail's Overview entry is disabled | Its metrics — *“27 / 134 conditions met”*, *“36% overall readiness”*, phase labels, top risks — have **no API**. §20.2 forbids inventing them, and fabricating data to match a screenshot was explicitly excluded |
+| **2** | **No Requirements workspace** | **U3 is not authorised.** It appears in the reference so the shell can accommodate it later |
+| **3** | **No language selector.** The reference shows an `EN` control | There are **no interface translations**. A selector that switches nothing is a fake capability. Interface direction follows the document element, so a real locale switch will mirror the whole shell with no CSS change — which the RTL browser test proves today |
+| **4** | **No global search, notifications or help controls** | None has a backing capability. Same rule as the dashboard metrics |
+| **5** | **The Sources side panel lives in the workspace, not the shell inspector** | It owns **write** state (the upload form, the rank form) that belongs with the screen rather than the shell. Visually it is the reference's right-hand panel; structurally the shell inspector stays free for the document view |
+| **6** | **Ask ASDP is collapsed by default** | It is **unavailable**. Opening it by default would give an inert panel the most valuable space on screen |
+| **7** | **Sub-navigation tabs on Sources are not used** | The reference tabs Inventory / Upload / Authority / Validation. All four are visible at once here, which suits three sources and keeps every U2 affordance reachable without a click. Tabs become worthwhile when the inventory is long enough to need them |
+| **8** | **Confidence is not shown anywhere** | U1/U2 surface no confidence value. A meter with nothing behind it would be the exact failure **Y21** forbids |
+| **9** | **No deep links.** **Y5** is approved as a target | It needs a router, which is a dependency decision and outside §25's scope. The shell is shaped so one can be added without moving a region |
+
+### 20.6 Remaining limitations of D-U2.5
+
+**None blocks a decision; all are recorded rather than left to be discovered.**
+
+- **Appearance is not persisted.** Theme and density reset on reload — deliberate, because a
+  `localStorage` key would leak between browser tests and silently change what the next one sees.
+- **Interface direction is not switchable from the UI.** It follows `document.documentElement`, which
+  is the real mechanism; there is no control because there is nothing to translate into.
+- **The rail's future entries are not keyboard-focusable**, being disabled buttons. Their reasons are
+  in the accessible name and are reachable by a screen reader in browse mode, but not by tabbing.
+- **Contrast was not machine-verified.** Token pairs were chosen for contrast and reviewed visually
+  in both themes; no automated contrast assertion exists yet.
+- **One inspector, one entity.** The fixed section order is proved on a **source**; requirements,
+  conflicts and gates have no inspector because they have no screen.
+
 ---
 
 ## 15. Next step

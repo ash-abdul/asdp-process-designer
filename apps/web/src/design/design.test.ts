@@ -1,0 +1,359 @@
+/**
+ * The design foundation, tested where it can actually be tested — **D-U2.5**.
+ *
+ * These are the rules the approved foundation turns on, and every one of them is
+ * asserted here rather than trusted:
+ *
+ * | Approved rule | Test |
+ * |---|---|
+ * | **Y14** — colour never carries meaning alone | *the vocabulary survives having its colour removed* |
+ * | **Y2** — the four epistemic levels are never conflated | *every level is distinct without colour* |
+ * | **ADR-0038** — `content_unverified` never looks like `resolved` | *they differ in glyph, label AND shape* |
+ * | **Y19** — one state vocabulary, and unknown values are visibly unknown | *an unrecognised value never renders as benign* |
+ * | **§2.1** — the rail never implies a capability that does not exist | *bidirectional nav drift* |
+ * | **Y26** — governance information collapses last | *a width sweep* |
+ * | **Y22/H3** — the assistant cannot ask anything | *no export can send a request* |
+ *
+ * The colour test is the one worth reading twice. Asserting *"every state has a
+ * colour"* proves nothing; asserting *"delete the colour and the states are still
+ * all distinguishable"* is the actual rule, and it fails the moment someone adds
+ * a state that differs only in hue.
+ */
+
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  VOCABULARY,
+  accessibleName,
+  badgeClasses,
+  semanticState,
+  statesIn,
+  unknownState,
+  type SemanticFamily,
+  type SemanticState,
+} from './semantics.ts';
+import { WORKSPACES, availableWorkspaceIds, isAvailable, navDrift, unavailableReason } from './nav.ts';
+import { IMPLEMENTED_WORKSPACES } from '../app/routes.ts';
+import {
+  appearanceAttributes,
+  densityControlLabel,
+  nextThemePreference,
+  otherDensity,
+  resolveTheme,
+  themeControlLabel,
+  THEME_PREFERENCES,
+} from './appearance.ts';
+import { BREAKPOINTS, collapseStage, layoutFor } from './responsive.ts';
+import * as assistant from '../assistant/assistant-model.ts';
+
+const FAMILIES: readonly SemanticFamily[] = [
+  'severity',
+  'epistemic',
+  'verification',
+  'decidedness',
+  'lifecycle',
+  'gate',
+  'policy',
+];
+
+/** Everything about a state except its colour. This is what must stay unique. */
+const withoutColour = (s: SemanticState): string => `${s.glyph}|${s.shape}|${s.label}`;
+
+describe('Y14 — colour never carries meaning alone', () => {
+  test('EVERY state stays distinguishable with the colour removed', () => {
+    for (const family of FAMILIES) {
+      const states = statesIn(family);
+      assert.ok(states.length > 0, `${family} has no states`);
+      const keys = states.map(withoutColour);
+      assert.equal(
+        new Set(keys).size,
+        keys.length,
+        `${family} has two states that differ only by colour: ${keys.join(' / ')}`,
+      );
+    }
+  });
+
+  test('every state carries a glyph AND a label AND screen-reader text', () => {
+    for (const s of VOCABULARY) {
+      assert.notEqual(s.glyph.trim(), '', `${s.family}/${s.state} has no glyph`);
+      assert.notEqual(s.label.trim(), '', `${s.family}/${s.state} has no label`);
+      assert.notEqual(s.srText.trim(), '', `${s.family}/${s.state} has no screen-reader text`);
+    }
+  });
+
+  test('glyphs are unique within a family, so greyscale is enough on its own', () => {
+    for (const family of FAMILIES) {
+      const glyphs = statesIn(family).map((s) => s.glyph);
+      assert.equal(new Set(glyphs).size, glyphs.length, `${family} reuses a glyph`);
+    }
+  });
+
+  test('the colour token is the LAST class, and never the only one', () => {
+    for (const s of VOCABULARY) {
+      const classes = badgeClasses(s);
+      assert.ok(classes.includes('badge'));
+      assert.ok(classes.some((c) => c.startsWith('badge--shape-')), 'no shape channel');
+      assert.ok(classes.some((c) => c.startsWith('badge--tone-')), 'no tone channel');
+      assert.ok(classes.length >= 3, 'a badge needs all three channels');
+    }
+  });
+});
+
+describe('Y2 / ADR-0007 — the epistemic ladder is never conflated', () => {
+  test('all four levels exist and are distinct without colour', () => {
+    const levels = statesIn('epistemic').map((s) => s.state);
+    assert.deepEqual([...levels].sort(), ['L1', 'L2', 'L3', 'L4']);
+    const keys = statesIn('epistemic').map(withoutColour);
+    assert.equal(new Set(keys).size, 4);
+  });
+
+  test('an AI level and an approved level never share a glyph or a label', () => {
+    const l2 = semanticState('epistemic', 'L2');
+    const l3 = semanticState('epistemic', 'L3');
+    const l4 = semanticState('epistemic', 'L4');
+    for (const ai of [l2, l3]) {
+      assert.notEqual(ai.glyph, l4.glyph);
+      assert.notEqual(ai.label, l4.label);
+      // The words matter: an AI item must never read as approved.
+      assert.doesNotMatch(ai.label.toLowerCase(), /approved/);
+    }
+    assert.match(l4.label.toLowerCase(), /approved/);
+  });
+
+  test('the accessible name states the level in words, not by colour', () => {
+    assert.match(accessibleName(semanticState('epistemic', 'L3'), 'REQ-0001'), /REQ-0001.*recommend/i);
+  });
+});
+
+describe('ADR-0038 — content_unverified must never look like resolved', () => {
+  test('they differ in glyph, in label and in border treatment', () => {
+    const resolved = semanticState('verification', 'resolved');
+    const unverified = semanticState('verification', 'content_unverified');
+    assert.notEqual(resolved.glyph, unverified.glyph);
+    assert.notEqual(resolved.label, unverified.label);
+    assert.notEqual(resolved.shape, unverified.shape);
+    assert.notEqual(withoutColour(resolved), withoutColour(unverified));
+  });
+
+  test('"unverified" is said in words, so the distinction survives greyscale', () => {
+    assert.match(semanticState('verification', 'content_unverified').label.toLowerCase(), /unverified/);
+    assert.match(semanticState('verification', 'content_unverified').srText.toLowerCase(), /not verified/);
+  });
+});
+
+describe('Y19 — decidedness, and unknown values', () => {
+  test('undecided is its own state and never reads as a low value', () => {
+    const undecided = semanticState('decidedness', 'undecided');
+    assert.match(undecided.label.toLowerCase(), /undecided/);
+    assert.match(undecided.srText.toLowerCase(), /nobody has decided/);
+    assert.doesNotMatch(undecided.label, /0|zero|low/i);
+  });
+
+  test('an unrecognised value renders as UNRECOGNISED, never as benign', () => {
+    // The drift this catches is a server that starts emitting something new.
+    const s = semanticState('severity', 'catastrophe');
+    assert.match(s.label.toLowerCase(), /unrecognised/);
+    assert.equal(s.tone, 'unknown');
+    for (const known of statesIn('severity')) {
+      assert.notEqual(s.label, known.label);
+    }
+  });
+
+  test('an ABSENT value is also visibly unrecognised, not defaulted', () => {
+    assert.match(semanticState('lifecycle', undefined).label.toLowerCase(), /unrecognised/);
+    assert.match(unknownState('gate', 'x').glyph, /⚠/);
+  });
+});
+
+describe('§2.1 — the rail never implies a capability that does not exist', () => {
+  test('the available entries EQUAL the implemented workspaces, in both directions', () => {
+    // U2-a's lesson applied to navigation: a one-directional check catches half
+    // the drift, and the half it misses is a rail entry claiming a capability
+    // this build does not have.
+    const drift = navDrift();
+    assert.deepEqual(drift.displayedButUnbuilt, [], 'the rail offers a workspace that is not implemented');
+    assert.deepEqual(drift.builtButUndisplayed, [], 'a workspace is implemented but not offered');
+    assert.deepEqual([...availableWorkspaceIds()].sort(), [...IMPLEMENTED_WORKSPACES].sort());
+  });
+
+  test('every unavailable entry names the slice that would deliver it', () => {
+    for (const w of WORKSPACES) {
+      if (w.availability.kind === 'future') {
+        assert.notEqual(w.availability.slice.trim(), '', `${w.id} has no slice`);
+        assert.notEqual(w.availability.note.trim(), '', `${w.id} has no note`);
+        const reason = unavailableReason(w.id);
+        assert.ok(reason !== undefined && reason.includes(w.availability.slice));
+        assert.match(reason, /not built/i);
+      }
+    }
+  });
+
+  test('requirements, specifications and processes are all future — U3 and P3 are not authorised', () => {
+    for (const id of ['requirements', 'specifications', 'processes', 'decisions', 'forms', 'services']) {
+      assert.equal(isAvailable(id), false, `${id} must not be available`);
+    }
+    assert.match(unavailableReason('requirements') ?? '', /U3/);
+    assert.match(unavailableReason('specifications') ?? '', /P3/);
+  });
+
+  test('no overview dashboard is offered, because its metrics have no API', () => {
+    // The visual reference shows readiness percentages and condition counts.
+    // Inventing them was explicitly forbidden by the approval (§26.2).
+    assert.equal(isAvailable('overview'), false);
+  });
+
+  test('every rail entry has a unique id, label and glyph', () => {
+    const ids = WORKSPACES.map((w) => w.id);
+    const labels = WORKSPACES.map((w) => w.label);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.equal(new Set(labels).size, labels.length);
+  });
+});
+
+describe('Y15 — theme and density', () => {
+  test('system follows the OS; an explicit choice wins', () => {
+    assert.equal(resolveTheme('system', true), 'dark');
+    assert.equal(resolveTheme('system', false), 'light');
+    assert.equal(resolveTheme('light', true), 'light');
+    assert.equal(resolveTheme('dark', false), 'dark');
+  });
+
+  test('three steps return the preference to where it started', () => {
+    let p = THEME_PREFERENCES[0]!;
+    const seen = [p];
+    for (let i = 0; i < 3; i += 1) {
+      p = nextThemePreference(p);
+      seen.push(p);
+    }
+    assert.equal(seen[0], seen[3]);
+    assert.equal(new Set(seen).size, 3);
+  });
+
+  test('exactly two attributes drive the token layer', () => {
+    assert.deepEqual(appearanceAttributes('dark', 'compact'), { 'data-theme': 'dark', 'data-density': 'compact' });
+  });
+
+  test('density toggles between exactly two values', () => {
+    assert.equal(otherDensity('comfortable'), 'compact');
+    assert.equal(otherDensity('compact'), 'comfortable');
+  });
+
+  test('both controls SAY what they do — never a bare icon (W8)', () => {
+    assert.match(themeControlLabel('system', 'dark'), /system.*showing dark/i);
+    assert.match(themeControlLabel('light', 'light'), /light/i);
+    assert.match(densityControlLabel('comfortable'), /switch to compact/i);
+  });
+});
+
+describe('Y26 — what collapses is chrome, never state', () => {
+  test('governance information is visible at EVERY width', () => {
+    for (let w = 320; w <= 2200; w += 17) {
+      assert.equal(layoutFor(w).governanceVisible, true, `governance hidden at ${w}px`);
+    }
+  });
+
+  test('the collapse order is the approved one', () => {
+    assert.deepEqual(layoutFor(1600), {
+      rail: 'expanded', inspector: 'docked', assistant: 'docked', columns: 2, approvalAffordances: true, governanceVisible: true,
+    });
+    assert.equal(layoutFor(1200).rail, 'icons');
+    assert.equal(layoutFor(1200).assistant, 'overlay');
+    assert.equal(layoutFor(1200).inspector, 'docked');
+    assert.equal(layoutFor(900).inspector, 'overlay');
+    assert.equal(layoutFor(600).rail, 'drawer');
+  });
+
+  test('collapsing is monotonic — nothing un-collapses as the window narrows', () => {
+    let previous = collapseStage(2400);
+    for (let w = 2400; w >= 320; w -= 13) {
+      const stage = collapseStage(w);
+      assert.ok(stage >= previous, `stage went backwards at ${w}px`);
+      previous = stage;
+    }
+  });
+
+  test('the breakpoints are the three approved ones', () => {
+    assert.deepEqual(BREAKPOINTS, { wide: 1440, medium: 1024, narrow: 768 });
+  });
+
+  test("U2's writes stay available at every width", () => {
+    // approvalAffordances gates APPROVAL flows, which do not exist yet. It must
+    // never be read as gating upload or ranking: D-U2.5 is presentation-only,
+    // and removing a U2 capability on a narrow screen would not be.
+    for (const w of [320, 500, 767, 768, 1024, 1440, 1920]) {
+      const layout = layoutFor(w);
+      assert.equal(typeof layout.approvalAffordances, 'boolean');
+      assert.equal(layout.governanceVisible, true, `at ${w}px`);
+    }
+    assert.equal(layoutFor(500).approvalAffordances, false);
+    assert.equal(layoutFor(1440).approvalAffordances, true);
+  });
+});
+
+describe('Y22 / H3 — the assistant cannot ask anything', () => {
+  test('availability is a CONSTANT: nothing can make it available', () => {
+    const a = assistant.availability();
+    assert.equal(a.kind, 'unavailable');
+    assert.equal(a.blocker, 'H3');
+    assert.match(a.message, /unavailable/i);
+    assert.match(a.message, /live AI enablement pending/i);
+    // Called twice, with nothing to influence it either time.
+    assert.deepEqual(assistant.availability(), a);
+    assert.equal(assistant.availability.length, 0, 'availability() must take no argument');
+  });
+
+  test('NO export could send a request, and none returns an answer', () => {
+    // Structural, not editorial: a comment promising restraint is not a control.
+    const forbidden = /^(ask|send|submit|query|prompt|complete|chat|generate|answer|stream|fetch|call|invoke)/i;
+    for (const name of Object.keys(assistant)) {
+      assert.doesNotMatch(name, forbidden, `assistant-model exports '${name}', which reads like a call path`);
+    }
+  });
+
+  test('no stub answer exists anywhere in the module', () => {
+    // A canned reply that looks like a live answer is worse than no answer:
+    // every evaluation figure in this repository is already a synthetic corpus
+    // against an authored stub, and a plausible UI answer hides that.
+    const values = Object.values(assistant).filter((v) => typeof v !== 'function');
+    const serialised = JSON.stringify(values);
+    assert.doesNotMatch(serialised, /"answer"|"response"|"reply"|"completion"/i);
+  });
+
+  test('context is stated, never guessed', () => {
+    assert.equal(assistant.contextFor({}).scope, 'none');
+    assert.match(assistant.contextFor({}).label, /No project selected/i);
+    assert.equal(assistant.contextFor({ projectKey: 'alpha' }).scope, 'project');
+    assert.match(assistant.contextFor({ projectKey: 'alpha' }).detail, /alpha/);
+    const withSource = assistant.contextFor({ projectKey: 'alpha', sourceName: 'brd.md' });
+    assert.equal(withSource.scope, 'source');
+    assert.match(withSource.label, /alpha/);
+    assert.match(withSource.label, /brd\.md/);
+  });
+
+  test('Y23 — the two most damaging answers are classified DETERMINISTIC', () => {
+    const byId = new Map(assistant.FUTURE_ACTIONS.map((a) => [a.id, a]));
+    for (const id of ['show-evidence', 'why-g1-blocked']) {
+      const action = byId.get(id);
+      assert.ok(action !== undefined, `${id} is missing`);
+      assert.equal(action.determinism, 'deterministic', `${id} must not be a prompt`);
+      assert.equal(action.level, 'L1', `${id} answers facts, not opinions`);
+    }
+  });
+
+  test('every future action declares a level, and none claims to be approved', () => {
+    for (const action of assistant.FUTURE_ACTIONS) {
+      assert.ok(['L1', 'L2', 'L3'].includes(action.level), `${action.id} has no level`);
+      assert.notEqual(action.level as string, 'L4', 'an assistant answer is never human-approved');
+      assert.notEqual(action.note.trim(), '');
+    }
+  });
+
+  test('the governance notes state the non-negotiables on screen', () => {
+    const all = assistant.GOVERNANCE_NOTES.join(' ').toLowerCase();
+    assert.match(all, /context/);
+    assert.match(all, /evidence/);
+    assert.match(all, /no approve/);
+    assert.match(all, /never presented as accuracy/);
+  });
+});

@@ -2,6 +2,15 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "asdp-api",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "ASDP_DATABASE_DIR=.asdp-dev ASDP_BLOB_ROOT=.asdp-dev/blobs node apps/api/dist/migrate-task.js && ASDP_DATABASE_DIR=.asdp-dev ASDP_BLOB_ROOT=.asdp-dev/blobs ASDP_LOG_LEVEL=info PORT=3000 node apps/api/dist/main.js"
+      ],
+      "port": 3000
+    },
+    {
       "name": "asdp-web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web"],
