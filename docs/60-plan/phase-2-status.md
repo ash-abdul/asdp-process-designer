@@ -116,7 +116,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Phase 2 closure** | ## **CLOSED — ACCEPTED 2026-08-24**, §16. Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*, plus K8's clarification that durable multi-project G1 must survive a restart. **Both satisfied and proved by execution.** Limitations 77 and 78 closed. Everything still open — H1, H2, H3, H6, H7, H8, V2-PDF, V4b-eval, ADR-0037 — is **off the path to G1**, was non-blocking at closure, and **remains open and unresolved** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **NONE. U2 is accepted and nothing is approved to follow it.** The next governance decision is the **UI/UX design foundation** — proposed at [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), **PROPOSED / NOT APPROVED**, requested before U3 so that U3–U5 and a later P3 Specification Studio do not need a fundamental redesign. **U3 must not start** until both that foundation and a U3 boundary are approved. The other open sequencing options — H3 and live-AI enablement, or P3 — remain **UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **D-U2.5 — the design foundation, demonstrated on what already exists.** The **UI/UX design foundation is APPROVED** 2026-08-25 (**Y1–Y28**, with the **Y12** clarification), together with a **supplied visual reference** and the **D-U2.5** implementation boundary — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), §20 below. D-U2.5 is **presentation-only**: it delivers **no capability**. **U3 is still NOT authorised** and must not start. The other open sequencing options — H3 and live-AI enablement, or P3 — remain **UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -2355,9 +2355,75 @@ indistinguishable from one that works, until the rule beneath it gets more preci
 | # | Follow-up | Status |
 |---|---|---|
 | **F-U2-a** | **The no-download guarantee is currently structural, and a Playwright upgrade could make it merely conventional.** Today the pinned Playwright packages carry **no install script at all** (`hasInstallScript` is false for `@playwright/test`, `playwright` and `playwright-core` in `package-lock.json`), so `npm ci` has **no hook from which to fetch a browser**. If a future upgrade reintroduces a browser-downloading install script, that structural guarantee disappears and the environment-variable route becomes load-bearing — at which point it must be **recorded in the repository** (an `.npmrc` entry or the `test:e2e` script), not in prose. [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)'s enforcement list was corrected at U2's acceptance for exactly this reason: it claimed an environment variable was recorded in two places where it appears **nowhere in the repository** | **OPEN.** Check at any Playwright version bump. **Not a defect today** — verified 2026-08-25: no `ms-playwright` browser cache exists on a machine where the suite passes |
-| **F-U2-b** | **A UI/UX design foundation must be approved before U3.** U1 and U2 established the journey; U3–U5 and a later **P3 Specification Studio** will add a requirements workspace, coverage, reconciliation and eventually a canvas. Establishing shell, navigation, tokens, states and evidence/AI presentation **after** those screens exist means redesigning them | **PROPOSED, NOT APPROVED** — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), decisions **Y1–Y28**, written 2026-08-25 against `582eb93`. Nothing in it may be implemented without approval, and approving the foundation is **not** authorisation to redesign — that is the separate **D-U2.5** boundary in its §25 |
+| **F-U2-b** | **DISCHARGED 2026-08-25 — the foundation is APPROVED**, with **D-U2.5** as its implementation boundary (§20). Original statement: **a UI/UX design foundation must be approved before U3.** U1 and U2 established the journey; U3–U5 and a later **P3 Specification Studio** will add a requirements workspace, coverage, reconciliation and eventually a canvas. Establishing shell, navigation, tokens, states and evidence/AI presentation **after** those screens exist means redesigning them | **PROPOSED, NOT APPROVED** — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), decisions **Y1–Y28**, written 2026-08-25 against `582eb93`. Nothing in it may be implemented without approval, and approving the foundation is **not** authorisation to redesign — that is the separate **D-U2.5** boundary in its §25 |
 | **F-U1-b** | **Unchanged and permanent.** Development header authentication stays localhost/development-only. U2 **writes**, which makes this more material, not less: the header lets a caller assert its own roles, so it must never reach a shared environment | **STANDING** — §18.1 |
 
+
+---
+
+## 20. UI/UX design foundation and **D-U2.5** — **APPROVED 2026-08-25**
+
+> **The foundation is APPROVED. D-U2.5 is APPROVED as its implementation boundary.**
+> **U3 is NOT authorised. P3 has not started. H3 is unresolved and no live provider call is
+> permitted.** Discharges **F-U2-b** (§19.3).
+
+### 20.0 What was approved
+
+| | |
+|---|---|
+| **Approved** | **2026-08-25** |
+| **Boundary** | [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) — **Y1–Y28**, with a clarification to **Y12** (§24.1 there) |
+| **Proposal commit** | `65a984d` — written as **PROPOSED**, approved as version 1.0 |
+| **Implementation boundary** | **D-U2.5** — *“the design foundation, demonstrated on what already exists”*. §25 of the proposal, and **only** §25 |
+| **Visual reference** | **Four mockup screens supplied and approved** — Home/Project Workspace, Sources & Intake, Source Viewer + Ask ASDP, Requirements Workspace + Ask ASDP. Adopted for **visual language, layout hierarchy, navigation model, information density, workspace structure and where contextual AI sits** |
+| **Precedence** | **The repository wins over the reference.** ADRs, accessibility rules, semantic-state rules, server-provided evidence offsets, authority semantics, validation behaviour, RBAC behaviour, **F-U1-b**, and actual U1/U2 behaviour are all authoritative where they and the reference disagree — proposal §26.1 |
+| **Dependencies** | **None added.** Plain CSS custom properties (**Y16**); no UI library, no CSS framework, no CSS-in-JS, no icon or font package |
+
+### 20.1 The Y12 clarification, and why it changes no ADR
+
+**Generated process and artifact canvases stay inspection-first and read-only** unless a future,
+explicitly approved phase introduces editing — **and that does not prohibit controlled
+specification-authoring interfaces** that may later be approved in P3 (**BPS**, **DecisionSpec**,
+**FormSpec**, **ServiceInterface**).
+
+That is [ADR-0002](../adr/ADR-0002-spec-layer-editing.md) and
+[ADR-0003](../adr/ADR-0003-no-override-editor.md) restated at the UI layer, not an amendment to
+either: **the specification layer is editable, the artifact layer is not.** A canvas that edited
+the artifact would still require superseding ADR-0003.
+
+### 20.2 What the visual reference does NOT authorise
+
+**Prefer honest product state over visual fidelity to the mockup** — the governing instruction,
+recorded verbatim.
+
+- **No invented dashboard metrics.** The reference's readiness percentages, condition counts, phase
+  labels and risk lists have **no API behind them** and are **not built**.
+- **No Requirements Workspace.** It appears in the reference so the shell can accommodate **U3**
+  later; **U3 is not authorised**.
+- **No fabricated or seeded data** to match a screenshot.
+- **Future rail entries may appear only as clearly disabled future-state navigation**, never
+  implying the capability exists (proposal §2.1).
+- **Ask ASDP is a disabled shell**: zero provider calls, no simulated answers, no stub imitating a
+  live model, no AI-driven write, approval or decision. **H3 / limitation 62 stands.**
+
+### 20.3 D-U2.5's approved scope, and its acceptance bar
+
+Seventeen items, all **presentation-only**: the token layer; typography, spacing, colour and the
+semantic-state system; `AppShell`; the persistent navigation rail; the project/context bar; the
+workspace layout; the contextual inspector where existing functionality supports one; the status
+strip; reusable buttons, forms, tables, cards, badges and feedback components; loading, empty,
+error and **refusal** states; the redesigned Sources/intake experience; the redesigned source
+viewer; existing evidence highlighting inside the new design; RTL/LTR behaviour; accessibility;
+density and responsive behaviour; and dark mode.
+
+**The acceptance bar, which is what makes it presentation-only rather than merely claimed to be:**
+**the existing 838 unit tests and 10 browser tests must pass UNCHANGED**, with no assertion
+weakened. New browser tests cover the new presentation behaviour, RTL mirroring, semantic states
+without colour, navigation and collapse behaviour, density and responsiveness, dark mode, and
+**that Ask ASDP makes no network call**. No checker rule may be weakened; no dependency added.
+
+**D-U2.5 is NOT accepted.** Acceptance is a separate explicit decision and requires a visual
+review.
 
 ---
 

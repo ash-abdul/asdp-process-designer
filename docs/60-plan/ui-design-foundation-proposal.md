@@ -1,10 +1,22 @@
-# ASDP UI/UX Design Foundation — Boundary · ⚠️ **PROPOSED, NOT APPROVED**
+# ASDP UI/UX Design Foundation — Boundary · ✅ **APPROVED**
 
-> **Status: PROPOSED — NOT APPROVED. Nothing here may be implemented.**
-> **Version:** 0.1 · **Written:** 2026-08-25 · **Against commit:** `582eb93` (U2 accepted)
+> ## **STATUS: APPROVED 2026-08-25. Y1–Y28 approved, with one clarification to Y12 (§24.1).**
+> **D-U2.5 is APPROVED as the implementation boundary** — §25, and **only** §25. It is
+> **presentation-only**: it delivers no capability, and **U3 is still not authorised.**
+> **A visual reference was supplied and approved** — four mockup screens, §26. The reference
+> governs **visual language, layout hierarchy, navigation model, information density, workspace
+> structure and where contextual AI sits**. It is **not** authorisation for the data or
+> functionality it depicts, and **the repository's architecture, ADRs, accessibility rules,
+> semantic-state rules and actual application behaviour remain authoritative wherever they and
+> the reference disagree** (§26.1).
+> **Ask ASDP stays a disabled shell.** **H3 / limitation 62 is unresolved**, so: zero provider
+> calls, no simulated answers, no stub imitating a live model, and no AI-driven write, approval or
+> decision.
+> **Version:** 1.0 · **Written:** 2026-08-25 as a proposal · **Approved:** 2026-08-25 ·
+> **Against commit:** `582eb93` (U2 accepted) · **Approved at:** `65a984d`
 > **Requested by:** **F-U2-b**, recorded at U2's acceptance —
 > [phase-2-status.md](phase-2-status.md) §19.3
-> **Decisions requested:** **Y1–Y24** (§21)
+> **Decisions:** **Y1–Y28**, all **APPROVED** (§24)
 > **Scope:** a **design foundation**, not a slice. It proposes **no capability, no API, no
 > dependency and no AI implementation.**
 > **Blocked by construction:** the **Ask ASDP** assistant (§16) is **design only**. Implementing it
@@ -29,6 +41,9 @@
 ---
 
 ## 0. What this is, and what it is not
+
+> **Read §24.1 and §26 before implementing anything.** They carry the two things the approval
+> changed: the Y12 clarification, and what the visual reference does and does not authorise.
 
 **This is the durable visual and interaction foundation** that U1 and U2 were accepted *without* —
 both were accepted explicitly **not** for visual or UX design ([phase-2-status.md](phase-2-status.md)
@@ -621,37 +636,78 @@ out loud.
 
 | # | Decision | Disposition sought |
 |---|---|---|
-| **Y1** | The three-strand design direction **and its three prohibitions** (§1) | Approve |
-| **Y2** | Epistemic level, verification state and decidedness are **first-class visual primitives** (§1.1) | Approve |
-| **Y3** | The **four-region shell** (§2) | Approve |
-| **Y4** | Global, explicit, unlosable **project context** (§2.2) | Approve |
-| **Y5** | **Everything is deep-linkable** (§2.3) | Approve |
-| **Y6** | **Main + contextual inspector**, with a fixed inspector section order (§3) | Approve |
-| **Y7** | The inspector **never becomes an artifact editor**; making a section editable needs a new ADR (§3) | Approve |
-| **Y8** | **Gate-first, drill-through dashboards**; no count without its undecided partner (§4) | Approve |
-| **Y9** | U2's **four distinctions promoted to foundation rules** (§5) | Approve |
-| **Y10** | U1's **server-computed highlighting guarantee is not tradeable** for visual refinement (§5) | Approve |
-| **Y11** | The **requirements workspace** three-pane composition, no bulk approve (§6) | Approve **as a target**, not as authorisation |
-| **Y12** | The **process/spec workspace is inspection-only**, with five explicit prohibitions (§7) | Approve **as a constraint on P3** |
-| **Y13** | **Typography**: three families, Arabic-first metrics, seven-step scale (§8) | Approve |
-| **Y14** | **Semantic-only colour**, six families, **every one with a second channel** (§9) | Approve |
-| **Y15** | **4px spacing scale, logical properties only, two densities** (§10) | Approve |
-| **Y16** | **Plain CSS custom properties. No UI library, no CSS framework, no CSS-in-JS** (§11) | Approve — or direct otherwise, which is an **A4** dependency decision |
-| **Y17** | The **component inventory**, and *no component carries a domain rule* (§11) | Approve |
-| **Y18** | **Tables primary**, cards summary-only, permission-aware actions, **no bulk approve** (§12) | Approve |
-| **Y19** | **One state vocabulary**, seven dimensions, rule ids always visible (§13) | Approve |
-| **Y20** | **Provenance is a first-class UI object**; unresolvable anchors are hard errors (§14) | Approve |
-| **Y21** | **AI content always distinct; confidence never presented as accuracy** (§15) | Approve |
-| **Y22** | **Ask ASDP as a governed contextual assistant** — dock, context binding, answer contract, seven governance properties (§16) | Approve **as UX architecture only.** Implementation needs **H3** and its own boundary |
-| **Y23** | *Show supporting evidence* and *Why is G1 blocked* are **deterministic, model-free** answers with optional narration (§16.2) | Approve |
-| **Y24** | The dock is **collapsible, never modal, never unprompted** (§16.3) | Approve |
-| **Y25** | **Direction is per-segment and server-decided**; explicit mirror / do-not-mirror lists (§18) | Approve |
-| **Y26** | **Three breakpoints**, fixed collapse order, **governance information collapses last** (§19) | Approve |
-| **Y27** | **Four states, refusal first-class**, quoting the server (§20) | Approve |
-| **Y28** | The **U1/U2 redesign is presentation-only**, and the existing tests must pass **unchanged** (§21) | Approve |
+| **Y1** | The three-strand design direction **and its three prohibitions** (§1) | **APPROVED** |
+| **Y2** | Epistemic level, verification state and decidedness are **first-class visual primitives** (§1.1) | **APPROVED** |
+| **Y3** | The **four-region shell** (§2) | **APPROVED** |
+| **Y4** | Global, explicit, unlosable **project context** (§2.2) | **APPROVED** |
+| **Y5** | **Everything is deep-linkable** (§2.3) | **APPROVED** |
+| **Y6** | **Main + contextual inspector**, with a fixed inspector section order (§3) | **APPROVED** |
+| **Y7** | The inspector **never becomes an artifact editor**; making a section editable needs a new ADR (§3) | **APPROVED** |
+| **Y8** | **Gate-first, drill-through dashboards**; no count without its undecided partner (§4) | **APPROVED** |
+| **Y9** | U2's **four distinctions promoted to foundation rules** (§5) | **APPROVED** |
+| **Y10** | U1's **server-computed highlighting guarantee is not tradeable** for visual refinement (§5) | **APPROVED** |
+| **Y11** | The **requirements workspace** three-pane composition, no bulk approve (§6) | **APPROVED as a target**, explicitly **not** authorisation for U3 |
+| **Y12** | The **process/spec workspace is inspection-only**, with five explicit prohibitions (§7) | **APPROVED as a constraint on P3, as clarified in §24.1** |
+| **Y13** | **Typography**: three families, Arabic-first metrics, seven-step scale (§8) | **APPROVED** |
+| **Y14** | **Semantic-only colour**, six families, **every one with a second channel** (§9) | **APPROVED** |
+| **Y15** | **4px spacing scale, logical properties only, two densities** (§10) | **APPROVED** |
+| **Y16** | **Plain CSS custom properties. No UI library, no CSS framework, no CSS-in-JS** (§11) | **APPROVED as proposed: plain CSS custom properties for this slice.** No UI library, no CSS framework, no CSS-in-JS |
+| **Y17** | The **component inventory**, and *no component carries a domain rule* (§11) | **APPROVED** |
+| **Y18** | **Tables primary**, cards summary-only, permission-aware actions, **no bulk approve** (§12) | **APPROVED** |
+| **Y19** | **One state vocabulary**, seven dimensions, rule ids always visible (§13) | **APPROVED** |
+| **Y20** | **Provenance is a first-class UI object**; unresolvable anchors are hard errors (§14) | **APPROVED** |
+| **Y21** | **AI content always distinct; confidence never presented as accuracy** (§15) | **APPROVED** |
+| **Y22** | **Ask ASDP as a governed contextual assistant** — dock, context binding, answer contract, seven governance properties (§16) | **APPROVED as UX architecture only.** Implementation needs **H3** and its own boundary |
+| **Y23** | *Show supporting evidence* and *Why is G1 blocked* are **deterministic, model-free** answers with optional narration (§16.2) | **APPROVED** |
+| **Y24** | The dock is **collapsible, never modal, never unprompted** (§16.3) | **APPROVED** |
+| **Y25** | **Direction is per-segment and server-decided**; explicit mirror / do-not-mirror lists (§18) | **APPROVED** |
+| **Y26** | **Three breakpoints**, fixed collapse order, **governance information collapses last** (§19) | **APPROVED** |
+| **Y27** | **Four states, refusal first-class**, quoting the server (§20) | **APPROVED** |
+| **Y28** | The **U1/U2 redesign is presentation-only**, and the existing tests must pass **unchanged** (§21) | **APPROVED** |
 
-**None of Y1–Y28 may be implemented before it is approved**, and approval of the foundation is **not**
-authorisation to redesign — that is §25, and it is a separate decision.
+**All of Y1–Y28 are APPROVED**, and **D-U2.5 (§25) is approved with them** — so the foundation may
+now be applied to the functionality U1 and U2 already deliver, **and to nothing else.**
+
+### 24.1 The one clarification — **Y12**
+
+**Y12 as approved:**
+
+> **Generated process and artifact canvases remain inspection-first and read-only** unless a
+> future, **explicitly approved** phase introduces editing. **This must not be read as prohibiting
+> controlled specification-authoring interfaces** that may later be approved in **P3** — including
+> **BPS**, **DecisionSpec**, **FormSpec** and **ServiceInterface** editors.
+
+**This clarification amends no ADR; it aligns Y12 with two that already existed.** The distinction
+it draws is exactly the product boundary:
+
+| Layer | Editable? | Governed by |
+|---|---|---|
+| **Specification layer** — BPS, DecisionSpec, FormSpec, ServiceInterface, requirements, directives | **Yes**, and authoring interfaces for it are legitimate future work | [ADR-0002](../adr/ADR-0002-spec-layer-editing.md) |
+| **Artifact layer** — generated BPMN, DMN, forms, layout geometry, serialisations | **No.** Inspection only, and **no override editor** | [ADR-0003](../adr/ADR-0003-no-override-editor.md), [ADR-0015](../adr/ADR-0015-read-only-viewers.md), [ADR-0014](../adr/ADR-0014-layout-safety-critical.md) |
+
+So §7's five prohibitions stand **for the canvas** — no element creation, no dragging, no
+connecting, no palette, no user-editable layout — while a future P3 **spec editor** is not
+foreclosed by them. **The canvas is a view onto a specification; the specification is the thing a
+user may change.** Any such editor still needs its own approved boundary, and a canvas that
+*edited the artifact* would still require superseding
+[ADR-0003](../adr/ADR-0003-no-override-editor.md).
+
+### 24.2 What the approval explicitly preserves
+
+Restated because these are the items that would be quietly lost first:
+
+- **The four-way visual distinction** between extracted evidence (L1), machine interpretation
+  (L2), machine recommendation (L3) and human-approved decision (L4) — **Y2**, **Y21**.
+- **Every semantic colour carries a non-colour cue** — **Y14**. Testable, and tested.
+- **AI-generated content is always distinguishable** — **Y21**.
+- **Confidence is never represented as accuracy** — **Y21**.
+- **Ask ASDP is a governed contextual assistant, not a generic chatbot** — **Y22**.
+- **“Show supporting evidence” and “Why is G1 blocked?” are deterministic queries first**, with
+  optional AI narration later — **Y23**.
+- **Plain CSS custom properties for this slice** — **Y16**.
+- **Reusable tokens and components instead of one-off styling** — **Y16**, **Y17**.
+- **The Requirements Workspace is a design target only.** Its appearance in the visual reference is
+  **not** authorisation for U3 — **Y11**, §26.2.
 
 ---
 
@@ -700,5 +756,59 @@ supersession UI · image or PDF viewing.
 3. **Whether D-U2.5 runs before U3 at all**, or whether U3 proceeds first and the redesign follows.
    **The recommendation is before**, for the reason in §0.1: the cost only rises.
 
-> **This document is PROPOSED. Nothing in it is approved. No implementation may begin, and U3, P3 and
-> H3 all remain untouched by it.**
+---
+
+## 26. The approved visual reference
+
+**Four mockup screens were supplied with the approval and are adopted as the visual and UX
+reference for the *“Modern AI Engineering”* expression of the approved direction (Y1):**
+
+| # | Screen | Role in the reference |
+|---|---|---|
+| **1** | **Home / Project Workspace** | Dashboard composition, card and metric hierarchy, activity and risk panels, where Ask ASDP sits when nothing is selected |
+| **2** | **Sources & Intake** | Workspace table density, filters, tabbed sub-navigation, upload as a right-side panel |
+| **3** | **Source Viewer + Ask ASDP** | Document surface, evidence-and-context inspector, assistant with evidence references and confidence |
+| **4** | **Requirements Workspace + Ask ASDP** | **Future** composition: list → detail → assistant, and the shape U3 must fit without redesign |
+
+**The visual language adopted:** dark/navy persistent navigation rail; light, high-density
+professional workspace; restrained blue/violet AI accents; strong information hierarchy; clean
+enterprise typography and spacing; a contextual project bar; structured cards, tables and work
+panels; semantic badges; a contextual right-side inspector where appropriate; a persistent,
+collapsible Ask ASDP location; **engineering-tool density rather than a generic SaaS dashboard**;
+and **AI visually present without dominating the application.**
+
+### 26.1 Precedence — the reference is a reference, not an authority
+
+> **Where the visual reference and this repository disagree, the repository wins.** The reference
+> governs **visual language, layout hierarchy, navigation model, information density, workspace
+> structure and the placement of contextual AI**. It does **not** govern behaviour, data, or
+> semantics.
+
+Authoritative over the reference, without exception: the **approved ADRs**; the
+**accessibility requirements** (§17, **W8**); the **semantic-state rules** (§13); **server-provided
+evidence offsets**, **authority semantics**, **validation behaviour**, **RBAC behaviour** and the
+**development-authentication restriction** (**F-U1-b**); and **actual application behaviour** as
+U1 and U2 deliver it.
+
+**Fidelity is never a reason to sacrifice semantic correctness.** Where the reference and
+accessibility, RTL, responsiveness or the available data pull apart, **the implementation
+diverges and records why.**
+
+### 26.2 What the reference does NOT authorise
+
+**The screens depict a finished product. Most of it does not exist, and D-U2.5 must not pretend it
+does.**
+
+| Depicted | Reality | Rule for D-U2.5 |
+|---|---|---|
+| Dashboard metrics — *“27 / 134 conditions met”*, *“36% overall readiness”*, phase labels, top risks | **No API supports these** as depicted | **Do not invent them, and do not fabricate data to match the screenshot.** A metric with no API behind it is not built |
+| **Requirements Workspace** (screen 4) | **API only. U3 is not authorised** | **Not implemented.** It exists in the reference so today's shell and components can accommodate U3 later |
+| Specifications · Processes · Decisions · Forms · Services · Reports | Do not exist | May appear **only** as clearly disabled future-state navigation, per §2.1, **never** implying the capability exists |
+| Ask ASDP answering questions, with evidence and confidence | **H3 unresolved** | **A disabled shell only.** Zero provider calls, no simulated answers, no stub imitating live AI |
+| Sample data — universities, policy manuals, requirement ids, activity feeds | Illustrative | **No sample or seeded data ships.** The UI shows what the API returns, including empty |
+
+**The governing instruction, recorded verbatim because it settles every fidelity argument:**
+**prefer honest product state over visual fidelity to the mockup.**
+
+> **This document is APPROVED, and D-U2.5 (§25) is approved with it. U3 is NOT authorised, P3 has
+> not started, H3 is unresolved, and no live provider call is permitted.**
