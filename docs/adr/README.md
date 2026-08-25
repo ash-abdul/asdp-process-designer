@@ -94,6 +94,7 @@ An approved ADR is never edited to change its decision — it is superseded by a
 | [0036](ADR-0036-build-toolchain.md) | Compiled Build Toolchain | Moderate |
 | [0037](ADR-0037-binary-document-extraction.md) | Binary Document Extraction and Rasterisation Toolchain — **PROPOSED, awaiting approval** | Moderate |
 | [0038](ADR-0038-target-versus-content-verification.md) | Target Verification versus Content Verification | **Hard** |
+| [0039](ADR-0039-react-presentation-layer.md) | React + Vite as the Presentation Layer, and Its Boundary | Moderate |
 
 ---
 

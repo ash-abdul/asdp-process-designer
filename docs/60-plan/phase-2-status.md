@@ -156,12 +156,13 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 
 ### ADRs
 
-**38 total.** ADR-0001…0032 approved in Phase 0. ADR-0033 discharged by ADR-0034.
+**39 total.** ADR-0001…0032 approved in Phase 0. ADR-0033 discharged by ADR-0034.
 
 | ADR | State |
 |---|---|
 | ADR-0034, 0035, 0036 | **Approved**, V0 |
 | **ADR-0038** — target versus content verification | **Approved**, V3 |
+| **ADR-0039** — React + Vite as the presentation layer | **Approved**, 2026-08-25, for the UI enablement slice |
 | **ADR-0037** — binary document extraction toolchain | **PROPOSED — HELD.** The only open ADR |
 
 ### Blocked items

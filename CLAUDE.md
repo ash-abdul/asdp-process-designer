@@ -112,7 +112,7 @@ Governed by [ADR-0005](docs/adr/ADR-0005-ir-first-compilation.md),
 | `docs/40-quality/` | Validation architecture, rule catalogue, test scenarios, AI evaluation |
 | `docs/50-governance/` | Gates G0–G4, Camunda integration, handoff & divergence, audit |
 | `docs/60-plan/` | Roadmap, phase plans, phase status, open decisions |
-| [docs/adr/](docs/adr/README.md) | **38 ADRs — the binding decisions.** ADR-0037 is the only one still `PROPOSED` |
+| [docs/adr/](docs/adr/README.md) | **39 ADRs — the binding decisions.** ADR-0037 is the only one still `PROPOSED` |
 
 Documents in `docs/` are **versioned specifications, not notes.**
 
