@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ASDP Process Designer \u2014 requirements-driven Camunda 8 process application generator",
+  "description": "ASDP Process Designer — requirements-driven Camunda 8 process application generator",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -32,6 +32,7 @@
     "build:web": "vite build --config apps/web/vite.config.ts apps/web"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@types/node": "^24.13.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",

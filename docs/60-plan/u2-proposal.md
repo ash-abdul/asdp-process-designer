@@ -1,8 +1,15 @@
 # U2 — Sources: Intake, Inventory, Authority and L0 Validation · ⚠️ PROPOSED, NOT APPROVED
 
-> **Status: PROPOSED. NOT APPROVED. NOT IMPLEMENTED.**
-> Nothing here may be built until decisions **X1–X10** are approved, per §11 of
-> [CLAUDE.md](../../CLAUDE.md).
+> **Status: BOUNDARY APPROVED 2026-08-25. X1–X10 approved.**
+> **X10 approved** — automated browser/E2E testing is introduced **before** U2 implementation, on a
+> **pre-provisioned browser that is never downloaded**, recorded in
+> **[ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)**.
+> **X6 approved** — the U1 role-list defect is corrected as **U2-a, separately and first**, and the
+> drift test must assert **equality in both directions** so a *missing* role fails verification as
+> surely as an unknown one.
+> **X1–X5 and X7–X9 approved as proposed**, including using the existing APIs **without** adding the
+> optional `/meta` surface.
+> **U3–U5 remain unauthorised. Acceptance of U2 is a separate decision.**
 > **Version:** 0.1 · **Written:** 2026-08-25 · **Against commit:** `63bbe47`
 > **Within:** the approved UI enablement boundary —
 > [ui-enablement-proposal.md](ui-enablement-proposal.md) §15.1, slice **U2**
