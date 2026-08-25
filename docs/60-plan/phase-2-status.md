@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** **V0–V7, H4 AND H5 ACCEPTED. Phase 2 is NOT CLOSED — closure is a separate decision that has not been taken.** Limitations **77** and **78** are both **CLOSED**, §5.13 and §5.14. **No closure blocker remains on the record.** V4b-eval deferred (and blocked by H3). V2-PDF blocked on spike S2. · **Version:** 7.0 · **Updated:** 2026-08-24
-> **Checkpoint:** §0 · **Commit:** **H5 ACCEPTED** — boundary `2d04ab1`, implementation `0ba13b7`, acceptance recorded here. H4 accepted `530dee3`. V7 accepted `50855bd`
+> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. · **Version:** 8.0 · **Updated:** 2026-08-24
+> **Checkpoint:** §0 · **Commit:** **PHASE 2 CLOSED** — recorded here, on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -22,12 +22,18 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 > reached"*) together with K8's binding clarification, and both are proved by executing tests rather
 > than by assertion.
 >
-> **NO PHASE 2 CLOSURE BLOCKER REMAINS.** The two that existed are closed: limitation **77** by
-> **H4** (§5.13) and limitation **78** by **H5** (§5.14).
+> # **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.**
 >
-> **PHASE 2 IS STILL NOT CLOSED.** Closure is a **separate, explicit decision** and it has not been
-> taken. **Do not infer it from the absence of blockers** — §11 of [CLAUDE.md](../../CLAUDE.md)
-> requires an explicit decision, and this box is the durable record of the fact that none was made.
+> Closed on an explicit decision, against the approved exit condition, on a record audited for
+> internal consistency first (`6dea2ae`). The two blockers that existed are closed: limitation **77**
+> by **H4** (§5.13) and limitation **78** by **H5** (§5.14). **§16 is the closure record.**
+>
+> **WHAT CLOSURE VALIDATES:** mechanics, governance, traceability and **durable multi-project G1**.
+>
+> **WHAT CLOSURE DOES NOT CLAIM — read this before citing Phase 2 anywhere:** **NO LIVE MODEL HAS
+> EVER BEEN CALLED.** Not once, in any slice. Every evaluation number is a **synthetic corpus against
+> an authored stub**. Phase 2 makes **no claim whatever about real AI or model quality**. That
+> question opens with **V4b-eval**, which is blocked by **H3**.
 >
 > **H4 IS ACCEPTED — 2026-08-24.** Boundary `ce15d9d` (**K1–K6** and **K8**; **K7 refused**),
 > implementation `193d295`, corrections `5a5504b`. **Limitation 77 is CLOSED:** two projects in
@@ -63,14 +69,14 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
-| **Current slice** | **None in progress.** **H5 is ACCEPTED / COMPLETE** — 2026-08-24, §5.14, after an independent acceptance review with mutation testing. **H4 ACCEPTED** — §5.13. **V7 ACCEPTED** — §10.10 |
+| **Current slice** | **None. PHASE 2 IS CLOSED** — 2026-08-24, §16. H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
 | **Previously** | **V6 ACCEPTED / COMPLETE** — 2026-08-23 against decisions **Q1–Q9**, §9.10 |
 | **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 — the whole approved Phase 2 slice sequence, plus both hardening slices.** H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
 | **Commit** | **H5 `2d04ab1` + `0ba13b7`.** H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
-| **Phase 2 closure** | **NOT CLOSED — and NO BLOCKER REMAINS.** Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*. **Limitations 77 (H4) and 78 (H5) are both CLOSED and ACCEPTED** (§5.13, §5.14): G1 is reachable by any number of projects, **and it survives an application restart**. **Closure is a separate, explicit decision and has NOT been taken.** Everything still open — H1, H2, H3, H6, H7, H8, V2-PDF, V4b-eval, ADR-0037 — is **off the path to G1** and non-blocking |
+| **Phase 2 closure** | ## **CLOSED — ACCEPTED 2026-08-24**, §16. Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*, plus K8's clarification that durable multi-project G1 must survive a restart. **Both satisfied and proved by execution.** Limitations 77 and 78 closed. Everything still open — H1, H2, H3, H6, H7, H8, V2-PDF, V4b-eval, ADR-0037 — is **off the path to G1**, was non-blocking at closure, and **remains open and unresolved** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **DECIDE WHETHER TO CLOSE PHASE 2.** No blocker remains, but **closure has not been approved and must not be inferred**. Nothing else is approved and nothing may begin. **P3 must not start** — its boundary is neither proposed nor approved. **No live provider call is permitted** while H3 / limitation 62 stands. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **NONE. Phase 2 is closed and nothing is approved to follow it.** **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -156,7 +162,7 @@ v4-proposal.md §3 checks it item by item and names the four changes that would 
 
 | Item | Blocked on |
 |---|---|
-| **PHASE 2 CLOSURE** | **NO BLOCKER REMAINS — but Phase 2 is NOT closed.** Limitations **77** (H4) and **78** (H5) are both closed and accepted (§5.13, §5.14). Closure is a **separate, explicit decision** that has not been taken, and **must not be inferred from the absence of blockers** |
+| ~~**PHASE 2 CLOSURE**~~ | **DISCHARGED — Phase 2 CLOSED / ACCEPTED 2026-08-24**, §16 |
 | **P3 — the Specification Studio** | **No proposed boundary, no approval.** §11 of [CLAUDE.md](../../CLAUDE.md): a slice needs its scope approved, not merely a go-ahead. It must not begin |
 | **V2-PDF** — PDF adapter, rasterisation, `pdf_region` rectangle lists, `L0-ING-008` wired | (1) a representative Arabic PDF corpus per [s2-corpus-request.md](s2-corpus-request.md) · (2) **spike S2 completed** against it, producing the exact-precision yield rate · (3) **ADR-0037 approved**. Enforced mechanically by the checker rule `pdf-engine-not-approved`; `@embedpdf/pdfium` is **not installed** |
 | **V4b-eval, and every live provider call** | **Three** things, not two: (1) an approved credential · (2) E1-permitted representative material · (3) **H3 — limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads to be retained and migration 006 retains metadata only, so **no live provider call is permitted while the gap stands** — an unretained live payload is unrecoverable. **V5 is unaffected: it is replay-only** |
@@ -214,7 +220,7 @@ Studio, no graphical designer. **P3 has not started.**
 
 | | |
 |---|---|
-| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) · **V7** (§10) — **all accepted** — **plus both hardening slices: **H4** (§5.13) and **H5** (§5.14), accepted 2026-08-24. The approved Phase 2 slice sequence is complete and **no closure blocker remains**; **Phase 2 itself is not closed**, because closure is a separate, explicit decision that has not been taken |
+| Slices completed | **V0** · **V1** · **V2** · **V3** (§5) · **V4a** (§6) · **V4b-core** (§7) · **V5** (§8) · **V6** (§9) · **V7** (§10) — **all accepted** — **plus both hardening slices: **H4** (§5.13) and **H5** (§5.14), accepted 2026-08-24. The approved Phase 2 slice sequence is complete, no closure blocker remained, and **PHASE 2 IS CLOSED / ACCEPTED 2026-08-24** — §16 |
 | Next slice | **None approved, and nothing is in progress.** The **only** open question is whether to **close Phase 2** — a decision that has not been taken and must not be inferred from the absence of blockers. **P3 has not started** and its boundary is neither proposed nor approved. **V4b-eval** is deferred and blocked by **H3**; **V2-PDF** is blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1**, **H2**, **H3**, **H6**, **H7** and **H8** are open and **all non-blocking** |
 | Tests | **794 pass · 0 fail · 0 skipped · 0 suppressed** · 158 suites (288 V0 · 415 V1 · 480 V2 · 572 V3 · 596 V4a · 621 V4b-core · 664 V5 · 714 V6 · 739 V7 · 769 V7-corrected · **782 H4** · **794 H5**) |
 | Verification | build · `check:arch` (**155 files**) · checker self-test (**50 cases**) · `check:docs` (**93 files, 989 links**) — all clean, and **no live provider call** |
@@ -1974,9 +1980,117 @@ excluded permanently, because it would reverse
 
 ---
 
+## 16. Phase 2 — **CLOSED / ACCEPTED, 2026-08-24**
+
+> **This section is the closure record.** It is written once and is not a plan. If a later phase
+> needs something Phase 2 did not deliver, that is a new proposal, not an amendment here.
+
+### 16.1 The decision
+
+**Phase 2 is CLOSED and ACCEPTED as of 2026-08-24**, on an explicit decision, against the approved
+exit condition, on a record audited for internal consistency first (`6dea2ae`).
+
+### 16.2 The exit condition, and why it is satisfied
+
+| | |
+|---|---|
+| **Approved condition** | *"Phase 2 ends when G1 can be reached."* — [phase-2-plan.md](phase-2-plan.md) §582 |
+| **Binding clarification** | **K8**, at H4's approval: durable multi-project G1 must **survive an application restart** |
+| **Satisfied?** | **Yes, both**, and **proved by executing tests rather than by assertion** |
+| **The proof** | `h4-multi-project.test.ts`: two projects in one database each reach G1, each from `REQ-0001`. `h5-durable-identity.test.ts`: **project A reaches G1 → the application restarts → project B reaches G1 in the same database**, and A's gate is still `approved` afterwards |
+
+### 16.3 What was accepted
+
+| Slice | Accepted | Commits |
+|---|---|---|
+| **V0 – V7** | The whole approved slice sequence | V7 `7bfa440` … accepted `50855bd` |
+| **H4** — project-scoped requirement identity | 2026-08-24, §5.13 | `ce15d9d` + `193d295` + `5a5504b` + `530dee3` |
+| **H5** — durable identity generation | 2026-08-24, §5.14 | `2d04ab1` + `0ba13b7` + `55b8547` |
+
+Both hardening slices were **independently reviewed before acceptance**. H4's review found four
+defects, corrected in `5a5504b` with no production code touched. H5's review **mutation-tested** every
+decisive property against the old generator, because a test that passes under the defect proves
+nothing.
+
+### 16.4 Verification at closure
+
+| | |
+|---|---|
+| `npm run verify` | **green end to end, exit 0** |
+| Tests | **794 pass · 0 fail · 0 skipped · 0 todo** · **158 suites** |
+| `check:arch` | passed — **155 source files** |
+| `check:arch:selftest` | passed — **50 cases** |
+| `check:docs` | passed — **93 files, 990 links** |
+| Migrations | **13**, `001_governance` … `013_requirement_project_scope` |
+| Runtime dependencies | **seven**, unchanged since V0 |
+| Live provider calls | **none — verification makes no network call** |
+
+### 16.5 What closure CLAIMS
+
+- **G1 is reachable end to end**, by **any number of projects in one database**, and **it survives an
+  application restart**.
+- **Traceability holds**: evidence → requirement, with **resolvable anchors** (ADR-0008), the
+  four-level epistemic ladder never conflated (ADR-0007), and provenance that survives a restart.
+- **Governance holds**: gates block **structurally**, approval is a signature over
+  `(baselineHash, validationRunId)` that **invalidates automatically** when either changes
+  (ADR-0017), segregation of duties is enforced, and the audit log is append-only.
+- **AI proposes, deterministic code commits** (ADR-0004): no LLM-authored artifact, no auto-approval,
+  no AI write to the repository.
+- **Multimodal intake** for text, DOCX and images, with ADR-0038 target-versus-content verification
+  honoured.
+- **Identity is durable**: identifiers survive restarts and multiple instances, and no existing
+  identifier was renumbered to achieve it.
+
+### 16.6 What closure does **NOT** claim
+
+> **NO LIVE MODEL HAS EVER BEEN CALLED. Not once, in any slice.**
+
+- **No claim whatever about real AI or model quality.** Every evaluation number in this document
+  comes from a **synthetic corpus against an authored stub**: `eval:baseline` is explicitly *"not
+  usable for a routing decision"*; `eval:frame` reports **slot accuracy 45%** and **semantic
+  faithfulness NOT MEASURED**; `eval:reconcile` reports recall **50%** and canonicalisation P/R
+  **50%**.
+- **Vision accuracy is unmeasured.** Shape, refusals, egress and provenance are proven; accuracy is
+  not.
+- **Semantic correctness of requirements is not claimed** by V5, V6 or V7. The mechanics of proposing,
+  reconciling and approving them are.
+- **Not PDF intake** — V2-PDF is blocked, and mechanically so.
+- **Not production deployment.** PGlite is the development adapter; PostgreSQL is the production
+  target (ADR-0035) and has never been run against.
+
+**The question Phase 2 does not answer opens with V4b-eval, and V4b-eval is blocked by H3.**
+Retention must exist **before** the first live call, because an unretained payload is unrecoverable.
+
+### 16.7 Open at closure — nothing here was resolved by it
+
+**None of the following was implemented, fixed or discharged as part of closure.** Each keeps the
+status it held, and each needs its own approved boundary before anything begins.
+
+| Item | Limitation | Status at closure | Blocked closure? |
+|---|---|---|---|
+| **H1** — element-name comparison | 43 | Proposed, not approved | No |
+| **H2** — `imageSha256` required where appropriate | 44 | Proposed, not approved | No |
+| **H3** — AI prompt/response payloads not retained | 62 | Proposed, not approved. **Blocks every live provider call**, and therefore V4b-eval | No — it blocks live calls, not G1 |
+| **H6** — domain error flattened to `503` | 79 | Recorded, not started. Refused as **K7** for H4 | No |
+| **H7** — `order by at, id` mis-orders past 9 999 | 80 | Recorded, not started. Verified against the engine | No |
+| **H8** — ordering inferred from the identifier | 81 | Recorded, not started | No |
+| **V2-PDF** | — | **Blocked** on (1) a representative Arabic PDF corpus, (2) spike **S2**, (3) **ADR-0037** approval. Enforced by the `pdf-engine-not-approved` checker rule; `@embedpdf/pdfium` is not installed | No — an input format, not a pipeline stage |
+| **V4b-eval** | — | **Deferred**, blocked by **H3** plus a credential and E1-permitted material. The core/eval split was approved as **F3** | No |
+| **ADR-0037** — binary document extraction | — | **PROPOSED — HELD.** The only open ADR. Gates V2-PDF alone | No |
+
+### 16.8 What must not be inferred from closure
+
+- **P3 has NOT started**, and its boundary is **neither proposed nor approved**. §11 of
+  [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins.
+- **No live provider call is permitted** while **H3 / limitation 62** stands.
+- **Closure discharges no open item.** §16.7 is the inventory, and it is unchanged by this decision.
+
+
+---
+
 ## 15. Next step
 
-### V0–V7, H4 and H5 are ACCEPTED. **No Phase 2 closure blocker remains** — and Phase 2 is **NOT CLOSED**, because closure is a separate decision that has not been taken. V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
+### V0–V7, H4 and H5 are ACCEPTED. **Phase 2 is CLOSED — §16.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
 
 | | |
 |---|---|
@@ -2002,8 +2116,7 @@ PDF engine import — so the V2-PDF block remains mechanical rather than remembe
 reached"* — is SATISFIED, together with K8's binding clarification that durable multi-project G1 must
 survive an application restart. Both are proved by executing tests, not by assertion.**
 
-**PHASE 2 IS NOT CLOSED.** No blocker remains, but **closure is a separate, explicit decision that
-has not been taken and must not be inferred from the absence of blockers.**
+**PHASE 2 IS CLOSED — ACCEPTED 2026-08-24. The closure record is §16.**
 
 **What Phase 2 completion would NOT claim, stated here because it is the easiest thing to lose:
 NO LIVE MODEL HAS EVER BEEN CALLED.** Not once, in any slice. Every evaluation number is a

@@ -1,6 +1,6 @@
 # Phase 2 — Implementation Plan
 
-> **Status:** V0–V3, V4a and V4b-core accepted · V4b-eval deferred · V2-PDF blocked · V5–V7 **provisional** · **Version:** 4.3 · **Updated:** 2026-08-23
+> **Status:** **PHASE 2 CLOSED / ACCEPTED 2026-08-24** — [phase-2-status.md](phase-2-status.md) §16. V0–V7 accepted, plus hardening slices **H4** and **H5**. V4b-eval deferred (blocked by H3) · V2-PDF blocked · **Version:** 5.0 · **Updated:** 2026-08-24
 > **Related:** [roadmap.md](roadmap.md), [phase-1-status.md](phase-1-status.md),
 > [phase-2-status.md](phase-2-status.md), [open-decisions.md](open-decisions.md),
 > [ADR-0034](../adr/ADR-0034-nestjs-application-layer.md),
