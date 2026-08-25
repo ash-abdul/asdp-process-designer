@@ -107,6 +107,7 @@ for the module you are building.
 | [h4-proposal.md](60-plan/h4-proposal.md) | **H4 boundary — project-scoped requirement identity.** Closed limitation **77**: a second project in the same database could not reach G1. **APPROVED, implemented and ACCEPTED 2026-08-24.** Decisions **K1–K8** — K1–K6 and K8 approved, **K7 refused** |
 | [h5-proposal.md](60-plan/h5-proposal.md) | **H5 boundary — durable identity generation.** Closes limitation **78**: every surrogate id comes from a per-process counter, so the first write after a restart collides. **APPROVED, implemented and ACCEPTED 2026-08-24.** Decisions **M1–M9** |
 | [ui-enablement-proposal.md](60-plan/ui-enablement-proposal.md) | **`apps/web` boundary — the smallest usable browser application over the accepted P1/P2 backend.** Addresses the undelivered P1/P2 UI capabilities recorded in [roadmap.md](60-plan/roadmap.md) §0.3. **BOUNDARY APPROVED 2026-08-25 (W1–W13); ONLY U1 authorised.** [ADR-0039](adr/ADR-0039-react-presentation-layer.md) records the React/Vite adoption |
+| [u2-proposal.md](60-plan/u2-proposal.md) | **U2 boundary — sources: intake, inventory, authority ranking and L0 validation.** The first UI slice that writes. **PROPOSED, NOT APPROVED.** Decisions **X1–X10** |
 | [s2-corpus-request.md](60-plan/s2-corpus-request.md) | Spike S2 — Arabic PDF corpus request, success criteria, measurement protocol, pre-registered decision rule |
 | [open-decisions.md](60-plan/open-decisions.md) | What genuinely blocks implementation |
 
