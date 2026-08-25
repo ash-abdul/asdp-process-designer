@@ -1,9 +1,96 @@
 # Implementation Roadmap
 
-> **Status:** Approved (Phase 0) · **Version:** 1.0 · **Updated:** 2026-08-22
-> **Related:** [phase-0-tasks.md](phase-0-tasks.md), [mvp-scope.md](../00-product/mvp-scope.md)
+> **Status:** Approved (Phase 0) · **Version:** 1.1 — **reconciliation note added 2026-08-25; §1 is
+> unchanged** · **Updated:** 2026-08-25
+> **Related:** [phase-0-tasks.md](phase-0-tasks.md), [mvp-scope.md](../00-product/mvp-scope.md),
+> [phase-2-status.md](phase-2-status.md) §17, [phase-2-plan.md](phase-2-plan.md)
 
 Durations are engineering estimates for a small focused team, not commitments.
+
+> ## ⚠️ Read §0 before citing P0, P1 or P2 as delivered
+>
+> **§1 below is the ORIGINAL APPROVED PLAN and has not been edited.** What was actually built
+> diverges from it, and **§0 is the reconciliation**. P1 and P2 must **not** be read as fully
+> delivered product milestones.
+
+---
+
+## 0. Reconciliation — roadmap versus what was actually built (2026-08-25)
+
+> **Version 1.1 adds this section and changes nothing else.** §1's phase table is preserved verbatim
+> as the version 1.0 commitment, deliberately, so what was originally promised stays legible. This
+> section records the divergence rather than editing it away.
+
+### 0.1 Why a reconciliation was needed
+
+Two numbering schemes run in parallel and had never been mapped:
+
+| Scheme | Meaning |
+|---|---|
+| **P0 … P9** | This roadmap's phases — a **capability plan**, approved in Phase 0 |
+| **Phase 0 / 1 / 2** | The **implementation phases actually executed** in this repository |
+
+**Implementation Phase 2 spans roadmap P1 and P2**, and it is **CLOSED / ACCEPTED** — see
+[phase-2-status.md](phase-2-status.md) §16. **Roadmap P1 and P2 are NOT closed**, and nothing in
+this repository has ever claimed they were.
+
+The divergence arose at a documented but unapproved step: [phase-2-plan.md](phase-2-plan.md) §5
+replaced this roadmap's exit criteria with twelve *"consolidated current acceptance criteria"*.
+That consolidation labels itself honestly — *"not presented as an approved original"* — but **none of
+its twelve criteria is user-facing**, and the omission of this roadmap's user-facing commitments was
+never recorded as a decision. It is **accidental divergence formalised by a silent consolidation**,
+not an approved re-scoping.
+
+### 0.2 What implementation Phase 2 genuinely delivered and had accepted
+
+Multimodal intake (text, DOCX, images), resolvable anchoring in Arabic and English, the AI broker
+with egress enforcement and a declared degradation ladder, evidence extraction, structured
+requirement proposals, reconciliation and conflict precedence, the human review command surface, and
+**gate G1 — reachable by any number of projects in one database and durable across an application
+restart**. All of it **API-only**, verified, and accepted for **mechanics, governance and
+traceability**.
+
+### 0.3 What remains UNDELIVERED from P1 and P2
+
+**None of the following was delivered, and none was ever formally re-scoped or deferred with a
+trigger.** They are open commitments of this roadmap.
+
+| Roadmap commitment | Phase | Actual status |
+|---|---|---|
+| **Source viewer with RTL-safe highlighting** | P1 | **API only.** `GET …/content`, `…/units`, `…/highlights` exist and compute direction-aware highlight segments server-side. **No rendering surface exists** |
+| **Requirements workspace** | P2 | **API only.** The full review command surface exists. **No workspace exists** |
+| **Coverage dashboard** | P2 | **API only.** `GET …/frame-coverage` and `…/g1/readiness` exist. **No dashboard exists** |
+| **A real bilingual 40-page BRD + screenshots + legacy BPMN** (P1 exit) | P1 | **Not done.** Every corpus is synthetic |
+| **"On a real BRD"** (P2 exit) | P2 | **Not done.** Every corpus is synthetic |
+| **Degradation ladder exercised end to end against the private-endpoint adapter** (P2 exit) | P2 | **Partial.** The adapter exists with a deliberately reduced capability set and the ladder is exercised in CI; **all transports are injected stubs** |
+| **`apps/web` React SPA** ([module-map.md](../10-architecture/module-map.md), [technology-stack.md](../10-architecture/technology-stack.md)) | — | **Does not exist.** No frontend of any kind; the checker's `presentation` class has never been declared by any package |
+
+**No live model has ever been called, in any slice.** Every evaluation figure in this repository is a
+synthetic corpus against an authored stub.
+
+### 0.4 Status of the undelivered work
+
+> **UNPLANNED · BOUNDARY NOT YET APPROVED.**
+
+The items in §0.3 have **no approved implementation phase, no slice, no boundary and no schedule**.
+They are recorded here so they are not lost, and **naming them here assigns no scope**. §11 of
+[CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any of them may begin.
+
+Two constraints already apply to them and are **not** lifted by this reconciliation:
+
+- **Live AI invocation is blocked by H3 / limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md)
+  requires prompt and response payloads to be retained and migration 006 stores metadata only, so no
+  live provider call is permitted. An unretained payload is unrecoverable.
+- **Real-material validation additionally needs approved material** within the **E1** development
+  egress ceiling.
+
+### 0.5 What this reconciliation does NOT do
+
+- It does **not** reopen P1 or P2.
+- It does **not** invalidate implementation Phase 2's closure, which remains valid for its explicitly
+  accepted scope — [phase-2-status.md](phase-2-status.md) §16.5 and §16.6.
+- It does **not** create, approve or schedule any phase or slice.
+- It does **not** edit §1. The original commitments stand as written.
 
 ---
 

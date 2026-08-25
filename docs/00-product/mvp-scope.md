@@ -30,8 +30,8 @@
 
 ### Requirements
 - Full requirement record with traceability fields
-- Review workspace with split-screen source highlighting (LTR and RTL)
-- Conflict resolution, coverage dashboard, version history, supersession
+- Review workspace with split-screen source highlighting (LTR and RTL) — **NOT DELIVERED as at 2026-08-25: the review APIs exist, the workspace does not. UNPLANNED, no approved boundary** ([roadmap.md](../60-plan/roadmap.md) §0)
+- Conflict resolution, coverage dashboard, version history, supersession — conflict resolution and version history **delivered as APIs**; the **coverage dashboard is NOT DELIVERED** (the `frame-coverage` API exists, the dashboard does not). **UNPLANNED, no approved boundary**
 
 ### Specification layer
 - Domain Model Registry (bilingual glossary, actors, data entities/fields, business rules,

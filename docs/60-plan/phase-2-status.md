@@ -35,6 +35,12 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 > an authored stub**. Phase 2 makes **no claim whatever about real AI or model quality**. That
 > question opens with **V4b-eval**, which is blocked by **H3**.
 >
+> **AND IT IS NOT A PRODUCT MILESTONE.** Implementation Phase 2 spans roadmap **P1 + P2**, and
+> **closing it did not close them** — **§17**. There is **no user interface of any kind**: the source
+> viewer, requirements workspace and coverage dashboard exist **as APIs only**, and `apps/web` does
+> not exist. Those commitments are **UNDELIVERED and UNPLANNED — no approved boundary**
+> ([roadmap.md](roadmap.md) §0).
+>
 > **H4 IS ACCEPTED — 2026-08-24.** Boundary `ce15d9d` (**K1–K6** and **K8**; **K7 refused**),
 > implementation `193d295`, corrections `5a5504b`. **Limitation 77 is CLOSED:** two projects in
 > one database each reach G1 independently, and each starts at `REQ-0001` — §5.13.
@@ -68,7 +74,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| **Phase** | **Phase 2** — multimodal intake and structured requirements (spans roadmap P1 + P2) |
+| **Phase** | **Phase 2** — multimodal intake and structured requirements. It **spans** roadmap **P1 + P2**, and **closing it did NOT close them**: P1 and P2 carry user-facing commitments this repository has not delivered — **§17**, [roadmap.md](roadmap.md) §0 |
 | **Current slice** | **None. PHASE 2 IS CLOSED** — 2026-08-24, §16. H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
 | **Previously** | **V6 ACCEPTED / COMPLETE** — 2026-08-23 against decisions **Q1–Q9**, §9.10 |
 | **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 — the whole approved Phase 2 slice sequence, plus both hardening slices.** H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
@@ -76,7 +82,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **Phase 2 closure** | ## **CLOSED — ACCEPTED 2026-08-24**, §16. Phase 2's completion test is *"Phase 2 ends when G1 can be reached"*, plus K8's clarification that durable multi-project G1 must survive a restart. **Both satisfied and proved by execution.** Limitations 77 and 78 closed. Everything still open — H1, H2, H3, H6, H7, H8, V2-PDF, V4b-eval, ADR-0037 — is **off the path to G1**, was non-blocking at closure, and **remains open and unresolved** |
 | **Working tree** | **Clean.** Everything is committed |
 | **Work in progress** | **None.** Spike S2's probe scripts lived outside the repo and were never committed |
-| **Next approved action** | **NONE. Phase 2 is closed and nothing is approved to follow it.** **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
+| **Next approved action** | **NONE. Phase 2 is closed, the roadmap is reconciled (§17), and nothing is approved to follow it.** The open decision is **what to sequence next** — the undelivered P1/P2 UI capabilities, H3 and live-AI enablement, or P3 — and **all three are UNPLANNED with no approved boundary**. **P3 must NOT start**: its boundary is neither proposed nor approved, and §11 of [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins. **No live provider call is permitted** while **H3 / limitation 62** stands — an unretained payload is unrecoverable. H1, H2, H6, H7, H8, V2-PDF, V4b-eval and ADR-0037 all remain open and none may be started without approval. **P3 must not start**: its boundary is neither proposed nor approved. **V4b-eval must not begin**: it needs an approved credential, E1-permitted material **and H3**. **No live provider call is permitted while limitation 62 / H3 stands.** V2-PDF stays blocked on the Arabic corpus, spike S2 and [ADR-0037](../adr/ADR-0037-binary-document-extraction.md). **H1/H2** are proposed, not approved |
 
 ### Completed slices
 
@@ -2084,6 +2090,70 @@ status it held, and each needs its own approved boundary before anything begins.
   [CLAUDE.md](../../CLAUDE.md) requires an approved boundary before any slice begins.
 - **No live provider call is permitted** while **H3 / limitation 62** stands.
 - **Closure discharges no open item.** §16.7 is the inventory, and it is unchanged by this decision.
+
+
+---
+
+## 17. Roadmap reconciliation — P0/P1/P2 versus what was built (2026-08-25)
+
+> **Documentation only.** This section reopens nothing, implements nothing and approves nothing. It
+> exists because implementation **Phase 2 is closed** while roadmap **P1 and P2 are not**, and until
+> now nothing on the record said so.
+
+### 17.1 The two numbering schemes
+
+| Scheme | Meaning | State |
+|---|---|---|
+| **P0 … P9** | [roadmap.md](roadmap.md) — a **capability plan**, approved in Phase 0 | **P1 and P2 are NOT closed** |
+| **Phase 0 / 1 / 2** | The **implementation phases actually executed** here | **Phase 2 is CLOSED / ACCEPTED** — §16 |
+
+Implementation Phase 2 spans roadmap P1 + P2. **Closing the first did not close the second**, and no
+document in this repository has ever claimed roadmap P1 or P2 was complete.
+
+### 17.2 Phase 2's closure remains valid, and its scope is unchanged
+
+**§16 stands.** It was closed against its own approved exit condition — *"Phase 2 ends when G1 can be
+reached"* — plus **K8**'s restart clarification, both satisfied and proved by executing tests.
+**§16.5** states what it claims; **§16.6** states what it does not. Nothing in this reconciliation
+alters either, and no accepted claim is withdrawn.
+
+What this reconciliation adds is the boundary of that claim in *roadmap* terms: **Phase 2's closure
+validates mechanics, governance, traceability and durable multi-project G1. It is not a statement
+that roadmap P1 or P2 delivered their product or UI milestones.**
+
+### 17.3 Undelivered P1/P2 commitments — **UNPLANNED · BOUNDARY NOT YET APPROVED**
+
+Enumerated in [roadmap.md](roadmap.md) §0.3. In summary: the **source viewer**, **requirements
+workspace** and **coverage dashboard** exist **as APIs only** and have **no rendering surface**;
+**real-BRD validation** was never performed; the **degradation ladder** has never run against a live
+private endpoint; and **`apps/web`** does not exist.
+
+**None of it has an approved boundary, a slice, or a schedule.** Recording it assigns no scope.
+
+### 17.4 How the divergence happened
+
+[phase-2-plan.md](phase-2-plan.md) §5 replaced the roadmap's exit criteria with twelve *consolidated*
+criteria, **none of them user-facing**, and criterion 12 positively requires that **no live AI call
+occurs in verification**. The consolidation labelled itself *"not presented as an approved
+original"* — honest, but a consolidation is **not an approved amendment**. The omission was never
+recorded as a decision.
+
+**Accidental divergence, formalised by a silent consolidation.** Not concealment, and not approved
+re-scoping. §5 now records what it dropped.
+
+### 17.5 Also corrected
+
+[phase-2-plan.md](phase-2-plan.md) §1 previously read *"Phase 2 **proves** the first of the two
+hypotheses… that AI reads real bilingual documents accurately."* **It does not.** Phase 2 proves the
+**provenance** half and nothing about model accuracy, because **no live model has ever been called**.
+The sentence now says *builds the machinery for*, with the correction recorded in place.
+
+### 17.6 What remains blocked, and is not lifted here
+
+- **Live AI invocation** — blocked by **H3 / limitation 62**. No live provider call is permitted.
+- **Real-material validation** — additionally needs approved material within the **E1** ceiling.
+- **UI work of any kind** — **UNPLANNED**, no approved boundary.
+- **P3** — not started; boundary neither proposed nor approved.
 
 
 ---

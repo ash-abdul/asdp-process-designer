@@ -51,9 +51,19 @@ At the end of Phase 2 the application must be able to:
 5. surface genuine gaps, ambiguities and conflicts for human resolution
 6. reach **G1** only after a human has actually resolved them
 
-Phase 2 proves the first of the two hypotheses the product depends on: **that AI reads real
-bilingual documents accurately, with provenance that resolves.** The second — that generation plus
-layout yields artifacts an architect accepts without touching them — is Phase 3+.
+Phase 2 **builds the machinery for** the first of the two hypotheses the product depends on: *that
+AI reads real bilingual documents accurately, with provenance that resolves.*
+
+> **CORRECTED 2026-08-25.** This sentence previously read *"Phase 2 **proves** the first of the two
+> hypotheses…"*. **It does not, and it never did.** Phase 2 proves the **provenance** half — anchors
+> resolve, in both reading directions, and survive a restart. It proves **nothing** about whether AI
+> reads real documents accurately, because **no live model has ever been called and every corpus is
+> synthetic**. The hypothesis is testable only once **H3 / limitation 62** is closed and V4b-eval
+> runs against approved real material. See [roadmap.md](roadmap.md) §0 and
+> [phase-2-status.md](phase-2-status.md) §17.
+
+The second — that generation plus layout yields artifacts an architect accepts without touching
+them — is Phase 3+.
 
 **Phase 2 delivers no generation.** See §7.
 
@@ -792,6 +802,19 @@ cannot reach an external provider regardless of which adapter is configured.
 > recoverable from repository evidence, so it is not reproduced. The set below is **derived from
 > existing approved ADRs, the validation rule catalogue, and the roadmap**, and every criterion
 > names its source. It is the current criteria set; it is not presented as an approved original.
+>
+> ### ⚠️ What this consolidation OMITTED — recorded 2026-08-25
+>
+> **None of the twelve criteria below is user-facing.** In consolidating, this section dropped the
+> [roadmap](roadmap.md)'s P1 and P2 commitments to a **source viewer with RTL-safe highlighting**, a
+> **requirements workspace** and a **coverage dashboard**, and its exit criteria requiring validation
+> **on a real BRD** and the degradation ladder exercised **against a live private endpoint**.
+>
+> **That omission was never approved as a re-scoping.** It is reconciled in [roadmap.md](roadmap.md)
+> §0, which records those commitments as **undelivered and UNPLANNED / BOUNDARY NOT YET APPROVED**.
+> Criterion 4 covers highlighting **as computed server-side**, not as rendered; criterion 12 requires
+> that **no live AI call occurs in verification**, which is why nothing here could ever have tested
+> real model accuracy.
 
 | # | Criterion | Traces to |
 |---|---|---|

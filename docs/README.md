@@ -93,7 +93,7 @@ for the module you are building.
 
 | Document | Purpose |
 |---|---|
-| [roadmap.md](60-plan/roadmap.md) | Phases P0–P9 with exit criteria |
+| [roadmap.md](60-plan/roadmap.md) | Phases P0–P9 with exit criteria. **§0 reconciles the roadmap against what was actually built (2026-08-25): roadmap P1/P2 are NOT fully delivered — the source viewer, requirements workspace and coverage dashboard exist as APIs only.** §1 preserves the original v1.0 commitments unedited |
 | [phase-0-tasks.md](60-plan/phase-0-tasks.md) | Phase 0 breakdown and the six spikes |
 | [phase-1-status.md](60-plan/phase-1-status.md) | Phase 1 implementation status, defects found, deferrals |
 | [phase-2-plan.md](60-plan/phase-2-plan.md) | Phase 2 objective, slices V0–V7, approved V2 boundary, acceptance criteria |
