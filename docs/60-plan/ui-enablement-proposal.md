@@ -1,10 +1,11 @@
-# UI Enablement (`apps/web`) — Boundary Proposal · ⚠️ PROPOSED, NOT APPROVED
+# UI Enablement (`apps/web`) — Boundary · ✅ APPROVED · **U1 ONLY**
 
-> **Status: PROPOSED. NOT APPROVED. NOT IMPLEMENTED.**
-> This document proposes a boundary. Nothing in it may be built until decisions **W1–W12** are
-> approved, per §11 of [CLAUDE.md](../../CLAUDE.md). **`apps/web` does not exist and is not created
-> by this document.**
-> **Version:** 0.1 · **Written:** 2026-08-25 · **Against commit:** `773c82c`
+> **Status: BOUNDARY APPROVED 2026-08-25. W1–W13 approved. ONLY U1 IS AUTHORISED TO BE BUILT.**
+> **U2–U5 are NOT authorised** and must not begin until U1 is reviewed and explicitly accepted,
+> per §11 of [CLAUDE.md](../../CLAUDE.md).
+> **React + Vite adoption is recorded in [ADR-0039](../adr/ADR-0039-react-presentation-layer.md)**,
+> approved before any UI code was written.
+> **Version:** 1.0 · **Approved:** 2026-08-25 · **Against commit:** `773c82c`
 > **Addresses:** the undelivered P1/P2 user-facing commitments recorded in
 > [roadmap.md](roadmap.md) §0.3 as **UNPLANNED / BOUNDARY NOT YET APPROVED**
 > **Related:** [phase-2-status.md](phase-2-status.md) §16–§17,
@@ -15,6 +16,35 @@
 > [ADR-0023](../adr/ADR-0023-unicode-bilingual-architecture.md),
 > [ADR-0038](../adr/ADR-0038-target-versus-content-verification.md),
 > [provenance-and-anchoring.md](../20-domain/provenance-and-anchoring.md) §6
+
+---
+
+## 0. The approved decisions
+
+| # | Decision | Disposition |
+|---|---|---|
+| **W1** | Seven screens and the journey (§3) | **APPROVED as the target.** Only **S1**, a minimal **S2** and **S4** are built in U1 |
+| **W2** | `apps/web` structure and the four import rules (§4) | **APPROVED** |
+| **W3** | React + TypeScript + Vite | **APPROVED**, per the existing approved technology stack, with adoption and boundaries recorded in **[ADR-0039](../adr/ADR-0039-react-presentation-layer.md)** *before* implementation |
+| **W4** | Plain typed `fetch` + React state (§6) | **APPROVED.** **No data-fetching or state-management library** without a demonstrated need and **separate approval** |
+| **W5** | Authentication posture (§7) | **APPROVED: W5-A — development-only header authentication.** Must **fail closed outside localhost/development** and be **visibly identified as development authentication**. **NOT the production authentication architecture** |
+| **W6** | RTL and bilingual behaviour (§8) | **APPROVED** |
+| **W7** | Evidence highlighting rules (§9) | **APPROVED** |
+| **W8** | Accessibility baseline (§10) | **APPROVED** |
+| **W9** | Error, loading and empty states (§11) | **APPROVED** |
+| **W10** | The three API gaps (§2.2) | **G-a APPROVED · G-b APPROVED · G-c DEFERRED** — hardcoded role mapping with an **automated drift test**. **G-a and G-b may be built only by the slice that first needs them; U1 needs neither** |
+| **W11** | Acceptance criteria (§13) | **APPROVED** |
+| **W12** | Required tests (§14) | **APPROVED** |
+| **W13** | Slices and sequence, U1 → U5 (§15) | **APPROVED as a sequence. ONLY U1 IS AUTHORISED** |
+| **W14** | Out of scope (§16) | Unchanged |
+
+### 0.1 U1's approved acceptance boundary
+
+> **Development sign-in → project selection → source selection → source viewer → server-provided
+> evidence highlighting with correct English/LTR and Arabic/RTL behaviour.**
+
+**Nothing else. U2–U5 must not be implemented.** G-a and G-b are approved but **out of U1**, because
+U1 needs neither.
 
 ---
 
