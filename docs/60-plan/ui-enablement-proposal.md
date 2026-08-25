@@ -13,7 +13,7 @@
 > U3; **F-U1-b STANDS permanently** — development header authentication is localhost-only and is
 > never the production authentication solution.
 > **F-U2-b** asks for a **UI/UX design foundation** before U3 —
-> `ui-design-foundation-proposal.md`, **PROPOSED / NOT APPROVED**.
+> [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), **PROPOSED / NOT APPROVED**.
 > **React + Vite adoption is recorded in [ADR-0039](../adr/ADR-0039-react-presentation-layer.md)**,
 > approved before any UI code was written.
 > **Version:** 1.0 · **Approved:** 2026-08-25 · **Against commit:** `773c82c`

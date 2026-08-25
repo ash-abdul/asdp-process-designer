@@ -23,7 +23,7 @@
 > optional `/meta` surface.
 > **U3–U5 remain unauthorised**, and each needs its own boundary proposed and approved, per §11 of
 > [CLAUDE.md](../../CLAUDE.md). **F-U2-b** additionally asks that a **UI/UX design foundation** be
-> approved before U3 — `ui-design-foundation-proposal.md`,
+> approved before U3 — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md),
 > **PROPOSED / NOT APPROVED**.
 > **Version:** 0.1 · **Written:** 2026-08-25 · **Against commit:** `63bbe47`
 > **Within:** the approved UI enablement boundary —
