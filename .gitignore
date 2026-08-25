@@ -8,3 +8,6 @@ dist/
 coverage/
 /tmp/
 /corpora/local/
+
+# Vite's browser bundle. Built on demand; never committed.
+apps/web/dist-web/

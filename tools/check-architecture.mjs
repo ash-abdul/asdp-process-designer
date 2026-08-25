@@ -43,6 +43,12 @@ const ALLOWED_DEPS = {
   // ADR-0004 / invariant I1: the AI layer cannot reach domain state.
   '@asdp/ai': ['@asdp/schemas', '@asdp/raf', '@asdp/text'],
   '@asdp/eval': ['@asdp/schemas', '@asdp/ai', '@asdp/text', '@asdp/provenance'],
+  // ADR-0039 §2: the presentation layer gets the CONTRACT package and nothing
+  // else. Pulling a rule engine into the browser is how the client starts
+  // deciding, and @asdp/validation in particular would let a screen compute its
+  // own verdict on gate readiness — which the user would then be shown when it
+  // disagreed with the server's.
+  '@asdp/web': ['@asdp/schemas'],
   '@asdp/api': [
     '@asdp/schemas',
     '@asdp/text',
@@ -320,6 +326,49 @@ const CONTROLLER_MAX_LINES = 220;
  */
 const G1_RECONCILED_FILE = 'apps/api/src/commands/review.ts';
 const G1_RECONCILE_EXEMPT = ['approveG1'];
+
+// --- ADR-0039: the presentation layer renders and requests, never decides --
+
+const PRESENTATION_DIR = 'apps/web/';
+
+/**
+ * Domain-rule symbols that must never appear in the browser.
+ *
+ * Not an import check — that is covered by ALLOWED_DEPS — but a check on the
+ * NAMES, so a rule re-implemented by hand is caught as surely as one imported.
+ * ADR-0039 §3.
+ */
+const DOMAIN_RULE_SYMBOLS = [
+  'evaluateGate',
+  'approveGate',
+  'freezeBaseline',
+  'computeBaselineHash',
+  'reopenIfInvalidated',
+  'computeConfidence',
+  'computePrecedence',
+  'computeFrameCoverage',
+  'evaluateL1Requirements',
+  'allocateD15_requirementId',
+  'assertD15_notReused',
+];
+
+/**
+ * The highlight path may not search rendered text.
+ *
+ * ADR-0039 §5, and the single most product-specific rule in this file. A client
+ * that searches for a quote finds SOMETHING most of the time and the wrong span
+ * the rest — silently, because a wrong highlight looks exactly like a right one.
+ * Offsets come from the server and are used exactly as given.
+ */
+const HIGHLIGHT_PATH = 'apps/web/src/source-viewer/';
+const TEXT_SEARCH_PATTERNS = [
+  { re: /\.indexOf\s*\(/, why: 'indexOf on rendered text' },
+  { re: /\.lastIndexOf\s*\(/, why: 'lastIndexOf on rendered text' },
+  { re: /\.search\s*\(/, why: 'String.search' },
+  { re: /\.match\s*\(/, why: 'String.match' },
+  { re: /\.matchAll\s*\(/, why: 'String.matchAll' },
+  { re: /\.normalize\s*\(/, why: 'normalising text the server already normalised' },
+];
 
 // --- H5 / M8: the counting id generator may not reach production ----------
 
@@ -753,6 +802,51 @@ export function evaluateRules(files) {
       }
     }
 
+    // --- ADR-0039: presentation boundaries ------------------------------
+    if (normalisedPath.startsWith(PRESENTATION_DIR)) {
+      for (const spec of imports) {
+        if (spec.startsWith('../../api/') || spec.includes('apps/api')) {
+          violations.push({
+            rule: 'presentation-no-api',
+            file: f.path,
+            detail:
+              'the presentation layer may not import apps/api; the contract between them is HTTP ' +
+              '(ADR-0039 §2)',
+          });
+        }
+      }
+
+      if (!/\.test\.tsx?$/.test(normalisedPath)) {
+        for (const symbol of DOMAIN_RULE_SYMBOLS) {
+          if (new RegExp(`\\b${symbol}\\b`).test(f.text)) {
+            violations.push({
+              rule: 'presentation-no-domain-rules',
+              file: f.path,
+              detail:
+                `'${symbol}' is a domain rule and may not appear in the browser. The UI renders and ` +
+                'requests; if a screen needs a verdict it asks the API (ADR-0039 §3)',
+            });
+          }
+        }
+      }
+
+      if (normalisedPath.startsWith(HIGHLIGHT_PATH) && !/\.test\.tsx?$/.test(normalisedPath)) {
+        const code = f.text.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+        for (const { re, why } of TEXT_SEARCH_PATTERNS) {
+          if (re.test(code)) {
+            violations.push({
+              rule: 'presentation-no-text-research',
+              file: f.path,
+              detail:
+                `${why} in the highlight path. Highlight offsets are computed by the SERVER and used ` +
+                'exactly as given; searching rendered text reintroduces every normalisation and ' +
+                'direction bug the pipeline exists to eliminate (ADR-0039 §5)',
+            });
+          }
+        }
+      }
+    }
+
     // --- H5 / M8: no counting generator in production ---------------------
     if (
       normalisedPath !== COUNTER_GENERATOR_HOME &&
@@ -825,7 +919,7 @@ function walk(dir, out = []) {
     const full = join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) walk(full, out);
-    else if (entry.endsWith('.ts')) out.push(full);
+    else if (entry.endsWith('.ts') || entry.endsWith('.tsx')) out.push(full);
   }
   return out;
 }
@@ -1019,6 +1113,44 @@ const SELF_TEST_CASES = [
     expectNone: true,
     file: { path: 'apps/api/src/commands/review.ts', pkg: '@asdp/api', cls: 'application',
             text: `export async function rejectRequirement(ctx) {\n  return mutate(ctx, a, s, async (repos) => repos.x());\n}\n` },
+  },
+  {
+    name: 'the browser importing apps/api is rejected (ADR-0039)',
+    rule: 'presentation-no-api',
+    file: { path: 'apps/web/src/api/leak.ts', pkg: '@asdp/web', cls: 'presentation',
+            text: `import { COMMANDS } from '../../api/src/commands.ts';\n` },
+  },
+  {
+    name: 'a domain rule re-implemented in the browser is rejected (ADR-0039)',
+    rule: 'presentation-no-domain-rules',
+    file: { path: 'apps/web/src/features/gate.ts', pkg: '@asdp/web', cls: 'presentation',
+            text: 'const ready = evaluateGate(state);\n' },
+  },
+  {
+    name: 'SEARCHING RENDERED TEXT for a highlight is rejected (ADR-0039 §5)',
+    rule: 'presentation-no-text-research',
+    file: { path: 'apps/web/src/source-viewer/bad.ts', pkg: '@asdp/web', cls: 'presentation',
+            text: 'const at = text.indexOf(quote);\n' },
+  },
+  {
+    name: 'normalising text the server already normalised is rejected too',
+    rule: 'presentation-no-text-research',
+    file: { path: 'apps/web/src/source-viewer/bad2.ts', pkg: '@asdp/web', cls: 'presentation',
+            text: 'const t = text.normalize("NFC");\n' },
+  },
+  {
+    name: 'using server offsets is PERMITTED (ADR-0039 §5)',
+    rule: 'presentation-no-text-research',
+    expectNone: true,
+    file: { path: 'apps/web/src/source-viewer/good.ts', pkg: '@asdp/web', cls: 'presentation',
+            text: 'const piece = codePoints.slice(range.start, range.end).join("");\n' },
+  },
+  {
+    name: 'indexOf OUTSIDE the highlight path is permitted (ADR-0039 §5)',
+    rule: 'presentation-no-text-research',
+    expectNone: true,
+    file: { path: 'apps/web/src/components/list.ts', pkg: '@asdp/web', cls: 'presentation',
+            text: 'const i = roles.indexOf(role);\n' },
   },
   {
     name: 'production wiring using counterIdGenerator is rejected (H5 / M8)',

@@ -2159,6 +2159,48 @@ The sentence now says *builds the machinery for*, with the correction recorded i
 
 ---
 
+## 18. UI enablement U1 — implemented, **AWAITING ACCEPTANCE**
+
+> **Documentation of an implemented slice, not an acceptance.** U1 is **NOT accepted**, and
+> **U2–U5 are not authorised**. Phase 2 stays closed; **P3 has not started**.
+
+**Boundary approved 2026-08-25** ([ui-enablement-proposal.md](ui-enablement-proposal.md), W1–W13),
+with **[ADR-0039](../adr/ADR-0039-react-presentation-layer.md)** recording the React/Vite adoption
+**before** any UI code was written.
+
+**U1's approved boundary, delivered:** development sign-in → project selection → source selection →
+source viewer → server-provided evidence highlighting with correct English/LTR and Arabic/RTL
+behaviour.
+
+| | |
+|---|---|
+| **Package** | **`apps/web`**, `asdp.class: "presentation"` — the class the checker has defined since V0 and no package had ever declared |
+| **Dependencies** | **React 19.2.8, React DOM 19.2.8** (runtime); **Vite 8.2.2, @vitejs/plugin-react 6.1.0, @types/react, @types/react-dom** (dev). All **pinned exactly**, per **A4** |
+| **Enforcement** | **Four new checker rules** — `presentation-no-api`, `presentation-no-domain-rules`, `presentation-no-text-research`, and `@asdp/web → @asdp/schemas` only. **Six self-test cases.** The checker now walks `.tsx` as well as `.ts` |
+| **Verification** | `npm run verify` **green, exit 0**: **818 pass · 0 fail · 0 skipped · 0 todo · 163 suites** (+24 from U1); `check:arch` **166 files**; self-test **56 cases**; `check:docs` 95 files / 1055 links |
+| **API gaps** | **None used.** G-a and G-b are approved but **not implemented** — U1 needs neither, and they belong to the slice that first does |
+
+**Verified in a real browser**, against the running service with English, Arabic and mixed-direction
+documents:
+
+- the Arabic document renders **RTL** with seven correctly-positioned highlights;
+- the mixed document renders **LTR** with Arabic runs individually `dir="rtl"` — segment directions
+  came back `ltr, ltr, rtl, ltr, ltr, rtl, ltr`, and **two segments were flagged counter-flow**;
+- accessible names carry direction and language — *"evidence, counter-flow, right to left, ar"* —
+  so **no highlight is identified by colour alone**;
+- **the rendered text is 170 code points, exactly the `textLength` the server reported.** Nothing was
+  lost, duplicated or transformed;
+- no console errors; skip link, `main` landmark, two labelled `nav` landmarks, ordered headings.
+
+**One defect found by the work itself.** The first run of the project list failed with a
+`ContractError` — the UI expected `name` to be a string and the API returns a **bilingual label**
+carrying its own language and direction (ADR-0023). The contract validation **caught it loudly at the
+boundary rather than rendering a blank pane**, which is exactly why W4 puts validation there. Fixed,
+and project names now render in their own direction.
+
+
+---
+
 ## 15. Next step
 
 ### V0–V7, H4 and H5 are ACCEPTED. **Phase 2 is CLOSED — §16.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.

@@ -11,6 +11,7 @@
     { "path": "./packages/validation" },
     { "path": "./packages/ai" },
     { "path": "./packages/eval" },
-    { "path": "./apps/api" }
+    { "path": "./apps/api" },
+    { "path": "./apps/web" }
   ]
 }

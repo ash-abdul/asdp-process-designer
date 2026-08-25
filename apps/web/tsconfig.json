@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+
+    // ADR-0039: the presentation layer is the only place JSX is permitted.
+    "jsx": "react-jsx",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+
+    // The browser bundle is built by Vite; `tsc -b` exists here to type-check
+    // and to emit the DOM-FREE modules so `node --test` can test them. That is
+    // deliberate: every rule worth testing lives outside a component.
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "references": [{ "path": "../../packages/schemas" }]
+}

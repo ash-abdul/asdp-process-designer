@@ -1,0 +1,15 @@
+{
+  "name": "@asdp/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ASDP browser application. Presentation only: it renders and requests, and never decides (ADR-0039).",
+  "asdp": {
+    "class": "presentation"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build:web": "vite build",
+    "preview": "vite preview"
+  }
+}

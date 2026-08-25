@@ -1,0 +1,108 @@
+/**
+ * Loading, empty and error states — **W9**.
+ *
+ * Three rules, and they are the reason this is a shared component rather than
+ * an inline ternary in each screen:
+ *
+ * 1. **An empty state carries its reason**, never a blank pane. *"No sources
+ *    yet"* is useless; *"no sources yet — upload one to begin"* is not.
+ * 2. **The API's status vocabulary survives to the screen.** CLAUDE.md §12 makes
+ *    401, 403, 404 and 503 mean different things, and a UI that renders them all
+ *    as *"something went wrong"* sends the user looking in the wrong place.
+ * 3. **A 503 is reported honestly.** Limitation 79 / H6 means a domain error
+ *    thrown inside a transaction still surfaces as `503 database unavailable`.
+ *    Rewriting that in the client would hide a recorded defect.
+ */
+
+import type { ReactNode } from 'react';
+import { ApiError, ContractError } from '../api/client.ts';
+
+export function Loading({ what }: { what: string }): ReactNode {
+  return (
+    <p className="state state--loading" role="status" aria-live="polite">
+      Loading {what}…
+    </p>
+  );
+}
+
+export function Empty({ what, hint }: { what: string; hint: string }): ReactNode {
+  return (
+    <div className="state state--empty">
+      <p>
+        <strong>No {what} yet.</strong>
+      </p>
+      <p className="state__hint">{hint}</p>
+    </div>
+  );
+}
+
+/** What the user should be told, and what they should do about it. */
+function describe(error: Error): { title: string; advice: string; detail?: string } {
+  if (error instanceof ContractError) {
+    return {
+      title: 'The server returned something this page did not expect',
+      advice:
+        'This is a contract mismatch between the UI and the API, not a problem with your data. ' +
+        'It is reported rather than hidden so it can be fixed.',
+      detail: error.message,
+    };
+  }
+  if (error instanceof ApiError) {
+    switch (error.kind) {
+      case 'unauthenticated':
+        return {
+          title: 'Sign-in required',
+          advice: 'Your identity was not accepted. This is a credentials problem, not a permissions one.',
+          detail: error.message,
+        };
+      case 'forbidden':
+        return {
+          title: 'Your role does not permit this',
+          advice:
+            'This is a permissions problem, not a credentials one. Sign in with a role that has it, ' +
+            'or ask someone who does.',
+          detail: error.message,
+        };
+      case 'not_found':
+        return { title: 'Not found', advice: 'It may have been removed, or the link may be stale.', detail: error.message };
+      case 'conflict':
+        return {
+          title: 'Someone else changed this first',
+          advice: 'Reload to see the current state before acting again.',
+          detail: error.message,
+        };
+      case 'unavailable':
+        return {
+          title: 'The service cannot complete this right now',
+          advice:
+            'The API returned 503. Note that a domain error thrown inside a transaction is currently ' +
+            'reported this way too (limitation 79 / H6), so the cause may be your input rather than the ' +
+            'database. The audit log will say which.',
+          detail: error.message,
+        };
+      case 'invalid':
+        return { title: 'That request was rejected', advice: 'The server explained why:', detail: error.message };
+      default:
+        return { title: 'Request failed', advice: 'The server did not explain further.', detail: error.message };
+    }
+  }
+  return { title: 'Something went wrong', advice: 'The error was not one this page recognises.', detail: error.message };
+}
+
+export function Failed({ error, retry }: { error: Error; retry?: () => void }): ReactNode {
+  const { title, advice, detail } = describe(error);
+  return (
+    <div className="state state--error" role="alert">
+      <p>
+        <strong>{title}</strong>
+      </p>
+      <p>{advice}</p>
+      {detail === undefined ? null : <p className="state__detail">{detail}</p>}
+      {retry === undefined ? null : (
+        <button type="button" onClick={retry}>
+          Try again
+        </button>
+      )}
+    </div>
+  );
+}

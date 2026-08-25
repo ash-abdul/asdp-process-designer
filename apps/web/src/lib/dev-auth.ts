@@ -1,0 +1,111 @@
+/**
+ * Development authentication — **W5-A**, and deliberately narrow.
+ *
+ * [ADR-0039](../../../../docs/adr/ADR-0039-react-presentation-layer.md) §6.
+ *
+ * The API's only working `authMode` is `headers`, in which the caller supplies
+ * `x-asdp-subject` and `x-asdp-roles`. A browser doing that is **asserting its
+ * own authorisation**, which anyone can forge with dev-tools.
+ *
+ * That is tolerable for local development and **nowhere else**. So:
+ *
+ * - it **fails closed**: any origin that is not a recognised localhost
+ *   development origin is refused, and the refusal is an exception, not a
+ *   fallback to some weaker mode;
+ * - it is **visibly identified** wherever it is used;
+ * - it is **NOT the production authentication architecture**. Production needs
+ *   OIDC ([ADR-0027](../../../../docs/adr/ADR-0027-abstract-oidc-identity.md)),
+ *   whose adapter is not implemented.
+ *
+ * The check is a pure function of the origin so it is testable without a browser.
+ */
+
+/** Roles the API recognises. Mirrors `Role` in @asdp/schemas. */
+export const ROLES = [
+  'PlatformAdmin',
+  'ProcessArchitect',
+  'BusinessAnalyst',
+  'BusinessApprover',
+  'Viewer',
+] as const;
+
+export type DevRole = (typeof ROLES)[number];
+
+export interface DevIdentity {
+  readonly subject: string;
+  readonly roles: readonly DevRole[];
+}
+
+export class DevAuthRefused extends Error {}
+
+/** Hostnames on which development authentication is permitted. Exhaustive. */
+const PERMITTED_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+/**
+ * Whether development authentication may operate against this origin.
+ *
+ * Fails closed: anything unparseable, any non-http(s) scheme and any host not in
+ * the list above is refused. A wildcard such as `*.localhost` is NOT accepted —
+ * a permissive pattern here is how a development door ends up open in staging.
+ */
+export function isDevelopmentOrigin(origin: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  return PERMITTED_HOSTS.has(url.hostname);
+}
+
+/**
+ * The headers development authentication sends, or a refusal.
+ *
+ * @throws DevAuthRefused when the origin is not a development origin.
+ */
+export function devAuthHeaders(identity: DevIdentity, origin: string): Record<string, string> {
+  if (!isDevelopmentOrigin(origin)) {
+    throw new DevAuthRefused(
+      `development authentication is refused for origin '${origin}'. It is permitted only against ` +
+        'localhost and is NOT the production authentication architecture; production requires OIDC ' +
+        '(ADR-0027, ADR-0039 §6)',
+    );
+  }
+  if (identity.subject.trim().length === 0) {
+    throw new DevAuthRefused('a development identity needs a subject');
+  }
+  if (identity.roles.length === 0) {
+    throw new DevAuthRefused('a development identity needs at least one role');
+  }
+  return {
+    'x-asdp-subject': identity.subject.trim(),
+    'x-asdp-roles': identity.roles.join(','),
+  };
+}
+
+/**
+ * The role map used to disable affordances — **W10 / G-c deferred**.
+ *
+ * `COMMANDS` in the API is the authority and is **not exposed over HTTP**, so
+ * this is a deliberate, recorded duplicate. It is a **courtesy**: the API
+ * refuses regardless (ADR-0027), and hiding a button is not a control.
+ *
+ * A drift test asserts every command named here is one the API actually has, so
+ * this map cannot rot unnoticed — which is the whole reason G-c was deferrable.
+ */
+export const COMMAND_ROLES: Readonly<Record<string, readonly DevRole[]>> = {
+  createProject: ['PlatformAdmin', 'ProcessArchitect'],
+  ingestSource: ['BusinessAnalyst', 'ProcessArchitect'],
+  listRequirements: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
+  frameCoverage: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
+  reviewRequirement: ['BusinessAnalyst', 'ProcessArchitect'],
+  g1Readiness: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
+};
+
+/** Whether an identity may invoke a command. Affordance only — never a control. */
+export function mayInvoke(identity: DevIdentity, command: string): boolean {
+  const required = COMMAND_ROLES[command];
+  if (required === undefined) return true; // unknown here: let the API decide
+  return identity.roles.some((r) => required.includes(r));
+}

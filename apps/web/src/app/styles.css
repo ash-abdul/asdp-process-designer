@@ -1,0 +1,50 @@
+/*
+ * Styling is deliberately minimal: U1 exists to validate the architecture and
+ * the highlight model, not a visual language.
+ *
+ * Two rules that are not cosmetic:
+ *   - a highlight is never identified by colour alone (W8), so every non-resolved
+ *     resolution also carries a visible textual badge and an accessible name;
+ *   - focus is always visible, in both directions.
+ */
+:root { color-scheme: light dark; --hl: #ffe9a8; --hl-unverified: #ffd6d6; --hl-drift: #e6dcff; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 8px; top: 8px; padding: 8px; background: #fff; z-index: 10; }
+:focus-visible { outline: 3px solid #0b57d0; outline-offset: 2px; }
+
+.shell__header { display: flex; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #ccc; flex-wrap: wrap; }
+.shell__title { font-size: 16px; margin: 0; }
+.shell__main { display: grid; grid-template-columns: 200px 260px 1fr; gap: 16px; padding: 16px; align-items: start; }
+@media (max-width: 900px) { .shell__main { grid-template-columns: 1fr; } }
+
+.dev-badge, .dev-warning { background: #7a2e2e; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 0; }
+.dev-warning { display: block; margin: 12px 0; }
+
+.pane h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 8px; }
+.pane ul { list-style: none; margin: 0; padding: 0; }
+.pane li button { display: block; width: 100%; text-align: start; padding: 6px 8px; border: 1px solid transparent; background: none; cursor: pointer; font: inherit; }
+.pane li button[aria-current="true"] { border-color: #0b57d0; font-weight: 600; }
+.chip { font-size: 11px; border: 1px solid currentColor; border-radius: 3px; padding: 0 4px; margin-inline-start: 6px; opacity: .75; }
+
+.viewer__text { white-space: pre-wrap; border: 1px solid #ccc; padding: 16px; max-width: 72ch; }
+.viewer__summary { font-size: 13px; opacity: .8; }
+.viewer__broken { list-style: none; padding: 0; margin: 0 0 12px; }
+.broken { border-inline-start: 4px solid #b00; background: #fff4f4; padding: 8px 12px; margin-bottom: 6px; }
+.broken__note { opacity: .8; font-style: italic; }
+
+mark.hl { background: var(--hl); padding: 0 1px; }
+mark.hl--content_unverified { background: var(--hl-unverified); }
+mark.hl--drifted { background: var(--hl-drift); }
+mark.hl--counterflow { outline: 1px dotted currentColor; }
+.hl__badge { font-size: 10px; text-transform: uppercase; margin-inline-start: 4px; padding: 0 3px; border: 1px solid currentColor; border-radius: 3px; }
+
+.state { padding: 8px 0; }
+.state--error { border-inline-start: 4px solid #b00; background: #fff4f4; padding: 8px 12px; }
+.state__hint, .state__detail { opacity: .8; font-size: 13px; }
+.signin { max-width: 46ch; margin: 8vh auto; padding: 0 16px; }
+.signin label { display: block; margin-top: 8px; }
+.signin input[type="text"], .signin input:not([type]) { width: 100%; padding: 6px; }
+.role { display: flex; gap: 6px; align-items: center; }
