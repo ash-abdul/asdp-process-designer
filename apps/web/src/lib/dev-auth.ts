@@ -20,13 +20,29 @@
  * The check is a pure function of the origin so it is testable without a browser.
  */
 
-/** Roles the API recognises. Mirrors `Role` in @asdp/schemas. */
+/**
+ * Roles the API recognises — **all ten of them**.
+ *
+ * This list must equal `Role` in `@asdp/schemas` **exactly**, and a drift test
+ * asserts equality in **both** directions.
+ *
+ * U1 shipped five of the ten, and its drift test did not catch it: it asserted
+ * *every role the UI names is a role the API defines*, which is true of any
+ * subset. **A one-directional drift test catches half the drift.** The
+ * consequence was concrete rather than theoretical — `ingestSource` permits
+ * `Contributor`, and a Contributor could not sign in at all.
+ */
 export const ROLES = [
-  'PlatformAdmin',
-  'ProcessArchitect',
-  'BusinessAnalyst',
-  'BusinessApprover',
   'Viewer',
+  'Contributor',
+  'BusinessAnalyst',
+  'ProcessArchitect',
+  'BusinessApprover',
+  'TechnicalApprover',
+  'CamundaDeveloper',
+  'TestDesigner',
+  'ComplianceReviewer',
+  'PlatformAdmin',
 ] as const;
 
 export type DevRole = (typeof ROLES)[number];
@@ -96,7 +112,21 @@ export function devAuthHeaders(identity: DevIdentity, origin: string): Record<st
  */
 export const COMMAND_ROLES: Readonly<Record<string, readonly DevRole[]>> = {
   createProject: ['PlatformAdmin', 'ProcessArchitect'],
-  ingestSource: ['BusinessAnalyst', 'ProcessArchitect'],
+
+  // U2. Note that ingest is DELIBERATELY WIDER than ranking: a Contributor may
+  // add evidence and may not decide how authoritative it is. ADR-0012 derives
+  // conflict precedence from that ranking, so it is a governance judgement
+  // rather than a clerical one, and the UI must not blur the difference.
+  ingestSource: ['Contributor', 'BusinessAnalyst', 'ProcessArchitect'],
+  setSourceAuthorityRank: ['BusinessAnalyst', 'ProcessArchitect'],
+  validateIntake: [
+    'Viewer',
+    'Contributor',
+    'BusinessAnalyst',
+    'ProcessArchitect',
+    'ComplianceReviewer',
+  ],
+
   listRequirements: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
   frameCoverage: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
   reviewRequirement: ['BusinessAnalyst', 'ProcessArchitect'],

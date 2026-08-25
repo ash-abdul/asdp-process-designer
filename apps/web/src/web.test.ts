@@ -334,14 +334,63 @@ describe('U1 role map drift guard', () => {
     }
   });
 
-  test('every role named in the UI map is a role the API defines', () => {
+  test('THE ROLE LIST EQUALS THE API\'S, IN BOTH DIRECTIONS (U2-a)', () => {
+    // U1 asserted only one direction — that every role the UI names exists in
+    // the API — which is true of ANY subset, and U1 shipped five of ten. A
+    // Contributor could not sign in, and `ingestSource` permits Contributor.
+    //
+    // Both directions now, so a MISSING role fails verification as surely as an
+    // unknown one.
     const here = dirname(fileURLToPath(import.meta.url));
     const primitives = readFileSync(
       join(here, '..', '..', '..', 'packages', 'schemas', 'src', 'primitives.ts'),
       'utf8',
     );
-    for (const role of ROLES) {
-      assert.ok(primitives.includes(`'${role}'`), `unknown role in the UI map: ${role}`);
+
+    const block = /export const Role = z\.enum\(\[([\s\S]*?)\]\)/.exec(primitives);
+    assert.ok(block !== null, 'could not find the Role enum in @asdp/schemas');
+    const apiRoles = [...(block[1] as string).matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1] as string);
+    assert.ok(apiRoles.length > 0, 'the Role enum parsed as empty');
+
+    const ui = [...ROLES].sort();
+    const api = [...apiRoles].sort();
+
+    const missing = api.filter((r) => !ui.includes(r as never));
+    const unknown = ui.filter((r) => !api.includes(r));
+
+    assert.deepEqual(missing, [], `roles the API defines but the UI cannot select: ${missing.join(', ')}`);
+    assert.deepEqual(unknown, [], `roles the UI names but the API does not define: ${unknown.join(', ')}`);
+    assert.deepEqual(ui, api, 'the UI role list and the API Role enum must be equal');
+  });
+
+  test('every role a U2 command requires is SELECTABLE in the UI', () => {
+    // The consequence the one-directional test missed: a command whose role
+    // cannot be chosen at sign-in is a command no one can reach.
+    for (const [command, roles] of Object.entries(COMMAND_ROLES)) {
+      for (const role of roles) {
+        assert.ok(
+          (ROLES as readonly string[]).includes(role),
+          `${command} requires '${role}', which the sign-in screen cannot select`,
+        );
+      }
+    }
+  });
+
+  test('the U2 command role maps match the API COMMANDS registry exactly', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const commands = readFileSync(join(here, '..', '..', 'api', 'src', 'commands.ts'), 'utf8');
+    for (const command of ['ingestSource', 'setSourceAuthorityRank']) {
+      const line = commands.split('\n').find((l) => l.includes(`name: '${command}'`));
+      assert.ok(line !== undefined, `the API has no command '${command}'`);
+      const required = [...line.matchAll(/'([A-Za-z]+)'/g)]
+        .map((m) => m[1] as string)
+        .filter((r) => (ROLES as readonly string[]).includes(r));
+      const mapped = [...(COMMAND_ROLES[command] ?? [])].sort();
+      assert.deepEqual(
+        mapped,
+        [...required].sort(),
+        `${command}: the UI role map disagrees with the API`,
+      );
     }
   });
 
