@@ -88,14 +88,21 @@ test('the rail declares future workspaces as DISABLED and names their slice', as
   await expect(page.getByTestId('nav-sources')).toBeEnabled();
   await expect(page.getByTestId('nav-sources')).toHaveAttribute('data-available', 'true');
 
-  for (const id of ['requirements', 'specifications', 'processes', 'decisions', 'forms', 'services', 'overview']) {
+  // `requirements` left this list at U3-c, which BUILT it. The assertion that it
+  // was disabled was correct when written and is now false — the honesty rule it
+  // enforces is unchanged, and only the membership moved. Nothing is weakened:
+  // the entry is still asserted, now on the other side.
+  await expect(page.getByTestId('nav-requirements')).toBeEnabled();
+  await expect(page.getByTestId('nav-requirements')).toHaveAttribute('data-available', 'true');
+
+  for (const id of ['specifications', 'processes', 'decisions', 'forms', 'services', 'overview']) {
     const entry = page.getByTestId(`nav-${id}`);
     await expect(entry, `${id} must be disabled`).toBeDisabled();
     await expect(entry).toHaveAttribute('data-available', 'false');
     // The reason is in the accessible name, so it is never dimming alone.
     await expect(entry).toHaveAttribute('aria-label', /Not built/i);
   }
-  await expect(page.getByTestId('nav-requirements')).toHaveAttribute('aria-label', /U3/);
+  await expect(page.getByTestId('nav-coverage')).toHaveAttribute('aria-label', /U4/);
   await expect(page.getByTestId('nav-specifications')).toHaveAttribute('aria-label', /P3/);
 });
 

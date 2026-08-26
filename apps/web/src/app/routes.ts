@@ -14,9 +14,9 @@
  */
 
 /** A workspace this build renders. Adding one here without adding it to `nav.ts` fails verification. */
-export type WorkspaceId = 'sources';
+export type WorkspaceId = 'sources' | 'requirements';
 
-export const IMPLEMENTED_WORKSPACES: readonly WorkspaceId[] = ['sources'];
+export const IMPLEMENTED_WORKSPACES: readonly WorkspaceId[] = ['sources', 'requirements'];
 
 export function isImplemented(id: string): id is WorkspaceId {
   return (IMPLEMENTED_WORKSPACES as readonly string[]).includes(id);

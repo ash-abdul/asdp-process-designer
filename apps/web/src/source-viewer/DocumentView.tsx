@@ -41,12 +41,14 @@ interface Narrowed {
   readonly reportedLength?: number;
   /** The units the server parsed. U3-b cites one of these, and nothing else. */
   readonly units: readonly UnitOption[];
+  /** The document's own filename, so a heading need not be passed in. */
+  readonly filename?: string;
 }
 
 /** Narrow the validated payloads. No inference: every field is the server's. */
 function narrow(value: DocumentPayload): Narrowed {
   const content = value.content as {
-    source: { direction?: string; primaryLanguage?: string; textLength?: number };
+    source: { direction?: string; primaryLanguage?: string; textLength?: number; filename?: string };
     text: string;
     units: readonly UnitOption[];
   };
@@ -59,29 +61,62 @@ function narrow(value: DocumentPayload): Narrowed {
     ranges: highlights.ranges,
     ...(content.source.textLength === undefined ? {} : { reportedLength: content.source.textLength }),
     units: content.units,
+    ...(content.source.filename === undefined ? {} : { filename: content.source.filename }),
   };
 }
 
 export function DocumentView({
   state,
   sourceName,
+  backLabel,
+  evidenceId,
   onBack,
   onRetry,
 }: {
   state: Remote<DocumentPayload>;
   sourceName: string;
+  /** Where "back" goes. Two workspaces reach this view since U3-c. */
+  backLabel?: string;
+  /**
+   * Present when the document was opened by **following a citation**.
+   *
+   * The heading then names the **document**, and the evidence id becomes
+   * secondary traceability text. It previously *was* the heading — a raw
+   * `ev-01M0Y…` at page-title scale, which is debug output, not hierarchy.
+   * Found by visual review; the id is kept because a citation must stay
+   * traceable, and only its prominence changed.
+   */
+  evidenceId?: string;
   onBack: () => void;
   onRetry: () => void;
 }): ReactNode {
+  // The document's own filename when it has loaded; the caller's label until
+  // then. No new read: `GET …/content` already returns the source.
+  const heading = state.kind === 'ready' ? narrow(state.value).filename ?? sourceName : sourceName;
+
   return (
     <>
       <header className="workspace__head">
         <Button onClick={onBack} glyph="←" testId="back-to-sources">
-          Back to sources
+          {backLabel ?? 'Back to sources'}
         </Button>
         <div>
-          <h1>{sourceName}</h1>
-          <p>Read-only. Evidence is highlighted from server-computed offsets.</p>
+          {evidenceId === undefined ? null : (
+            // The existing label style, reused: no new CSS, and `section-title`
+            // is already the shell's small uppercase label.
+            <p className="section-title" data-testid="document-eyebrow">
+              Evidence
+            </p>
+          )}
+          <h1 data-testid="document-heading">{heading}</h1>
+          <p>
+            {evidenceId === undefined ? null : (
+              <>
+                Showing the region cited by <code className="id" data-testid="document-evidence-id">{evidenceId}</code>.{' '}
+              </>
+            )}
+            Read-only. Evidence is highlighted from server-computed offsets.
+          </p>
         </div>
       </header>
 

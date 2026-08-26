@@ -78,7 +78,24 @@ export interface ShellRegions {
   readonly railFooter: ReactNode;
 }
 
-export function AppShell({ currentWorkspace, regions }: { currentWorkspace: string; regions: ShellRegions }): ReactNode {
+export function AppShell({
+  currentWorkspace,
+  onNavigate,
+  regions,
+}: {
+  currentWorkspace: string;
+  /**
+   * Where the rail sends the user — **U3-c**.
+   *
+   * Until there were two workspaces the rail's selection had nowhere to go, so
+   * the shell dropped the id and only closed the drawer. It is threaded through
+   * now. The rail model itself is unchanged: availability still comes from
+   * `nav.ts`, an unavailable entry is still inert, and this callback is only
+   * ever reached for one that is available.
+   */
+  onNavigate: (workspace: string) => void;
+  regions: ShellRegions;
+}): ReactNode {
   const width = useViewport();
   const prefersDark = usePrefersDark();
   // No override hook: the layout is a pure function of the width, and the
@@ -119,7 +136,10 @@ export function AppShell({ currentWorkspace, regions }: { currentWorkspace: stri
       <Rail
         mode={layout.rail === 'drawer' ? 'expanded' : layout.rail}
         currentWorkspace={currentWorkspace}
-        onSelect={() => setRailOpen(false)}
+        onSelect={(id) => {
+          setRailOpen(false);
+          onNavigate(id);
+        }}
         {...(drawer && !railOpen ? { hidden: true } : {})}
         footer={
           <>

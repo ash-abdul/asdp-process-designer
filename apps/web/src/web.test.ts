@@ -51,6 +51,17 @@ import {
 } from './features/sources/source-model.ts';
 import { ProjectList, ProjectSummary, SourceContent, HighlightList, labelOf } from './api/contracts.ts';
 import {
+  setStateOf,
+  evidenceExpectationOf,
+  confidenceOf,
+  versionOf,
+  derivationOf,
+  degradationsOf,
+  provenanceOf,
+  chipsFor,
+  type RequirementRow,
+} from './features/requirements/requirement-model.ts';
+import {
   citeUnitBody,
   citeRefusal,
   preview,
@@ -911,6 +922,421 @@ describe('U3-b role drift, and Z2-B', () => {
           `${file} references '${route}': apps/web must hold no AI-invoking control (Z2-B)`,
         );
       }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U3-c — the read-only requirements workspace
+// ---------------------------------------------------------------------------
+
+function requirementRow(over: Partial<RequirementRow> = {}): RequirementRow {
+  return {
+    id: 'REQ-0001',
+    requirementSetId: 'rqs-1',
+    text: 'The applicant must submit the renewal request within ninety days.',
+    originalAiText: 'The applicant must submit the renewal request within ninety days.',
+    category: 'business_rule',
+    rafSlot: 'rules.eligibility',
+    epistemicLevel: 'L2',
+    derivation: 'interpreted',
+    computedConfidence: 0.62,
+    confidenceBand: 'MEDIUM',
+    confidenceFunctionVersion: 'conf-1.2',
+    humanConfirmationRequired: true,
+    version: 1,
+    status: 'draft',
+    generatedBy: 'ai',
+    aiInteractionId: 'ai-1',
+    promptVersion: 'frame@1',
+    providerId: 'stub',
+    modelId: 'stub-1',
+    degradations: [],
+    classification: 'INTERNAL',
+    language: 'en',
+    createdBy: 'u-analyst',
+    createdAt: '2026-08-26T00:00:00.000Z',
+    evidence: [{ evidenceItemId: 'ev-1', contribution: 'primary' }],
+    ...over,
+  };
+}
+
+describe('U3-c the two empty states', () => {
+  test('NO PASS and AN EMPTY SET ARE DIFFERENT FACTS, and never collapse', () => {
+    // The API distinguishes them: it omits requirementSetId when no pass has run,
+    // and returns it with an empty list when a pass ran and proposed nothing.
+    // "No requirements" for both would be the same class of error as rendering
+    // `unranked` as rank 0.
+    assert.deepEqual(setStateOf({ requirements: [] }), { kind: 'no_pass' });
+    assert.deepEqual(setStateOf({ requirementSetId: 'rqs-1', requirements: [] }), {
+      kind: 'empty_set',
+      requirementSetId: 'rqs-1',
+    });
+  });
+
+  test('a populated set reports its id and its count', () => {
+    assert.deepEqual(setStateOf({ requirementSetId: 'rqs-1', requirements: [1, 2, 3] }), {
+      kind: 'populated',
+      requirementSetId: 'rqs-1',
+      total: 3,
+    });
+  });
+});
+
+describe('U3-c confidence — Y21', () => {
+  test('CONFIDENCE IS NEVER A BARE PERCENTAGE', () => {
+    // "A bare 92% reads as 92% correct, which nothing in this repository has
+    // ever measured." The band leads; the score never appears without the
+    // version of the function that produced it.
+    const c = confidenceOf(requirementRow({ computedConfidence: 0.925 }));
+    assert.equal(c.band, 'MEDIUM');
+    assert.equal(c.score, '0.93');
+    assert.equal(c.functionVersion, 'conf-1.2');
+    for (const value of Object.values(c)) {
+      assert.doesNotMatch(String(value), /%/, 'a confidence value must never be rendered as a percentage');
+    }
+    assert.match(c.caution.toLowerCase(), /not a measure of accuracy/);
+  });
+
+  test('the module never emits a percent sign anywhere', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'requirement-model.ts'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    assert.ok(!source.includes("'%'"), 'no percent formatting may exist in the requirement model');
+    assert.ok(!source.includes('* 100'), 'a confidence score must not be scaled to a percentage');
+  });
+});
+
+describe('U3-c versions — bounded by G-e', () => {
+  test('A PREDECESSOR IS NAMED, NEVER RETRIEVABLE (G-e is unfilled)', () => {
+    const v = versionOf(requirementRow({ version: 2, supersedesId: 'REQ-0001@1', changeReason: 'clarified', generatedBy: 'human' }));
+    assert.equal(v.version, 2);
+    assert.equal(v.predecessor, 'REQ-0001@1');
+    assert.equal(v.changeReason, 'clarified');
+    // The type is the literal `false`: this is not a capability switched off,
+    // it is one that does not exist.
+    assert.equal(v.historyAvailable, false);
+  });
+
+  test('"edited" comes from the SERVER\'s facts, not from comparing strings', () => {
+    // A revision that restored the original wording is still a revision. The two
+    // signals can disagree, so they are reported separately.
+    const restored = versionOf(requirementRow({ version: 2, generatedBy: 'human' }));
+    assert.equal(restored.edited, true);
+    assert.equal(restored.textDiffersFromAi, false);
+
+    const untouched = versionOf(requirementRow());
+    assert.equal(untouched.edited, false);
+    assert.equal(untouched.predecessor, undefined);
+  });
+
+  test('originalAiText is reported as differing only when it does', () => {
+    const edited = versionOf(requirementRow({ text: 'Reworded.', version: 2, generatedBy: 'human' }));
+    assert.equal(edited.textDiffersFromAi, true);
+  });
+});
+
+describe('U3-c derivation and provenance', () => {
+  test('AN INFERRED REQUIREMENT WITH NO RATIONALE IS A DEFECT, not a blank', () => {
+    // Invariant D2 requires one and addInferredRequirement refuses without it,
+    // so a row missing it means something wrote past the guard. An empty field
+    // would turn a broken invariant into a cosmetic gap.
+    const bad = derivationOf(requirementRow({ derivation: 'inferred' }));
+    assert.match(bad.defect ?? '', /D2/);
+    assert.equal(bad.rationale, undefined);
+
+    const blank = derivationOf(requirementRow({ derivation: 'inferred', inferenceRationale: '   ' }));
+    assert.ok(blank.defect !== undefined, 'whitespace is not a rationale');
+
+    const good = derivationOf(requirementRow({ derivation: 'inferred', inferenceRationale: 'The SOP implies it.' }));
+    assert.equal(good.rationale, 'The SOP implies it.');
+    assert.equal(good.defect, undefined);
+  });
+
+  test('a non-inferred requirement is not asked for a rationale', () => {
+    const d = derivationOf(requirementRow({ derivation: 'extracted' }));
+    assert.equal(d.defect, undefined);
+    assert.equal(d.rationale, undefined);
+  });
+
+  test('NO DEGRADATIONS means "none RECORDED", which is a different claim', () => {
+    assert.match(degradationsOf(requirementRow()).summary, /none recorded/i);
+    const some = degradationsOf(requirementRow({ degradations: ['no_provider_configured'] }));
+    assert.deepEqual(some.items, ['no_provider_configured']);
+  });
+
+  test('a human-authored requirement reports AI provenance as absent, not blank', () => {
+    const human = provenanceOf(requirementRow({ generatedBy: 'human', aiInteractionId: 'ai-1', modelId: 'm' }));
+    const interaction = human.find((e) => e.label === 'AI interaction');
+    assert.equal(interaction?.value, undefined, 'a human author has no AI interaction to report');
+    const authored = human.find((e) => e.label === 'Authored by');
+    assert.equal(authored?.value, 'human');
+  });
+
+  test('an AI-authored requirement carries its full provenance', () => {
+    const ai = provenanceOf(requirementRow({ framePass: 'pass-2' }));
+    assert.equal(ai.find((e) => e.label === 'Provider')?.value, 'stub');
+    assert.equal(ai.find((e) => e.label === 'Model')?.value, 'stub-1');
+    assert.equal(ai.find((e) => e.label === 'Frame pass')?.value, 'pass-2');
+  });
+});
+
+describe('U3-c evidence chips', () => {
+  test('AN UNRESOLVED CITATION IS SHOWN, never dropped', () => {
+    // A citation the workspace cannot follow is exactly what a reviewer needs to
+    // be told about (ADR-0008). Silently shortening the list would make a broken
+    // traceability edge invisible.
+    const chips = chipsFor(
+      requirementRow({ evidence: [{ evidenceItemId: 'ev-1', contribution: 'primary' }, { evidenceItemId: 'ev-gone' }] }),
+      (id) => (id === 'ev-1' ? 'src-1' : undefined),
+    );
+    assert.equal(chips.length, 2, 'no chip may be dropped');
+    assert.equal(chips[0]?.followable, true);
+    assert.equal(chips[0]?.sourceId, 'src-1');
+    assert.equal(chips[1]?.followable, false);
+    assert.equal(chips[1]?.sourceId, undefined);
+  });
+
+  test('a contribution the API did not state is NOT assumed to be "supporting"', () => {
+    const chips = chipsFor(requirementRow({ evidence: [{ evidenceItemId: 'ev-1' }] }), () => 'src-1');
+    assert.equal(chips[0]?.contribution, 'not stated');
+  });
+});
+
+describe('U3-c ordering and read-only scope', () => {
+  test('THE CLIENT DOES NOT SORT — the API\'s order is rendered unchanged', () => {
+    // The repository read is `order by id asc` on a TEXT column, so REQ-10000
+    // sorts before REQ-9999 past the ten-thousandth requirement — the same class
+    // as limitations 80/81. Sorting correctly here would be a business rule in
+    // the browser AND would hide a recorded defect behind a client-side patch.
+    const here = dirname(fileURLToPath(import.meta.url));
+    for (const file of ['requirement-model.ts', 'Requirements.tsx']) {
+      const source = readFileSync(
+        join(here, '..', 'src', 'features', 'requirements', file),
+        'utf8',
+      ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      assert.ok(!source.includes('.sort('), `${file} must not re-order what the API returned`);
+      assert.ok(!source.includes('localeCompare'), `${file} must not re-order what the API returned`);
+    }
+  });
+
+  test('U3-c IS READ-ONLY: no write route is named anywhere in the feature', () => {
+    // Accept, reject, defer, revise and confirm are U3-d/U3-e. Absence is the
+    // enforcement, and a helper that anticipated one would fail here.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const forbidden = ['/review', '/revise', '/confirm-inference', 'requirements/inferred', 'requirement-flags'];
+    for (const file of ['requirement-model.ts', 'Requirements.tsx', 'RequirementInspector.tsx']) {
+      const source = readFileSync(
+        join(here, '..', 'src', 'features', 'requirements', file),
+        'utf8',
+      ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      for (const route of forbidden) {
+        assert.ok(!source.includes(route), `${file} names ${route}: U3-c is read-only`);
+      }
+    }
+  });
+
+  test('NO BULK SELECTION MODEL EXISTS to extend', () => {
+    // Limitation 70's only structural mitigation. A checkbox column or a
+    // select-all would fail here before it could fail review.
+    const here = dirname(fileURLToPath(import.meta.url));
+    // Comments are stripped: the file's own prose explains why there is no
+    // checkbox column, and prose naming a thing is not the thing.
+    const source = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'Requirements.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    for (const f of ['selectAll', 'checkbox', 'selectedIds', 'toggleAll', 'multiSelect']) {
+      assert.ok(!source.includes(f), `Requirements.tsx contains '${f}': no bulk model may exist`);
+    }
+  });
+});
+
+describe('U3-c role map, corrected', () => {
+  test('listRequirements NOW MATCHES the API exactly (the U3-b finding, closed)', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const commands = readFileSync(join(here, '..', '..', 'api', 'src', 'commands.ts'), 'utf8');
+    const line = commands.split('\n').find((l) => l.includes("name: 'listRequirements'"));
+    assert.ok(line !== undefined);
+    const required = [...line.matchAll(/'([A-Za-z]+)'/g)]
+      .map((m) => m[1] as string)
+      .filter((r) => (ROLES as readonly string[]).includes(r));
+    assert.deepEqual([...(COMMAND_ROLES['listRequirements'] ?? [])].sort(), [...required].sort());
+    // The specific consequence the old map had: these three were refused by the
+    // UI and permitted by the API.
+    for (const role of ['Contributor', 'ComplianceReviewer', 'PlatformAdmin']) {
+      assert.ok(mayInvoke({ subject: 'u', roles: [role] as never }, 'listRequirements'), role);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U3-c amendment — findings from the visual review
+// ---------------------------------------------------------------------------
+
+describe('U3-c amendment: derivation AND evidence, together', () => {
+  test('AN INFERRED REQUIREMENT WITH NO EVIDENCE IS VALID, not a D2 violation', () => {
+    // The defect this closes: the inspector reported an inferred L3 with no
+    // citations as "invariant D2 requires at least one, so this row should not
+    // exist" — telling a reviewer a perfectly legal row was broken.
+    //
+    // `addInferredRequirement` stores NO links on purpose: "deliberately NOT
+    // insertProposal: that requires evidence links, and an inferred requirement
+    // has a rationale instead." D2 is satisfied by the mandatory rationale.
+    const inferred = requirementRow({ derivation: 'inferred', epistemicLevel: 'L3', evidence: [] });
+    const expectation = evidenceExpectationOf(inferred, 0);
+
+    assert.equal(expectation.kind, 'rationale_instead');
+    assert.ok(!('detail' in expectation), 'a valid state must carry no defect text');
+  });
+
+  test('ANY OTHER derivation with no evidence IS still a defect', () => {
+    // The other half. Closing the false positive must not close the true one:
+    // insertProposal refuses an unevidenced proposal at the repository boundary,
+    // so one arriving here means something wrote past the guard.
+    for (const derivation of ['extracted', 'interpreted']) {
+      const row = requirementRow({ derivation, evidence: [] });
+      const expectation = evidenceExpectationOf(row, 0);
+      assert.equal(expectation.kind, 'defect', `${derivation} with no evidence must still be a defect`);
+      assert.match(expectation.kind === 'defect' ? expectation.detail : '', /D2/);
+    }
+  });
+
+  test('evidence present is "cited", whatever the derivation', () => {
+    for (const derivation of ['extracted', 'interpreted', 'inferred']) {
+      assert.equal(evidenceExpectationOf(requirementRow({ derivation }), 1).kind, 'cited', derivation);
+    }
+  });
+
+  test('THE COMBINATION IS THE TEST — neither field alone decides it', () => {
+    // Why this test exists at all. `derivationOf` and `chipsFor` were each
+    // covered, and the bug lived in their combination, which nothing asserted.
+    // A 2x2 over (derivation, citedCount), so the pairing cannot silently regress.
+    const cases = [
+      { derivation: 'inferred', cited: 0, expected: 'rationale_instead' },
+      { derivation: 'inferred', cited: 1, expected: 'cited' },
+      { derivation: 'interpreted', cited: 0, expected: 'defect' },
+      { derivation: 'interpreted', cited: 1, expected: 'cited' },
+    ];
+    for (const c of cases) {
+      assert.equal(
+        evidenceExpectationOf(requirementRow({ derivation: c.derivation }), c.cited).kind,
+        c.expected,
+        `${c.derivation} with ${c.cited} citation(s)`,
+      );
+    }
+  });
+
+  test('the inspector renders the valid case WITHOUT defect wording', () => {
+    // Asserted over the component, because the defect was in what it rendered.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'RequirementInspector.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+    // The defect message must reach the screen only through the model's
+    // `defect` branch, never as a literal for any empty-evidence row.
+    assert.ok(
+      !source.includes('cites NO evidence'),
+      'the inspector must not hard-code a missing-evidence defect message',
+    );
+    assert.ok(source.includes('evidenceExpectationOf'), 'it must ask the model which case this is');
+  });
+});
+
+describe('U3-c amendment: a requirement never outlives its project', () => {
+  test('CHANGING PROJECT CLEARS THE SELECTED REQUIREMENT', () => {
+    // The defect this closes: after "Change project" the inspector still showed
+    // a requirement from the project just left, beside the project list.
+    // A requirement is scoped to a project by construction — its identity is
+    // (projectId, id) since H4 — so it must not survive the selection changing.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(join(here, '..', 'src', 'app', 'App.tsx'), 'utf8');
+
+    const leave = /const leaveProject = \(\): void => \{([\s\S]*?)\};/.exec(source);
+    assert.ok(leave !== null, 'App.tsx must have a single place that leaves a project');
+    const body = leave[1] as string;
+    assert.match(body, /setProject\(undefined\)/, 'it must clear the project');
+    assert.match(body, /setRequirement\(undefined\)/, 'it must clear the selected requirement');
+    assert.match(body, /closeDocument\(\)/, 'it must close any open document');
+
+    // And the control actually uses it, rather than clearing the project inline.
+    assert.match(source, /onClick=\{leaveProject\}/, 'the Change project control must call it');
+    assert.ok(
+      !/setProject\(undefined\);\s*\n\s*closeDocument\(\);/.test(source),
+      'no path may clear the project without also clearing the requirement',
+    );
+  });
+
+  test('leaving the requirements workspace also clears the selection', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(join(here, '..', 'src', 'app', 'App.tsx'), 'utf8');
+    assert.match(
+      source,
+      /if \(id !== 'requirements'\) setRequirement\(undefined\);/,
+      'navigating away from the workspace must drop the selection',
+    );
+  });
+});
+
+describe('U3-c amendment: the evidence page is not titled by its id', () => {
+  test('THE HEADING IS THE DOCUMENT; the evidence id is secondary', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(join(here, '..', 'src', 'source-viewer', 'DocumentView.tsx'), 'utf8');
+
+    // The heading prefers the document's own filename, which `GET …/content`
+    // already returns — no new API surface for a presentation change.
+    assert.match(source, /narrow\(state\.value\)\.filename/, 'the heading must use the loaded filename');
+    // The id is kept for traceability, in the sub-line rather than the h1.
+    assert.match(source, /data-testid="document-evidence-id"/, 'the evidence id must remain on the page');
+    assert.ok(
+      !/<h1[^>]*>\{`Evidence /.test(source),
+      'a raw evidence id must not be the page heading',
+    );
+  });
+
+  test('App no longer names the page after the evidence id', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(join(here, '..', 'src', 'app', 'App.tsx'), 'utf8');
+    assert.ok(
+      !source.includes('`Evidence ${evidenceItemId}`'),
+      'the evidence id must not be passed as the document name',
+    );
+  });
+});
+
+describe('U3-c amendment: Y21 and the confidence column', () => {
+  test('THE LIST KEEPS THE BAND, and never emits a percentage', () => {
+    // Y21: "Confidence is a computed band with its inputs inspectable, never a
+    // bare percentage." The band is required in the list; the inputs must be
+    // INSPECTABLE, which the inspector provides in full.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const list = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'Requirements.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+    assert.match(list, /c\.band/, 'the list must show the band');
+    assert.ok(!list.includes("'%'") && !list.includes('* 100'), 'never a percentage');
+    // The function version is not lost: it is one hover away and in the inspector.
+    assert.match(list, /c\.functionVersion/, 'the function version must remain reachable from the list');
+  });
+
+  test('THE INSPECTOR STILL CARRIES THE COMPLETE confidence information', () => {
+    // The approved U3 boundary requires band, computed value, function version
+    // and degradations on the detail. Moving detail out of the list must not
+    // move it out of the product.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const inspector = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'RequirementInspector.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+    for (const required of ['confidence.band', 'confidence.score', 'confidence.functionVersion', 'req-degradations']) {
+      assert.ok(inspector.includes(required), `the inspector must still render ${required}`);
     }
   });
 });

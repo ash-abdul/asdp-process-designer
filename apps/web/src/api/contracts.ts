@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod';
-import { EvidenceItem, HighlightRange } from '@asdp/schemas';
+import { EvidenceItem, HighlightRange, Requirement } from '@asdp/schemas';
 
 /**
  * A project, as the API returns it.
@@ -198,3 +198,43 @@ export const EvidenceList = z.object({
   evidence: z.array(EvidenceItem),
 });
 export type EvidenceList = z.infer<typeof EvidenceList>;
+
+// ---------------------------------------------------------------------------
+// U3-c — requirements
+// ---------------------------------------------------------------------------
+
+/**
+ * A requirement, with the evidence it cites.
+ *
+ * `Requirement` is the **server's own schema**, imported rather than restated,
+ * for the same reason `EvidenceItem` and `HighlightRange` are. The evidence link
+ * is described locally because `listRequirements` spreads it onto the row rather
+ * than returning it as a named entity.
+ */
+export const RequirementWithEvidence = Requirement.extend({
+  evidence: z
+    .array(
+      z.object({
+        evidenceItemId: z.string(),
+        contribution: z.string().optional(),
+      }),
+    )
+    .default([]),
+});
+export type RequirementWithEvidence = z.infer<typeof RequirementWithEvidence>;
+
+/**
+ * The list response.
+ *
+ * **`requirementSetId` is optional, and its absence is meaningful** — the API
+ * omits it when no population pass has ever run, and returns it with `total: 0`
+ * when a pass ran and proposed nothing. Those are different facts about a
+ * project and the workspace renders them differently, so the schema must not
+ * flatten them into one empty list.
+ */
+export const RequirementList = z.object({
+  requirementSetId: z.string().optional(),
+  total: z.number().optional(),
+  requirements: z.array(RequirementWithEvidence),
+});
+export type RequirementList = z.infer<typeof RequirementList>;

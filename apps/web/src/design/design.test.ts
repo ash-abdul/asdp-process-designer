@@ -274,11 +274,23 @@ describe('U3-a / Z8-a — every requirement status is renderable', () => {
     assert.match(accessibleName(s, 'REQ-0007'), /^REQ-0007, Superseded, /);
   });
 
-  test('U3 is NOT implemented by this slice: the rail still says so', () => {
-    // U3-a is the vocabulary and its guard. The workspace is U3-c, and claiming
-    // it here would be exactly the dishonest navigation §2.1 forbids.
-    assert.equal(isAvailable('requirements'), false);
-    assert.match(unavailableReason('requirements') ?? '', /U3/);
+  test('U3-c BUILT the workspace, so the rail now declares it — and the guard proves the pair', () => {
+    // **This assertion was inverted at U3-c, and the previous one was correct
+    // when it was written.** At U3-a it read `isAvailable('requirements') ===
+    // false`, because U3-a delivered a vocabulary and no screen; claiming the
+    // workspace then would have been exactly the dishonest navigation §2.1
+    // forbids. U3-c built it, so the honest answer changed.
+    //
+    // What did NOT change is the rule: the available set must equal the
+    // implemented set, in both directions. That is asserted below and in
+    // `navDrift()`, and it is what makes this flip safe rather than a claim.
+    assert.equal(isAvailable('requirements'), true);
+    assert.equal(unavailableReason('requirements'), undefined);
+    assert.ok(
+      (IMPLEMENTED_WORKSPACES as readonly string[]).includes('requirements'),
+      'the rail may not offer a workspace routes.ts does not implement',
+    );
+    assert.deepEqual(navDrift(), { displayedButUnbuilt: [], builtButUndisplayed: [] });
   });
 });
 
@@ -305,12 +317,16 @@ describe('§2.1 — the rail never implies a capability that does not exist', ()
     }
   });
 
-  test('requirements, specifications and processes are all future — U3 and P3 are not authorised', () => {
-    for (const id of ['requirements', 'specifications', 'processes', 'decisions', 'forms', 'services']) {
+  test('specifications and processes are still future — P3 is not authorised', () => {
+    // `requirements` left this list at U3-c, which built it. Everything else in
+    // it is still unbuilt, and P3 still has no approved boundary.
+    for (const id of ['specifications', 'processes', 'decisions', 'forms', 'services']) {
       assert.equal(isAvailable(id), false, `${id} must not be available`);
     }
-    assert.match(unavailableReason('requirements') ?? '', /U3/);
     assert.match(unavailableReason('specifications') ?? '', /P3/);
+    // The slices that follow U3-c are still unbuilt and still say which they are.
+    assert.match(unavailableReason('coverage') ?? '', /U4/);
+    assert.match(unavailableReason('reconciliation') ?? '', /U5/);
   });
 
   test('no overview dashboard is offered, because its metrics have no API', () => {

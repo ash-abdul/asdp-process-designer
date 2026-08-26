@@ -18,6 +18,9 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { createClient } from '../api/client.ts';
 import { ProjectList, SourceContent, HighlightList, labelOf } from '../api/contracts.ts';
 import { Sources } from '../features/sources/Sources.tsx';
+import { Requirements, useRequirements } from '../features/requirements/Requirements.tsx';
+import { RequirementInspector } from '../features/requirements/RequirementInspector.tsx';
+import type { RequirementRow } from '../features/requirements/requirement-model.ts';
 import type { ProjectSummary } from '../api/contracts.ts';
 import { devAuthHeaders, type DevIdentity } from '../lib/dev-auth.ts';
 import { DevSignIn } from './DevSignIn.tsx';
@@ -77,6 +80,17 @@ function Workspace({
    * and the list that must change is in the sources workspace.
    */
   const [evidenceEpoch, setEvidenceEpoch] = useState(0);
+  /** Set when the document is opened by FOLLOWING a citation — U3-c. */
+  const [evidenceId, setEvidenceId] = useState<string | undefined>(undefined);
+  /** Which workspace the rail has the user in — **U3-c**, the first slice with two. */
+  const [workspace, setWorkspace] = useState<string>('sources');
+  /** The requirement whose detail the inspector holds. One entity, per Y6. */
+  const [requirement, setRequirement] = useState<RequirementRow | undefined>(undefined);
+
+  // Read only while the requirements workspace is open. The hook is called
+  // unconditionally so hook order stays stable; `enabled` decides whether it
+  // reaches the network.
+  const requirements = useRequirements(client, project?.id, workspace === 'requirements');
 
   const loadProjects = useCallback(async (): Promise<void> => {
     setProjects(loading());
@@ -94,15 +108,23 @@ function Workspace({
   }, [loadProjects]);
 
   const loadDocument = useCallback(
-    async (projectId: string, source: string): Promise<void> => {
+    async (projectId: string, source: string, evidenceId?: string): Promise<void> => {
       setDocument(loading());
       try {
         // Two reads, in parallel: the text and every highlight on it. With no
         // selector the API returns a range per unit, so one request paints the
         // whole document.
+        //
+        // **U3-c** passes `evidenceId`, and the server then returns the ranges
+        // for that one citation. The client still paints only what it is given:
+        // it does not filter, and it never searches the text for a quote.
+        const highlightPath =
+          evidenceId === undefined
+            ? `/projects/${projectId}/sources/${source}/highlights`
+            : `/projects/${projectId}/sources/${source}/highlights?evidenceId=${encodeURIComponent(evidenceId)}`;
         const [content, highlights] = await Promise.all([
           client.get(`/projects/${projectId}/sources/${source}/content`, SourceContent),
-          client.get(`/projects/${projectId}/sources/${source}/highlights`, HighlightList),
+          client.get(highlightPath, HighlightList),
         ]);
         setDocument(ready({ content, highlights }));
       } catch (error) {
@@ -114,17 +136,55 @@ function Workspace({
   );
 
   const projectLabel = project === undefined ? undefined : labelOf(project);
+  /** Captured once: TypeScript loses the narrowing inside the nested region branches. */
+  const projectId = project?.id ?? '';
+  /**
+   * The label for the open document, preferring the **document's own filename**
+   * once it has loaded — U3-c amendment, finding 3.
+   *
+   * `sourceName` is only a placeholder when a citation is followed, because the
+   * filename is not known until `GET …/content` returns. Letting the breadcrumb
+   * keep the placeholder would leave *"the cited source"* in the chrome beside a
+   * heading that names the file.
+   */
+  const documentLabel =
+    document_.kind === 'ready'
+      ? ((document_.value.content as { source?: { filename?: string } }).source?.filename ?? sourceName)
+      : sourceName;
   const viewingDocument = sourceId !== undefined && project !== undefined;
 
   const closeDocument = (): void => {
     setSourceId(undefined);
     setSourceName(undefined);
+    setEvidenceId(undefined);
     setDocument(idle());
+  };
+
+  /**
+   * Leaving a project clears everything scoped to it — **U3-c amendment**.
+   *
+   * The selected requirement was not cleared, so after "Change project" the
+   * inspector kept showing a requirement from the project the user had just
+   * left, beside the project list. Found by visual review. A requirement is
+   * scoped to a project by construction — its identity is `(projectId, id)`
+   * since H4 — so it must not outlive the project selection.
+   */
+  const leaveProject = (): void => {
+    setProject(undefined);
+    setRequirement(undefined);
+    closeDocument();
   };
 
   return (
     <AppShell
-      currentWorkspace="sources"
+      currentWorkspace={workspace}
+      onNavigate={(id) => {
+        setWorkspace(id);
+        // Leaving a workspace closes the document it had open, so the next one
+        // does not inherit a reading pane that belongs to the last.
+        closeDocument();
+        if (id !== 'requirements') setRequirement(undefined);
+      }}
       regions={{
         projectBar: (
           <ProjectBar
@@ -132,14 +192,11 @@ function Workspace({
             {...(projectLabel === undefined ? {} : { projectDirection: projectLabel.direction === 'rtl' ? 'rtl' : 'ltr' })}
             {...(projectLabel?.language === undefined ? {} : { projectLanguage: projectLabel.language })}
             {...(project === undefined ? {} : { projectKey: project.key })}
-            {...(sourceName === undefined ? {} : { sourceName })}
+            {...(documentLabel === undefined ? {} : { sourceName: documentLabel })}
           >
             {project === undefined ? null : (
               <Button
-                onClick={() => {
-                  setProject(undefined);
-                  closeDocument();
-                }}
+                onClick={leaveProject}
                 small
                 glyph="⇄"
                 testId="change-project"
@@ -157,8 +214,18 @@ function Workspace({
             <DocumentView
               state={document_}
               sourceName={sourceName ?? ''}
+              backLabel={workspace === 'requirements' ? 'Back to requirements' : 'Back to sources'}
+              {...(evidenceId === undefined ? {} : { evidenceId })}
               onBack={closeDocument}
               onRetry={() => void loadDocument(project.id, sourceId)}
+            />
+          ) : workspace === 'requirements' ? (
+            <Requirements
+              data={requirements.data}
+              identity={identity}
+              {...(requirement === undefined ? {} : { selectedId: requirement.id })}
+              onSelect={setRequirement}
+              onReload={requirements.reload}
             />
           ) : (
             <Sources
@@ -178,22 +245,51 @@ function Workspace({
         // The shell's inspector belongs to the document view. The Sources
         // screen carries its own side panel, because that panel owns write
         // state (upload, ranking) that belongs with the screen, not the shell.
-        ...(viewingDocument
+        /*
+          **Y11, and the reason the requirement wins here.** When a chip is
+          followed, the inspector keeps the REQUIREMENT rather than switching to
+          the document: the whole point of the evidence pane is that the
+          proposition and the passage it rests on are on screen together.
+          *"Provenance that requires navigating away does not get checked."*
+        */
+        ...(workspace === 'requirements' && requirement !== undefined
           ? {
               inspector: (
-                <DocumentInspector
-                  state={document_}
-                  sourceName={sourceName ?? ''}
-                  sourceId={sourceId}
-                  client={client}
-                  projectId={project.id}
-                  identity={identity}
-                  onClose={closeDocument}
-                  onEvidenceRecorded={() => setEvidenceEpoch((n) => n + 1)}
+                <RequirementInspector
+                  row={requirement}
+                  sourceOf={
+                    requirements.data.kind === 'ready'
+                      ? requirements.data.value.sourceOf
+                      : () => undefined
+                  }
+                  onFollowEvidence={(evidenceItemId, evidenceSourceId) => {
+                    setSourceId(evidenceSourceId);
+                    // Only a fallback: the heading uses the loaded document's own
+                    // filename once it arrives.
+                    setSourceName('the cited source');
+                    setEvidenceId(evidenceItemId);
+                    void loadDocument(projectId, evidenceSourceId, evidenceItemId);
+                  }}
+                  onClose={() => setRequirement(undefined)}
                 />
               ),
             }
-          : {}),
+          : viewingDocument
+            ? {
+                inspector: (
+                  <DocumentInspector
+                    state={document_}
+                    sourceName={sourceName ?? ''}
+                    sourceId={sourceId}
+                    client={client}
+                    projectId={projectId}
+                    identity={identity}
+                    onClose={closeDocument}
+                    onEvidenceRecorded={() => setEvidenceEpoch((n) => n + 1)}
+                  />
+                ),
+              }
+            : {}),
 
         assistant: (overlay, collapse) => (
           <AssistantDock
@@ -201,6 +297,7 @@ function Workspace({
               ...(projectLabel === undefined ? {} : { projectLabel: projectLabel.text }),
               ...(project === undefined ? {} : { projectKey: project.key }),
               ...(sourceName === undefined ? {} : { sourceName }),
+              ...(requirement === undefined ? {} : { requirementId: requirement.id }),
             }}
             overlay={overlay}
             onCollapse={collapse}

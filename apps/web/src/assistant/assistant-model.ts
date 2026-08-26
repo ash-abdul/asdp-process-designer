@@ -63,7 +63,7 @@ export function availability(): Unavailable {
 // Context — the assistant always shows what it would be answering about
 // ---------------------------------------------------------------------------
 
-export type ContextScope = 'none' | 'project' | 'source';
+export type ContextScope = 'none' | 'project' | 'source' | 'requirement';
 
 export interface AssistantContext {
   readonly scope: ContextScope;
@@ -77,6 +77,8 @@ export interface Selection {
   readonly projectLabel?: string;
   readonly projectKey?: string;
   readonly sourceName?: string;
+  /** **U3-c / Z9.** Context binding only — it does not make anything answerable. */
+  readonly requirementId?: string;
 }
 
 /**
@@ -86,6 +88,18 @@ export interface Selection {
  * — a chatbot guesses; a governed assistant states its scope.
  */
 export function contextFor(selection: Selection): AssistantContext {
+  /*
+    The requirement is the NARROWEST scope, so it wins. **Z9**: this is context
+    binding, which Y22 already requires — it is not an answer, and nothing here
+    becomes answerable because the dock knows what it would be about.
+  */
+  if (selection.requirementId !== undefined && selection.projectKey !== undefined) {
+    return {
+      scope: 'requirement',
+      label: `${selection.projectKey} · ${selection.requirementId}`,
+      detail: `Answers would be scoped to requirement ${selection.requirementId} in project ${selection.projectKey}.`,
+    };
+  }
   if (selection.sourceName !== undefined && selection.projectKey !== undefined) {
     return {
       scope: 'source',

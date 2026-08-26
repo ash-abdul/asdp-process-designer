@@ -56,7 +56,7 @@ const future = (id: string, label: string, glyph: string, slice: string, note: s
 export const WORKSPACES: readonly Workspace[] = [
   future('overview', 'Overview', '◱', 'not scheduled', 'A project dashboard needs readiness APIs that do not exist yet.'),
   available('sources', 'Sources', '▤'),
-  future('requirements', 'Requirements', '❑', 'U3', 'The requirements workspace exists as an API only. U3 is not authorised.'),
+  available('requirements', 'Requirements', '❑'),
   future('coverage', 'Coverage', '◴', 'U4', 'Frame coverage and the G1 preconditions exist as an API only. U4 is not authorised.'),
   future('reconciliation', 'Reconciliation', '⇄', 'U5', 'Conflicts, precedence and equivalence exist as an API only. U5 is not authorised.'),
   future('gate', 'Gate G1', '⛉', 'U5', 'Freeze, validate and sign exist as an API only. U5 is not authorised.'),

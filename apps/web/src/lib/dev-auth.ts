@@ -132,14 +132,28 @@ export const COMMAND_ROLES: Readonly<Record<string, readonly DevRole[]>> = {
   // not decide which of its passages is evidence for a requirement.
   recordEvidence: ['BusinessAnalyst', 'ProcessArchitect'],
 
-  // Named here but consumed by NO screen yet, and three of the four DO NOT match
-  // the API. `listRequirements`, `frameCoverage` and `g1Readiness` each omit
-  // roles the API grants and, in two cases, name one it does not. The drift test
-  // below covers every command a screen actually gates on; these are outside it
-  // because nothing gates on them, and correcting them belongs to the slice that
-  // first consumes them (U3-c). Recorded rather than quietly fixed here — U3-b's
-  // scope is evidence.
-  listRequirements: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
+  // U3-c. CORRECTED to match the API exactly, because U3-c is the first slice
+  // that gates on it. It previously read
+  // ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'] — which
+  // omitted three roles the API grants and named one it does not, so a
+  // Contributor, a ComplianceReviewer and a PlatformAdmin would each have been
+  // shown a refusal the API would not have given, and a BusinessApprover the
+  // reverse. Recorded as a finding at U3-b and fixed here rather than there,
+  // because a map entry nothing consumes cannot mislead anyone.
+  listRequirements: [
+    'Viewer',
+    'Contributor',
+    'BusinessAnalyst',
+    'ProcessArchitect',
+    'ComplianceReviewer',
+    'PlatformAdmin',
+  ],
+
+  // Still consumed by NO screen, and `frameCoverage` and `g1Readiness` still do
+  // NOT match the API. They are left alone deliberately: correcting an entry
+  // nothing gates on is churn, and each belongs to the slice that first uses it
+  // — frameCoverage to U4, g1Readiness to U5. `reviewRequirement` happens to be
+  // correct already and belongs to U3-d.
   frameCoverage: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
   reviewRequirement: ['BusinessAnalyst', 'ProcessArchitect'],
   g1Readiness: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
