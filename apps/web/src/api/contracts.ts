@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod';
-import { HighlightRange } from '@asdp/schemas';
+import { EvidenceItem, HighlightRange } from '@asdp/schemas';
 
 /**
  * A project, as the API returns it.
@@ -173,3 +173,28 @@ export const RuleCatalogue = z.object({
   ),
 });
 export type RuleCatalogue = z.infer<typeof RuleCatalogue>;
+
+// ---------------------------------------------------------------------------
+// U3-b — evidence
+// ---------------------------------------------------------------------------
+
+/**
+ * Evidence, validated against **the server's own schema**.
+ *
+ * `EvidenceItem` is imported rather than restated, for the same reason
+ * `HighlightRange` is: a locally re-described contract is a contract that drifts
+ * silently, and [ADR-0039](../../../../docs/adr/ADR-0039-react-presentation-layer.md)
+ * §2 makes `@asdp/schemas` importable precisely so it need not be.
+ *
+ * It is the stricter choice, deliberately. An evidence item carries an anchor,
+ * and an anchor whose shape the client has guessed at is the beginning of a
+ * client that guesses at offsets.
+ */
+export const RecordedEvidence = EvidenceItem;
+export type RecordedEvidence = z.infer<typeof EvidenceItem>;
+
+export const EvidenceList = z.object({
+  total: z.number().optional(),
+  evidence: z.array(EvidenceItem),
+});
+export type EvidenceList = z.infer<typeof EvidenceList>;

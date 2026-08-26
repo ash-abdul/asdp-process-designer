@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3's BOUNDARY IS APPROVED 2026-08-26 (§21, Z1–Z14) and U3-a is ACCEPTED (§21.1); U3-b–U3-f, U4 and U5 are NOT authorised.** · **Version:** 8.4 · **Updated:** 2026-08-26
-> **Checkpoint:** §0 · **Commit:** **U3-a ACCEPTED** — §21.1. **U3 boundary approved** — §21, Z1–Z14. **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
+> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3's BOUNDARY IS APPROVED 2026-08-26 (§21, Z1–Z14), U3-a is ACCEPTED (§21.1) and U3-b is implemented and AWAITING REVIEW (§21.5); U3-c–U3-f, U4 and U5 are NOT authorised.** · **Version:** 8.5 · **Updated:** 2026-08-26
+> **Checkpoint:** §0 · **Commit:** **U3-b implemented, awaiting review** — §21.5. **U3-a ACCEPTED** — §21.1. **U3 boundary approved** — §21, Z1–Z14. **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -27,7 +27,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **HEAD at handoff** | **`ad363a6`** — *"Docs: the fresh-session handoff, so no session depends on a conversation"*. The previous entry here read `e9ad1b2` and was one commit behind, because `ad363a6` is the commit that added **this section**; corrected 2026-08-26 rather than deleted |
 | **Working tree** | **Check it.** `git status` is the answer, not this table. As at 2026-08-26 the **U3 boundary approval and U3-a** are written but **not yet accepted** — §21 |
 | **Remote** | Verify with `git ls-remote origin main`, not with the local tracking ref. Everything **accepted** is pushed |
-| **In progress** | **Nothing.** **U3-a is ACCEPTED** (§21.1) and no step is open. **U3-b is the next permitted action and has not started**; §11 of [CLAUDE.md](../../CLAUDE.md) requires each step to be reported and reviewed before the next begins |
+| **In progress** | **U3-b — implemented, verified, AWAITING REVIEW** (§21.5). **U3-a is ACCEPTED** (§21.1). **U3-c does not follow automatically**; §11 of [CLAUDE.md](../../CLAUDE.md) requires each step to be reported and reviewed before the next begins |
 
 ### What is ACCEPTED
 
@@ -42,6 +42,7 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **D-U2.5** | **ACCEPTED 2026-08-25** at `99de2a7`, after a **visual review** — §20.7. The UI/UX design foundation (**Y1–Y28**, with the **Y12** clarification) applied to U1 and U2. **Presentation-only: it delivered no capability** |
 | **U3 — the boundary** | **BOUNDARY APPROVED 2026-08-26** — §21, [u3-proposal.md](u3-proposal.md), **Z1–Z14**. **Approval of a boundary is not approval of an implementation:** each step is reported and reviewed |
 | **U3-a** | **ACCEPTED 2026-08-26** — §21.1. Requirement statuses in the semantic vocabulary, with a bidirectional drift guard **proved to fail by mutation**. **It delivered no capability** |
+| **U3-b** | **IMPLEMENTED, NOT ACCEPTED** — §21.5. Cite-a-unit from the source viewer, and the evidence inventory. **The first capability U3 delivers**, and the first write outside the sources domain |
 
 ### The design baseline is SETTLED — §20.8
 
@@ -66,20 +67,20 @@ it and should say **which screens it adds**, not which of these it intends to re
 
 ### THE EXACT NEXT PERMITTED ACTION
 
-> **Begin U3-b — and U3-b only. Do not roll into U3-c.**
+> **Review U3-b and accept, amend or reject it. Do not begin U3-c.**
 >
-> **U3-a is ACCEPTED** (§21.1) and nothing else in U3 is authorised to start. **U3-b** is evidence
-> recording, per [u3-proposal.md](u3-proposal.md) §3.2, §3.3 and §12:
+> **U3-a is ACCEPTED** (§21.1). **U3-b is written, built and verified — but NOT accepted.** Acceptance
+> is always a separate decision and is **never inferred from a green run** (§11 of
+> [CLAUDE.md](../../CLAUDE.md)). What U3-b changed, what it discovered, and the verification behind
+> it, is **§21.5**.
 >
-> - **cite a unit as evidence** from the existing U1 source viewer — `POST …/evidence`
->   `{ sourceId, sourceUnitId }`, **unit-level only**;
-> - the **evidence inventory** — `GET …/evidence`;
-> - **server refusals rendered honestly**, including a `broken` or `drifted` anchor, which the API
->   refuses rather than stores.
+> **Three findings in §21.5 deserve a decision, not just a read:** an ADR-0038 conflation that was
+> caught before it shipped and is now guarded; a **500** where the API should return 400 for an anchor
+> refusal; and three role-map entries that do not match the API and are consumed by nothing yet.
 >
-> **No character-range citation** minted from a DOM selection (§6), and **no AI-invoking control**
-> (**Z2-B**). When U3-b is complete it is **reported and reviewed**; acceptance is a separate
-> decision and is **never inferred from a green run**.
+> **On acceptance of U3-b, the next permitted action is U3-c — and U3-c only:** the read-only
+> requirements workspace (list, detail inspector, evidence pane wired to the U1 viewer), per
+> [u3-proposal.md](u3-proposal.md) §12. It does not roll into U3-d.
 >
 > **Three things U3 must not lose, restated because they are the easiest to erode:**
 >
@@ -117,14 +118,14 @@ it and should say **which screens it adds**, not which of these it intends to re
 npm run verify
 ```
 
-**Green end to end, exit 0** with **U3-a** in the tree: **886 pass / 886** · 0 fail · 0 cancelled ·
-0 skipped · 0 todo · **178 suites**; `check:arch` **187 source files**; `check:arch:selftest`
-**57 cases**; `check:docs` **99 files / 1234 links**. It is **deterministic, network-free,
-server-free**, and makes **no live provider call**.
+**Green end to end, exit 0** with **U3-a and U3-b** in the tree: **902 pass / 902** · 0 fail ·
+0 cancelled · 0 skipped · 0 todo · **181 suites**; `check:arch` **190 source files**;
+`check:arch:selftest` **57 cases**; `check:docs` **99 files / 1238 links**. It is **deterministic,
+network-free, server-free**, and makes **no live provider call**.
 
-**U3-a added 8 tests and 1 suite and changed nothing else.** The baseline it was measured against was
-**878 / 878 · 177 suites** at `ad363a6`; `check:arch` is unchanged at 187 source files because
-`semantics.ts` was already counted, and no checker rule was added or weakened.
+**The baseline was 878 / 878 · 177 suites · 187 source files at `ad363a6`.** U3-a added 8 tests and
+1 suite; U3-b added 16 tests, 2 suites and 3 source files. **No checker rule was added or weakened,
+and no dependency was added** — runtime dependencies remain nine.
 
 ```bash
 npm run test:e2e
@@ -307,7 +308,7 @@ curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H '
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements. It **spans** roadmap **P1 + P2**, and **closing it did NOT close them**: P1 and P2 carry user-facing commitments this repository has not delivered — **§17**, [roadmap.md](roadmap.md) §0 |
-| **Current slice** | **None open. U3-a is ACCEPTED** (§21.1) and **U3's boundary is APPROVED** 2026-08-26 (§21, **Z1–Z14**). The next permitted action is **U3-b, and U3-b only**; **U3-c–U3-f, U4 and U5 are NOT authorised.** D-U2.5 is ACCEPTED — 2026-08-25, §20.7, at `99de2a7` after a visual review. **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U2 accepted §19; U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
+| **Current slice** | **U3-b — implemented, AWAITING REVIEW** (§21.5). **U3-a is ACCEPTED** (§21.1) and **U3's boundary is APPROVED** 2026-08-26 (§21, **Z1–Z14**); **U3-c–U3-f, U4 and U5 are NOT authorised.** D-U2.5 is ACCEPTED — 2026-08-25, §20.7, at `99de2a7` after a visual review. **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U2 accepted §19; U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
 | **Previously** | **U2 ACCEPTED** — 2026-08-25, §19, against decisions **X1–X10** |
 | **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 · U1 · U2 · D-U2.5 — the whole approved Phase 2 slice sequence, both hardening slices, the first two UI enablement slices, and the design foundation.** D-U2.5 accepted 2026-08-25 (`52ba323` + `90d9297` + `c42f99e` + `99de2a7`) after a **visual review**; U2 accepted 2026-08-25 (`0b7b700` + `8f7d37b` + `c93e05b`); U1 accepted 2026-08-25 (`da95b56` + `5882bb2` + `d4785c1`). H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
 | **Commit** | **D-U2.5 `52ba323` + `90d9297` + `c42f99e` + `99de2a7`.** U2 `0b7b700` + `8f7d37b` + `c93e05b`. U1 `da95b56` + `5882bb2` + `d4785c1`. H5 `2d04ab1` + `0ba13b7`. H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
@@ -2812,7 +2813,7 @@ it intends to redecide.
 
 ---
 
-## 21. UI enablement U3 — **BOUNDARY APPROVED 2026-08-26** · U3-a **ACCEPTED**
+## 21. UI enablement U3 — **BOUNDARY APPROVED 2026-08-26** · U3-a **ACCEPTED** · U3-b **AWAITING REVIEW**
 
 **The boundary is approved. The slice is not accepted, and no part of it is.**
 
@@ -2839,7 +2840,7 @@ it intends to redecide.
 | | |
 |---|---|
 | **Accepted** | **2026-08-26**, on an explicit decision, after the implementation, its **mutation-proof** and its verification were reported |
-| **Accepted at** | **The tree carried by the commit that adds this record.** A commit cannot name itself, so the hash is written into §21.1 by the **next** commit rather than invented here — the same reason a baseline hash is recomputed rather than remembered |
+| **Accepted at** | **`5f72f83`** — *"U3-a ACCEPTED — requirement statuses, and a drift guard that bites"*. The record inside that commit could not name it, because a commit cannot name itself; the hash was written here immediately afterwards rather than invented in advance |
 | **Boundary** | [u3-proposal.md](u3-proposal.md) §12, step **U3-a**, under **Z8-a** |
 | **What acceptance CLAIMS** | That the requirement statuses are in the vocabulary, that the drift guard is bidirectional and **proved to fail**, and that nothing already accepted changed |
 | **What it does NOT claim** | **Any capability.** Nothing renders differently, no screen consumes a requirement status, and **U3 is not implemented** — §21.4 |
@@ -2888,6 +2889,87 @@ that is what keeps the badges readable in greyscale. `approved` uses the shield,
 decoration: migration 010 refuses `status: 'approved'` without an approver, a timestamp and a
 baseline, so the state a requirement reaches is a **gate** act and the glyph says which.
 
+### 21.5 U3-b — evidence recording · **IMPLEMENTED, AWAITING REVIEW**
+
+**Scope:** cite a unit as evidence from the existing source viewer, and list what has been cited
+([u3-proposal.md](u3-proposal.md) §3.2, §3.3). **The first capability U3 delivers.**
+
+| | |
+|---|---|
+| **Added** | `apps/web/src/features/evidence/evidence-model.ts` (DOM-free) · `CiteEvidence.tsx` · `Evidence.tsx` · `apps/web/e2e/u3-evidence.spec.ts` |
+| **Changed** | `api/contracts.ts` (evidence schemas, imported from `@asdp/schemas`) · `lib/dev-auth.ts` (`recordEvidence`) · `source-viewer/DocumentView.tsx` (the citation panel in the inspector) · `app/App.tsx` (wiring, and the re-read epoch) · `features/sources/Sources.tsx` (the inventory) · `src/web.test.ts` |
+| **Not changed** | **The backend.** No API, contract, migration, command or domain behaviour. No token, no CSS, no component in `components/` |
+| **Dependencies** | **None added.** Runtime dependencies remain **nine** |
+| **Checker rules** | **None weakened, none added, no exemption** |
+| **Verification** | `npm run verify` **green, exit 0** — **902 pass / 902 · 0 fail · 0 skipped · 0 todo · 181 suites**; `check:arch` **190 source files**; `check:arch:selftest` **57 cases**; `check:docs` **99 files / 1238 links**. **`npm run test:e2e`: 39 passed / 39** — the **31 pre-existing browser tests passed UNCHANGED**, no spec edited, no assertion weakened |
+
+**Four structural guards, each proved to fail by mutation before this was reported:**
+
+| Guard | Mutation that breaks it |
+|---|---|
+| The citation body carries **no character range** | Adding `charStart`/`charEnd` to `citeUnitBody` |
+| `evidence-model.ts` mentions neither field **at all** | The same |
+| The inventory **never** renders a verification badge from `anchorVerified` | Reintroducing `StateBadge` in `Evidence.tsx` |
+| **Z2-B** — `apps/web` holds **no AI-invoking control** | Any module naming `populate-frame`, `extract-evidence`, `/profile` or `reconcile` |
+
+### 21.5.1 An ADR-0038 conflation, caught before it shipped
+
+**The first implementation mapped `anchorVerified` to the `resolved` verification badge. That was
+wrong, and wrong in the way this repository cares most about.**
+
+`recordEvidence` stores `anchorVerified: true` for **everything it accepts**, and `content_unverified`
+**is** accepted (`isCitable` admits `resolved` and `content_unverified`). So the boolean means *"the
+server checked this before storing it (D1)"*, **not** *"the anchor resolved to its exact region"* —
+and the badge would have labelled a content-unverified anchor as resolved, which is precisely what
+[ADR-0038](../adr/ADR-0038-target-versus-content-verification.md) exists to prevent.
+
+**A stored `EvidenceItem` does not carry its resolution status at all**, so this build genuinely
+cannot tell the two apart. The inventory now **says so** rather than guessing, in words, and both a
+unit test over the component source and a browser test assert the word *"Resolved"* never appears.
+**Recorded as a gap: the evidence read surface exposes no resolution status.** Filling it is a
+backend change and is **not** U3 scope.
+
+### 21.5.2 Three findings, recorded and NOT fixed
+
+| # | Finding | Why it was not fixed here |
+|---|---|---|
+| **1** | **An anchor refusal returns 500, not 400.** `AnchorVerificationError extends Error` and is absent from `domain-error.filter.ts`'s mapping chain, so *"refusing to store evidence with a broken anchor"* falls through to the generic 500. The message survives, so the UI renders the reason faithfully — but a legitimate domain refusal is reported as a server error | A **backend** change. U3 adds no backend capability, and the boundary is explicit about it. **Needs a decision** |
+| **2** | **Three role-map entries do not match the API.** `listRequirements`, `frameCoverage` and `g1Readiness` in `dev-auth.ts` each omit roles the API grants, and two name `BusinessApprover`, which it does not. **No screen gates on any of them**, so nothing is currently wrong on screen | Correcting them belongs to **U3-c**, the slice that first consumes them. The new drift test covers **every command a screen actually gates on** — `ingestSource`, `setSourceAuthorityRank`, `validateIntake`, `recordEvidence` — and states its own scope and why |
+| **3** | **The `broken`/`drifted` refusal is unreachable from this UI.** Citing a unit inherits an anchor the server minted and immediately re-verifies; nothing in a browser can make stored text drift | Covered by **unit tests** over `citeRefusal` rather than a browser test, and the browser suite covers the refusal that *is* reachable — a role that may not cite. Stated in the spec's own header |
+
+### 21.5.3 A sentence narrowed, not deleted
+
+U1's document inspector said *"Read-only by construction (ADR-0015). There is no write path in this
+view and none to add."* U3-b adds a write path to that view, so the sentence was **narrowed and the
+narrowing recorded in place**, rather than quietly removed.
+
+**The claim it protected still holds:** the document itself is not editable, a source is immutable
+after ingest, and an `EvidenceItem` is immutable too (D1, D8). **ADR-0015 governs *artifact* viewers**
+— BPMN, DMN, forms — and forbids editing the artifact; recording a citation is not editing the thing
+cited, and evidence sits on the **editable** side of the product boundary
+([ADR-0002](../adr/ADR-0002-spec-layer-editing.md)). **No ADR conflict arises**, and §3.2 of the
+approved boundary is explicit that S4 gains this action.
+
+### 21.5.4 A deviation from the boundary, stated
+
+**§3.3 places the evidence inventory on S5**, the requirements workspace — which **U3-c** builds and
+which does not exist. It renders in the **Sources** workspace instead, because evidence is cited
+*from* a source and that is the screen that already holds them. The alternatives were to invent a
+rail entry the approved navigation does not declare, or to defer the inventory out of the slice the
+boundary puts it in. **U3-c may move or mirror it.**
+
+### 21.5.5 What U3-b does NOT claim
+
+- **No requirement is rendered.** That is U3-c, and the rail still shows *Requirements* as
+  unavailable and names U3.
+- **No model was called**, and `apps/web` holds no control that could call one — asserted
+  structurally (**Z2-B**).
+- **`anchorVerified` is not a resolution status**, and this build does not claim to know which
+  anchors resolved exactly — §21.5.1.
+- **Limitation 70 is untouched.** U3-b records evidence; it decides nothing.
+
+---
+
 ### 21.2 What U3 claims about limitation 70 — and what it does not
 
 **Limitation 70 remains OPEN.** *"Nothing measures whether a reviewer reviewed."*
@@ -2926,7 +3008,7 @@ scope expands.**
 
 ## 15. Next step
 
-### V0–V7, H4, H5, U1, U2, D-U2.5 and U3-a are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3's boundary is APPROVED (§21); U3-b is the next permitted action; U3-c–U3-f, U4 and U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
+### V0–V7, H4, H5, U1, U2, D-U2.5 and U3-a are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3's boundary is APPROVED (§21); U3-b awaits review; U3-c–U3-f, U4 and U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
 
 | | |
 |---|---|
@@ -2949,7 +3031,7 @@ PDF engine import — so the V2-PDF block remains mechanical rather than remembe
 | **U1 — `apps/web` and the source viewer** | **ACCEPTED / COMPLETE**, 2026-08-25 — §18. Boundary **W1–W13**; [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) recorded before any UI code. Two follow-ups: **F-U1-a DISCHARGED** by ADR-0040, **F-U1-b STANDING**. Accepted for **mechanics, governance and RTL/LTR correctness, explicitly not visual or UX design** |
 | **U2 — sources: intake, inventory, authority, L0 validation** | **ACCEPTED / COMPLETE**, 2026-08-25 — §19, after an independent review. **The first slice that writes.** Boundary **X1–X10**; [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) recorded before implementation. Three defects found and corrected (§19.1); follow-ups **F-U2-a** and **F-U2-b** recorded (§19.3). Accepted for **mechanics, governance and the journey, explicitly not visual or UX design** |
 | **D-U2.5 — the design foundation, demonstrated on U1 and U2** | **ACCEPTED / COMPLETE**, 2026-08-25 — §20.7, after a visual review. **Presentation-only: no capability.** Boundary **Y1–Y28** with the **Y12** clarification. Eight defects found across two review passes; the ten U2 browser tests passed **unchanged** throughout. **The accepted design system is the baseline for every later UI slice** — §20.8 |
-| **U3 — the requirements workspace** | **BOUNDARY APPROVED 2026-08-26** — §21, [u3-proposal.md](u3-proposal.md), **Z1–Z14**. **U3-a ACCEPTED** (§21.1); **U3-b is next**; U3-c–U3-f not authorised. **F-U2-b is DISCHARGED** — the design foundation was accepted as D-U2.5 on 2026-08-25. **Z2-B**: no AI-invoking control in `apps/web`. **Z5**: **G-a and G-e deliberately unfilled**, so flags and version history are out. **Z6-B**: limitation 70 **stays open** |
+| **U3 — the requirements workspace** | **BOUNDARY APPROVED 2026-08-26** — §21, [u3-proposal.md](u3-proposal.md), **Z1–Z14**. **U3-a ACCEPTED** (§21.1); **U3-b awaits review** (§21.5); U3-c–U3-f not authorised. **F-U2-b is DISCHARGED** — the design foundation was accepted as D-U2.5 on 2026-08-25. **Z2-B**: no AI-invoking control in `apps/web`. **Z5**: **G-a and G-e deliberately unfilled**, so flags and version history are out. **Z6-B**: limitation 70 **stays open** |
 | **U4 / U5 — coverage, reconciliation and G1 in the browser** | **NOT AUTHORISED.** W13 approved U1→U5 as a **sequence**, which is not authorisation. U4 needs API gap **G-a**, U5 needs **G-b**; both are approved and unbuilt, and **U3 fills neither** |
 | **V6 — conflicts, precedence and reconciliation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §9, reviewed in §9.10. Decisions **Q1–Q9**; `L1-CONF-*` and slot-scoped comparison approved at acceptance. **Accepted for mechanics and governance, explicitly not semantic correctness** — §9.8 |
 

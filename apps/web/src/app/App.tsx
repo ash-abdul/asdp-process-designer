@@ -69,6 +69,14 @@ function Workspace({
   const [sourceId, setSourceId] = useState<string | undefined>(undefined);
   const [sourceName, setSourceName] = useState<string | undefined>(undefined);
   const [document_, setDocument] = useState<Remote<DocumentPayload>>(idle());
+  /**
+   * Bumped by a successful citation — **U3-b**.
+   *
+   * W4: re-read after every mutation, never an optimistic row. It lives here
+   * rather than in either screen because the write happens in the document view
+   * and the list that must change is in the sources workspace.
+   */
+  const [evidenceEpoch, setEvidenceEpoch] = useState(0);
 
   const loadProjects = useCallback(async (): Promise<void> => {
     setProjects(loading());
@@ -158,6 +166,7 @@ function Workspace({
               projectId={project.id}
               identity={identity}
               {...(sourceId === undefined ? {} : { selectedSourceId: sourceId })}
+              evidenceEpoch={evidenceEpoch}
               onOpenSource={(id, filename) => {
                 setSourceId(id);
                 setSourceName(filename);
@@ -172,7 +181,16 @@ function Workspace({
         ...(viewingDocument
           ? {
               inspector: (
-                <DocumentInspector state={document_} sourceName={sourceName ?? ''} onClose={closeDocument} />
+                <DocumentInspector
+                  state={document_}
+                  sourceName={sourceName ?? ''}
+                  sourceId={sourceId}
+                  client={client}
+                  projectId={project.id}
+                  identity={identity}
+                  onClose={closeDocument}
+                  onEvidenceRecorded={() => setEvidenceEpoch((n) => n + 1)}
+                />
               ),
             }
           : {}),

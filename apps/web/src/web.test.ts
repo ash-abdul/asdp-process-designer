@@ -15,7 +15,7 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -50,6 +50,16 @@ import {
   describeRule,
 } from './features/sources/source-model.ts';
 import { ProjectList, ProjectSummary, SourceContent, HighlightList, labelOf } from './api/contracts.ts';
+import {
+  citeUnitBody,
+  citeRefusal,
+  preview,
+  unitOptionLabel,
+  anchorSummary,
+  originOf,
+  bySource,
+  type EvidenceRow,
+} from './features/evidence/evidence-model.ts';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -667,5 +677,240 @@ describe('U2 project label tolerance', () => {
   test('a project with no name falls back to its key, never to blank', () => {
     const bare = ProjectSummary.parse({ id: 'prj-4', key: 'delta' });
     assert.equal(labelOf(bare).text, 'delta');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U3-b — evidence: citing a unit, and the inventory
+// ---------------------------------------------------------------------------
+
+/** A row shaped like the API's, with the fields U3-b renders. */
+function evidenceRow(over: Partial<EvidenceRow> = {}): EvidenceRow {
+  return {
+    id: 'ev-1',
+    sourceId: 'src-1',
+    sourceUnitId: 'su-1',
+    verbatimText: 'The applicant must submit the renewal request within ninety days.',
+    language: 'en',
+    classification: 'INTERNAL',
+    extractedBy: 'parser',
+    anchorVerified: true,
+    anchor: { precision: 'exact', direction: 'ltr', target: { kind: 'text_range' } },
+    createdBy: 'u-analyst',
+    createdAt: '2026-08-26T00:00:00.000Z',
+    ...over,
+  };
+}
+
+describe('U3-b citing a unit', () => {
+  test('THE BODY CARRIES NO CHARACTER RANGE — unit level only (Z3)', () => {
+    // The rule the whole module exists for. `recordEvidence` accepts charStart
+    // and charEnd; minting them from a bidirectional DOM selection is the class
+    // of bug ADR-0039 §5 exists to prevent, so this UI never sends them.
+    const body = citeUnitBody('src-1', 'su-7');
+
+    assert.deepEqual(body, { sourceId: 'src-1', sourceUnitId: 'su-7' });
+    assert.deepEqual(Object.keys(body).sort(), ['sourceId', 'sourceUnitId']);
+    for (const forbidden of ['charStart', 'charEnd']) {
+      assert.ok(!(forbidden in body), `the citation body must never carry ${forbidden}`);
+    }
+  });
+
+  test('THE MODULE EXPORTS NO WAY to build a character-range citation', () => {
+    // Structural, not editorial: absence is the enforcement. A future helper
+    // called `citeRangeBody` would fail here before it could fail in review.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(
+      join(here, '..', 'src', 'features', 'evidence', 'evidence-model.ts'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''); // strip comments: prose names them
+
+    for (const forbidden of ['charStart', 'charEnd']) {
+      assert.ok(!source.includes(forbidden), `evidence-model.ts must not mention ${forbidden}`);
+    }
+  });
+
+  test('a refusal QUOTES THE SERVER and never summarises it', () => {
+    const reason =
+      'refusing to store evidence with a broken anchor: the quote is no longer present';
+    const phase = citeRefusal('su-1', new ApiError(500, { error: reason }, reason));
+
+    assert.equal(phase.kind, 'refused');
+    if (phase.kind !== 'refused') return;
+    assert.equal(phase.reason, reason, 'the server\'s words must survive verbatim');
+    assert.equal(phase.roleRefusal, false);
+  });
+
+  test('a 403 is a ROLE refusal, and 400/500 are not — the status vocabulary holds', () => {
+    // CLAUDE.md §12: a caller who gets 403 goes looking for a permissions
+    // problem. Collapsing these sends them to the wrong place.
+    const forbidden = citeRefusal('su-1', new ApiError(403, { error: 'needs BusinessAnalyst' }, 'needs BusinessAnalyst'));
+    assert.equal(forbidden.kind === 'refused' && forbidden.roleRefusal, true);
+
+    for (const status of [400, 404, 409, 500, 503]) {
+      const other = citeRefusal('su-1', new ApiError(status, { error: 'no' }, 'no'));
+      assert.equal(other.kind === 'refused' && other.roleRefusal, false, `status ${status}`);
+    }
+  });
+
+  test('a non-API failure still produces a refusal, not a blank', () => {
+    const phase = citeRefusal('su-1', new TypeError('network down'));
+    assert.equal(phase.kind, 'refused');
+    if (phase.kind !== 'refused') return;
+    assert.match(phase.reason, /network down/);
+    assert.equal(phase.status, undefined, 'no status may be invented for a non-HTTP failure');
+  });
+
+  test('a unit with no text SAYS SO rather than rendering blank', () => {
+    assert.match(unitOptionLabel({ id: 'su-1', ordinal: 3 }), /no text recorded/);
+    assert.match(unitOptionLabel({ id: 'su-1', ordinal: 3, text: '   ' }), /no text recorded/);
+    assert.match(unitOptionLabel({ id: 'su-1', text: 'x' }), /^su-1 · x$/);
+    assert.match(unitOptionLabel({ id: 'su-1', ordinal: 2, text: 'Eligibility' }), /^2 · Eligibility$/);
+  });
+
+  test('a truncated quote is VISIBLY truncated, and counts code points', () => {
+    // A silently cut quote reads as the whole quote, and evidence is verbatim.
+    assert.equal(preview('short', 10), 'short');
+    assert.equal(preview('abcdefghijkl', 5), 'abcde…');
+    // Non-BMP: slicing UTF-16 units here would split a surrogate pair.
+    assert.equal(preview('🏛🏛🏛🏛', 2), '🏛🏛…');
+    assert.equal(preview('  spaced\n\ntext  ', 50), 'spaced text');
+  });
+});
+
+describe('U3-b the evidence inventory', () => {
+  test('ANCHOR VERIFICATION IS NOT A RESOLUTION STATUS (ADR-0038)', () => {
+    // recordEvidence stores anchorVerified: true for everything it accepts, and
+    // content_unverified IS accepted. Mapping that boolean to the `resolved`
+    // badge would label a content-unverified anchor as resolved — the one
+    // conflation ADR-0038 exists to prevent.
+    const summary = anchorSummary(evidenceRow());
+    assert.equal(summary.verified, true);
+    assert.ok(!('resolution' in summary), 'the row carries no resolution status to report');
+    assert.ok(!('resolved' in summary));
+  });
+
+  test('the inventory NEVER renders a verification badge from anchorVerified', () => {
+    // Asserted over the component source, because this is a mistake that would
+    // look completely correct in review.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(
+      join(here, '..', 'src', 'features', 'evidence', 'Evidence.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+    assert.ok(
+      !source.includes('StateBadge'),
+      'Evidence.tsx must not render a semantic verification badge from anchorVerified',
+    );
+    assert.ok(!source.includes("'resolved'"), 'the inventory may not claim an anchor resolved');
+  });
+
+  test('the anchor is reported in the SERVER\'s terms, each field its own', () => {
+    const summary = anchorSummary(
+      evidenceRow({ anchor: { precision: 'page', direction: 'rtl', target: { kind: 'pdf_region' } } }),
+    );
+    assert.equal(summary.precision, 'page');
+    assert.equal(summary.target, 'pdf_region');
+    assert.equal(summary.direction, 'rtl');
+  });
+
+  test('an unrecognised origin is NOT defaulted to something benign', () => {
+    assert.match(originOf(evidenceRow({ extractedBy: 'parser' })).label, /Parser/);
+    assert.match(originOf(evidenceRow({ extractedBy: 'ai' })).label, /AI/);
+    const unknown = originOf(evidenceRow({ extractedBy: 'telepathy' }));
+    assert.match(unknown.label, /Unrecognised/);
+    assert.doesNotMatch(unknown.label, /Parser/);
+  });
+
+  test('grouping by source PRESERVES the API order, and invents none', () => {
+    const rows = [
+      evidenceRow({ id: 'ev-1', sourceId: 'src-b' }),
+      evidenceRow({ id: 'ev-2', sourceId: 'src-a' }),
+      evidenceRow({ id: 'ev-3', sourceId: 'src-b' }),
+    ];
+    const groups = bySource(rows);
+
+    // Group order follows first appearance; within a group, the API's order.
+    assert.deepEqual(groups.map((g) => g.sourceId), ['src-b', 'src-a']);
+    assert.deepEqual(groups[0]?.rows.map((r) => r.id), ['ev-1', 'ev-3']);
+    assert.deepEqual(groups[1]?.rows.map((r) => r.id), ['ev-2']);
+    // Nothing is dropped.
+    assert.equal(groups.reduce((n, g) => n + g.rows.length, 0), rows.length);
+  });
+
+  test('an empty list groups to nothing rather than throwing', () => {
+    assert.deepEqual(bySource([]), []);
+  });
+});
+
+describe('U3-b role drift, and Z2-B', () => {
+  test('EVERY COMMAND A SCREEN GATES ON matches the API exactly', () => {
+    // The API source is READ, not imported: @asdp/api is not importable from the
+    // presentation layer (ADR-0039 §2), which is the same reason the U2 test
+    // parses it this way.
+    //
+    // Scoped to what is CONSUMED, and the scope is stated rather than implied.
+    // `listRequirements`, `frameCoverage` and `g1Readiness` sit in the map, are
+    // gated on by no screen, and do NOT match the API. That is recorded in
+    // dev-auth.ts and reported with U3-b; correcting them belongs to U3-c, the
+    // slice that first consumes them. Widening this test to cover them would
+    // have meant fixing them inside U3-b, which is not U3-b's scope.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const commands = readFileSync(join(here, '..', '..', 'api', 'src', 'commands.ts'), 'utf8');
+    const consumed = ['ingestSource', 'setSourceAuthorityRank', 'validateIntake', 'recordEvidence'];
+
+    for (const name of consumed) {
+      const line = commands.split('\n').find((l) => l.includes(`name: '${name}'`));
+      assert.ok(line !== undefined, `the API has no command '${name}'`);
+      const required = [...line.matchAll(/'([A-Za-z]+)'/g)]
+        .map((m) => m[1] as string)
+        .filter((r) => (ROLES as readonly string[]).includes(r));
+      assert.ok(required.length > 0, `no roles parsed for ${name}`);
+      assert.deepEqual(
+        [...(COMMAND_ROLES[name] ?? [])].sort(),
+        [...required].sort(),
+        `${name}: the UI role map disagrees with the API`,
+      );
+    }
+  });
+
+  test('a Contributor may upload and may NOT cite evidence', () => {
+    const contributor = { subject: 'u-c', roles: ['Contributor'] as const };
+    assert.equal(mayInvoke(contributor, 'ingestSource'), true);
+    assert.equal(mayInvoke(contributor, 'recordEvidence'), false);
+    assert.equal(mayInvoke({ subject: 'u-a', roles: ['BusinessAnalyst'] as const }, 'recordEvidence'), true);
+  });
+
+  test('Z2-B — apps/web CONTAINS NO AI-INVOKING CONTROL', () => {
+    // The structural guarantee behind Z2-B. Every AI port refuses by default
+    // today, so a control here would be a live provider call the moment one is
+    // wired — and H3 is unresolved. Asserted over every non-test module.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const root = join(here, '..', 'src');
+    const forbidden = ['populate-frame', 'extract-evidence', '/profile', 'reconcile'];
+
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full);
+        else if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !entry.endsWith('.test.ts')) {
+          files.push(full);
+        }
+      }
+    };
+    walk(root);
+    assert.ok(files.length > 0, 'no source files were scanned — the walk is broken');
+
+    for (const file of files) {
+      const source = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      for (const route of forbidden) {
+        assert.ok(
+          !source.includes(route),
+          `${file} references '${route}': apps/web must hold no AI-invoking control (Z2-B)`,
+        );
+      }
+    }
   });
 });

@@ -30,6 +30,7 @@ import { Button, Reason } from '../../components/ui/Button.tsx';
 import { Card, Field } from '../../components/ui/Card.tsx';
 import { DataTable, CellStack } from '../../components/ui/DataTable.tsx';
 import { StateBadge, Chip } from '../../components/ui/Badge.tsx';
+import { Evidence } from '../evidence/Evidence.tsx';
 import {
   authorityOf,
   parseStateOf,
@@ -55,12 +56,15 @@ export function Sources({
   identity,
   selectedSourceId,
   onOpenSource,
+  evidenceEpoch,
 }: {
   client: ApiClient;
   projectId: string;
   identity: DevIdentity;
   selectedSourceId?: string;
   onOpenSource: (sourceId: string, filename: string) => void;
+  /** Bumped when a citation succeeds, so the evidence list re-reads (U3-b). */
+  evidenceEpoch: number;
 }): ReactNode {
   const [inventory, setInventory] = useState<Remote<readonly SourceRow[]>>(idle());
   const [upload, setUpload] = useState<UploadPhase>({ kind: 'idle' });
@@ -247,6 +251,18 @@ export function Sources({
       </Card>
 
       <Validation state={validation} onRun={() => void validate()} />
+
+      {/*
+        U3-b. The evidence inventory sits with the sources it cites, because the
+        requirements workspace §3.3 places it on does not exist yet — U3-c. The
+        deviation is recorded rather than silently taken.
+      */}
+      <Evidence
+        client={client}
+        projectId={projectId}
+        epoch={evidenceEpoch}
+        filenameFor={(sourceId) => rows.find((s) => s.id === sourceId)?.filename}
+      />
       </div>
 
       <div className="worksplit__side">

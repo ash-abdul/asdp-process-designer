@@ -23,6 +23,10 @@ import { StateBadge, Chip } from '../components/ui/Badge.tsx';
 import { Inspector, InspectorSection } from '../components/shell/Inspector.tsx';
 import { InspectorRow } from '../components/ui/Card.tsx';
 import type { Remote } from '../app/state.ts';
+import type { ApiClient } from '../api/client.ts';
+import type { DevIdentity } from '../lib/dev-auth.ts';
+import { CiteEvidence } from '../features/evidence/CiteEvidence.tsx';
+import type { UnitOption } from '../features/evidence/evidence-model.ts';
 
 interface DocumentPayload {
   readonly content: unknown;
@@ -35,6 +39,8 @@ interface Narrowed {
   readonly language?: string;
   readonly ranges: readonly HighlightRange[];
   readonly reportedLength?: number;
+  /** The units the server parsed. U3-b cites one of these, and nothing else. */
+  readonly units: readonly UnitOption[];
 }
 
 /** Narrow the validated payloads. No inference: every field is the server's. */
@@ -42,6 +48,7 @@ function narrow(value: DocumentPayload): Narrowed {
   const content = value.content as {
     source: { direction?: string; primaryLanguage?: string; textLength?: number };
     text: string;
+    units: readonly UnitOption[];
   };
   const highlights = value.highlights as { ranges: readonly HighlightRange[] };
   const d = content.source.direction;
@@ -51,6 +58,7 @@ function narrow(value: DocumentPayload): Narrowed {
     ...(content.source.primaryLanguage === undefined ? {} : { language: content.source.primaryLanguage }),
     ranges: highlights.ranges,
     ...(content.source.textLength === undefined ? {} : { reportedLength: content.source.textLength }),
+    units: content.units,
   };
 }
 
@@ -111,11 +119,21 @@ function Body({ value }: { value: Narrowed }): ReactNode {
 export function DocumentInspector({
   state,
   sourceName,
+  sourceId,
+  client,
+  projectId,
+  identity,
   onClose,
+  onEvidenceRecorded,
 }: {
   state: Remote<DocumentPayload>;
   sourceName: string;
+  sourceId: string;
+  client: ApiClient;
+  projectId: string;
+  identity: DevIdentity;
   onClose: () => void;
+  onEvidenceRecorded: () => void;
 }): ReactNode {
   if (state.kind !== 'ready') {
     return (
@@ -197,8 +215,35 @@ export function DocumentInspector({
       </InspectorSection>
 
       <InspectorSection title="Actions">
+        {/*
+          **This sentence was narrowed at U3-b, not deleted.** It read: "Read-only
+          by construction (ADR-0015). There is no write path in this view and none
+          to add." The claim it was protecting still holds and is restated below;
+          what changed is that citing a passage is not a write to the document.
+
+          The source is immutable after ingest, an EvidenceItem is immutable too
+          (D1, D8), and ADR-0015 governs ARTIFACT viewers — BPMN, DMN, forms —
+          which must not be editable. Recording a citation is not editing the
+          thing cited, and evidence is on the editable side of the product
+          boundary (ADR-0002).
+        */}
         <p className="state__hint">
-          Read-only by construction (ADR-0015). There is no write path in this view and none to add.
+          <strong>The document itself is not editable</strong>, here or anywhere: a source is
+          immutable after ingest, and so is a citation of one (D1, D8). What this panel adds is a
+          citation <em>about</em> the document.
+        </p>
+        <CiteEvidence
+          client={client}
+          projectId={projectId}
+          sourceId={sourceId}
+          units={value.units}
+          identity={identity}
+          onRecorded={onEvidenceRecorded}
+        />
+        <p className="state__hint">
+          Citation is <strong>unit-level only</strong>. The API accepts a character range and this
+          UI does not send one: offsets minted from a browser selection are the failure ADR-0039 §5
+          exists to prevent.
         </p>
       </InspectorSection>
     </Inspector>

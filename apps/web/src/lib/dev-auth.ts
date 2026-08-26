@@ -127,6 +127,18 @@ export const COMMAND_ROLES: Readonly<Record<string, readonly DevRole[]>> = {
     'ComplianceReviewer',
   ],
 
+  // U3-b. Recording evidence is a BusinessAnalyst/ProcessArchitect act, and is
+  // deliberately narrower than ingest: a Contributor may add a document and may
+  // not decide which of its passages is evidence for a requirement.
+  recordEvidence: ['BusinessAnalyst', 'ProcessArchitect'],
+
+  // Named here but consumed by NO screen yet, and three of the four DO NOT match
+  // the API. `listRequirements`, `frameCoverage` and `g1Readiness` each omit
+  // roles the API grants and, in two cases, name one it does not. The drift test
+  // below covers every command a screen actually gates on; these are outside it
+  // because nothing gates on them, and correcting them belongs to the slice that
+  // first consumes them (U3-c). Recorded rather than quietly fixed here — U3-b's
+  // scope is evidence.
   listRequirements: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
   frameCoverage: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
   reviewRequirement: ['BusinessAnalyst', 'ProcessArchitect'],
