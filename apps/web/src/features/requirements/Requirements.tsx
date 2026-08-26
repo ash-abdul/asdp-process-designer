@@ -128,9 +128,16 @@ export function Requirements({
       <header className="workspace__head">
         <div>
           <h1>Requirements</h1>
+          {/*
+            **Corrected at U3-d.** This read *"Read-only in this build: reviewing,
+            revising and approving are later slices"*, which was true at U3-c and
+            is now false in two ways: reviewing IS available, and **approving is
+            not a later slice of this screen at all** — it is G1's act, reachable
+            from no control here in any build.
+          */}
           <p>
-            Proposals derived from this project&apos;s evidence. Read-only in this build: reviewing,
-            revising and approving are later slices.
+            Proposals derived from this project&apos;s evidence. Open one to review it. Revising is a
+            later slice; <strong>approving is never done here</strong> — that is G1&apos;s act.
           </p>
         </div>
         <span className="workspace__spacer" />

@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod';
-import { EvidenceItem, HighlightRange, Requirement } from '@asdp/schemas';
+import { EvidenceItem, Gate, HighlightRange, Requirement } from '@asdp/schemas';
 
 /**
  * A project, as the API returns it.
@@ -238,3 +238,50 @@ export const RequirementList = z.object({
   requirements: z.array(RequirementWithEvidence),
 });
 export type RequirementList = z.infer<typeof RequirementList>;
+
+// ---------------------------------------------------------------------------
+// U3-d — the review actions
+// ---------------------------------------------------------------------------
+
+/**
+ * What `POST …/requirements/:r/review` returns: the requirement it just changed.
+ *
+ * `Requirement` is the server's own schema again, so a reviewer's decision is
+ * validated against the same contract the list was. That matters more here than
+ * anywhere else in the client: this response is the **only** evidence the UI has
+ * that `accept` produced `in_review` rather than something else, and a locally
+ * restated shape could quietly accept a status the schema does not allow.
+ */
+export const ReviewedRequirement = Requirement;
+export type ReviewedRequirement = z.infer<typeof Requirement>;
+
+/**
+ * What `POST …/requirements/:r/confirm-inference` returns.
+ *
+ * The controller returns `{ requirementId, confirmed: true }` and nothing else —
+ * notably **not** the updated requirement — so the workspace re-reads the list
+ * afterwards rather than patching a row from this. `confirmed` is a literal
+ * `true`: there is no route that returns `false`, and accepting one would be
+ * accepting a shape the server never sends.
+ */
+export const InferenceConfirmed = z.object({
+  requirementId: z.string(),
+  confirmed: z.literal(true),
+});
+export type InferenceConfirmed = z.infer<typeof InferenceConfirmed>;
+
+/**
+ * The gate list — `GET /projects/:p/gates`, read to surface a **G1 reopen**.
+ *
+ * `mutate()` in the command layer reconciles G1 inside every workspace mutation
+ * and **discards** the boolean saying whether it reopened, so no mutation
+ * response carries that fact. Reading the gates before and after an action is
+ * therefore the only way a reviewer can be told, and it is what the approved
+ * boundary specifies (**Z6**, §5.1) rather than a workaround for a missing
+ * field.
+ *
+ * `Gate` is the server's schema. `status` is the five-member `GateStatus`, which
+ * already includes `reopened`.
+ */
+export const GateList = z.array(Gate);
+export type GateList = z.infer<typeof GateList>;

@@ -496,6 +496,54 @@ describe('U1 approval is reachable only through G1', () => {
       await s.close();
     }
   });
+
+  /**
+   * **U3-d — an invalid review action is 400, and specifically NOT 500.**
+   *
+   * The assertion above is `>= 400`, which a 500 satisfies — and a 500 is what
+   * the route returned, because the action allow-list threw a plain `Error` that
+   * fell past every branch of `DomainErrorFilter`. The loose assertion is why it
+   * survived: it was true, and it was true of the wrong status.
+   *
+   * Same defect class as §21.5.6, *"an anchor refusal is 400, not 500"*. A
+   * refusal is not a server failure: it tells the caller to look at their own
+   * request, and a 500 sends them to look at the server instead.
+   *
+   * Drives the real controller, filter and HTTP path — not the classifier in
+   * isolation — because the defect was in how the two composed.
+   */
+  test('U3-d: AN INVALID REVIEW ACTION IS 400 AND NOT 500 — a refusal is not a server failure', async () => {
+    const s = await startServer();
+    try {
+      const { projectId } = await projectWithProposals(s);
+      const listed = await call(s, 'GET', `/projects/${projectId}/requirements`, undefined, asAnalyst);
+      const id = listed.json.requirements[0].id;
+
+      for (const action of ['approve', 'approved', 'unaccept', 'ACCEPT', '']) {
+        const r = await call(
+          s, 'POST', `/projects/${projectId}/requirements/${id}/review`, { action }, asAnalyst,
+        );
+        assert.notEqual(r.status, 500, `action '${action}' must not read as a server failure`);
+        assert.equal(r.status, 400, `action '${action}' is a client refusal, so 400`);
+        // The refusal still says what was wrong. An empty action is caught one
+        // step earlier by `requiredString`, so it names the field instead.
+        const message = String((r.json as { error?: unknown }).error ?? '');
+        assert.ok(
+          action === '' ? message.includes('action') : message.includes(action),
+          `the refusal must quote what was refused, got: ${message}`,
+        );
+      }
+
+      // The four valid actions are untouched by the correction.
+      const ok = await call(
+        s, 'POST', `/projects/${projectId}/requirements/${id}/review`, { action: 'accept' }, asAnalyst,
+      );
+      assert.equal(ok.status, 200, 'a valid action still succeeds');
+      assert.equal(ok.json.status, 'in_review', 'accept means in_review, never approved');
+    } finally {
+      await s.close();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

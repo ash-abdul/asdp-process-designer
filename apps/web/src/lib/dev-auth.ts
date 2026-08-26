@@ -157,6 +157,18 @@ export const COMMAND_ROLES: Readonly<Record<string, readonly DevRole[]>> = {
   frameCoverage: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
   reviewRequirement: ['BusinessAnalyst', 'ProcessArchitect'],
   g1Readiness: ['Viewer', 'BusinessAnalyst', 'ProcessArchitect', 'BusinessApprover'],
+
+  // U3-d. Both entries below are now CONSUMED, so both are covered by the
+  // exact-match drift test rather than the weaker "the API has this command"
+  // one. `reviewRequirement` above was already correct and needed no change;
+  // `confirmInference` was absent entirely, and an absent entry means
+  // `mayInvoke` returns true for everyone — deferring to the API, which is safe
+  // but shows a Viewer an enabled control the API will refuse.
+  //
+  // Deliberately NOT wider than reviewing: confirming an inference is a
+  // governance judgement about a human recommendation (ADR-0007 L3), not a
+  // clerical act.
+  confirmInference: ['BusinessAnalyst', 'ProcessArchitect'],
 };
 
 /** Whether an identity may invoke a command. Affordance only — never a control. */

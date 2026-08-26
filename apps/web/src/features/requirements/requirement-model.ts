@@ -47,6 +47,9 @@ export interface RequirementRow {
   readonly supersedesId?: string;
   readonly changeReason?: string;
   readonly inferenceRationale?: string;
+  /** Set once a person has confirmed the inference — U3-d renders it. */
+  readonly inferenceConfirmedBy?: string;
+  readonly inferenceConfirmedAt?: string;
   readonly status: string;
   readonly generatedBy: string;
   readonly aiInteractionId?: string;
@@ -306,4 +309,40 @@ export function chipsFor(
       followable: sourceId !== undefined,
     };
   });
+}
+
+/**
+ * The confirmation state — **required** and **given** are different facts.
+ *
+ * `humanConfirmationRequired` is computed at write time and says a confirmation
+ * is needed. `inferenceConfirmedBy` says one was recorded. `confirmInference`
+ * deliberately does not clear the first — the requirement still required a
+ * confirmation, and it now has one — so a UI that renders only the flag reports
+ * *"undecided"* forever and makes a completed act invisible.
+ *
+ * Found at U3-d, when the confirm control produced no observable change.
+ */
+export function confirmationOf(row: RequirementRow): {
+  readonly state: 'decided' | 'undecided';
+  readonly detail: string;
+} {
+  if (row.inferenceConfirmedBy !== undefined) {
+    return {
+      state: 'decided',
+      detail:
+        `Confirmed by ${row.inferenceConfirmedBy}` +
+        // A DATE, not a raw ISO instant. `.slice(0, 10)` is the convention the
+        // project list already uses; the visual review caught
+        // `2026-08-26T19:09:21.326Z` sitting in a human-readable field, which is
+        // machine output leaking into the interface. The full instant stays on
+        // the record — it is in the audit entry, which is where precision to the
+        // millisecond actually matters.
+        (row.inferenceConfirmedAt === undefined ? '' : ` on ${row.inferenceConfirmedAt.slice(0, 10)}`) +
+        '.',
+    };
+  }
+  if (row.humanConfirmationRequired) {
+    return { state: 'undecided', detail: 'Required, and not yet confirmed.' };
+  }
+  return { state: 'decided', detail: 'No separate confirmation is required.' };
 }

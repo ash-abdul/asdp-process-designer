@@ -15,14 +15,24 @@
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { createClient } from '../api/client.ts';
+import { createClient, type ApiClient } from '../api/client.ts';
 import { ProjectList, SourceContent, HighlightList, labelOf } from '../api/contracts.ts';
+import { GateList, InferenceConfirmed, ReviewedRequirement } from '../api/contracts.ts';
 import { Sources } from '../features/sources/Sources.tsx';
 import { Requirements, useRequirements } from '../features/requirements/Requirements.tsx';
 import { RequirementInspector } from '../features/requirements/RequirementInspector.tsx';
 import type { RequirementRow } from '../features/requirements/requirement-model.ts';
+import {
+  g1StatusOf,
+  observeG1,
+  outcomeWording,
+  reviewRefusal,
+  type GateStatusValue,
+  type ReviewAction,
+  type ReviewPhase,
+} from '../features/requirements/review-model.ts';
 import type { ProjectSummary } from '../api/contracts.ts';
-import { devAuthHeaders, type DevIdentity } from '../lib/dev-auth.ts';
+import { devAuthHeaders, mayInvoke, type DevIdentity } from '../lib/dev-auth.ts';
 import { DevSignIn } from './DevSignIn.tsx';
 import { DocumentView, DocumentInspector } from '../source-viewer/DocumentView.tsx';
 import { Loading, Empty, Failed } from '../components/states.tsx';
@@ -37,6 +47,44 @@ import { Chip } from '../components/ui/Badge.tsx';
 
 /** Same-origin: Vite proxies `/api` to the service, so there is no CORS to loosen. */
 const API_BASE = '/api';
+
+/**
+ * G1's current status, or `undefined` when it cannot be established — **U3-d**.
+ *
+ * A failed or unreadable gate list is **not** an error the reviewer needs to see:
+ * the gate is reported *alongside* a decision, it does not gate one. Swallowing
+ * it here is deliberate, and it is safe in the one way that matters — an unknown
+ * status can never satisfy `approved → reopened`, so `observeG1` refuses to claim
+ * causation rather than guessing at it.
+ */
+/**
+ * The rendered fields of a requirement, for deciding whether a re-read changed it.
+ *
+ * Every field here is one the inspector actually shows, so the comparison tracks
+ * *"would the reviewer see something different"* rather than object identity.
+ * Deliberately not a deep compare: a signature that included everything would
+ * replace the row on any backend addition, and one that included nothing would
+ * never replace it at all — which was the defect.
+ */
+function rowSignature(row: RequirementRow): string {
+  return [
+    row.status,
+    row.version,
+    row.text,
+    row.humanConfirmationRequired,
+    row.inferenceConfirmedBy ?? '',
+    row.changeReason ?? '',
+    row.evidence.length,
+  ].join('|');
+}
+
+async function readG1(client: ApiClient, projectId: string): Promise<GateStatusValue | undefined> {
+  try {
+    return g1StatusOf(await client.get(`/projects/${projectId}/gates`, GateList));
+  } catch {
+    return undefined;
+  }
+}
 
 export function App({ origin }: { origin: string }): ReactNode {
   const [identity, setIdentity] = useState<DevIdentity | undefined>(undefined);
@@ -91,6 +139,132 @@ function Workspace({
   // unconditionally so hook order stays stable; `enabled` decides whether it
   // reaches the network.
   const requirements = useRequirements(client, project?.id, workspace === 'requirements');
+
+  /**
+   * The review phase and the G1 observation — **U3-d**.
+   *
+   * Held here, in the composition root, rather than in `Requirements.tsx`. That
+   * is deliberate: `Requirements.tsx` is the **list**, and keeping every mention
+   * of a review route out of it is the cheapest possible proof of **Z6-a** —
+   * *no decision from a list row alone*. A structural test asserts the absence,
+   * and a hook living there would have made that assertion untrue while changing
+   * nothing about the user-visible behaviour.
+   */
+  const [reviewPhase, setReviewPhase] = useState<ReviewPhase>({ kind: 'idle' });
+  const [g1Message, setG1Message] = useState<string | undefined>(undefined);
+
+  /**
+   * Re-sync the OPEN requirement from the reloaded list — **a defect fix**.
+   *
+   * **Found by the U3-d browser tests, and it was a real bug.** `submitDecision`
+   * calls `requirements.reload()`, which refreshes the list — but the inspector
+   * renders a `RequirementRow` held in state, captured when the row was selected.
+   * So after rejecting a requirement the list showed `rejected` and **the
+   * inspector, which is what the reviewer is actually looking at, still showed
+   * `in review`**. The decision had been recorded correctly and the screen denied
+   * it.
+   *
+   * Re-derived here rather than patched from the mutation response, because the
+   * response is not enough: `confirm-inference` returns only
+   * `{requirementId, confirmed}`, so a response-patching fix would have left the
+   * confirmation invisible — the second defect this slice found.
+   *
+   * The signature comparison is what makes this settle. `find` returns a new
+   * object on every fetch, so replacing on identity would set state on every
+   * render; replacing only when a rendered field actually differs converges after
+   * one pass.
+   *
+   * The held row is kept while the list is reloading, deliberately: deriving the
+   * inspector's row purely from the list would unmount it mid-reload and take the
+   * outcome message with it.
+   */
+  useEffect(() => {
+    if (requirements.data.kind !== 'ready' || requirement === undefined) return;
+    const fresh = requirements.data.value.rows.find((r) => r.id === requirement.id);
+    if (fresh !== undefined && rowSignature(fresh) !== rowSignature(requirement)) {
+      setRequirement(fresh);
+    }
+  }, [requirements.data, requirement]);
+
+  /**
+   * Record one decision on one requirement.
+   *
+   * **One act, one requirement.** `requirementId` is a single string and
+   * `action` is a single action; there is no array parameter, no loop, and no
+   * batching layer anywhere on this path. That is limitation 70's only
+   * structural mitigation, and it is held by the shape of this function.
+   *
+   * **The G1 reopen surface.** `mutate()` in the command layer reconciles G1
+   * inside every workspace mutation and discards whether it reopened, so the
+   * response cannot carry the fact. G1 is therefore read **before** and
+   * **after** the mutation and compared — what the approved boundary specifies
+   * (**Z6**, §5.1), needing no API change. Causation is claimed only for an
+   * `approved → reopened` transition observed across this action.
+   */
+  const submitDecision = useCallback(
+    async (
+      projectId: string,
+      requirementId: string,
+      action: ReviewAction | 'confirm_inference',
+    ): Promise<void> => {
+      setReviewPhase({ kind: 'sending', requirementId, action });
+      setG1Message(undefined);
+
+      // Read G1 first. A failure here must not block the decision — the gate is
+      // reported alongside the outcome, it does not gate it — so it degrades to
+      // "unknown before", which `observeG1` then refuses to claim causation from.
+      const before = await readG1(client, projectId);
+
+      try {
+        let status: string;
+        if (action === 'confirm_inference') {
+          await client.post(
+            `/projects/${projectId}/requirements/${requirementId}/confirm-inference`,
+            {},
+            InferenceConfirmed,
+          );
+          // The confirm route returns `{requirementId, confirmed}` and not the
+          // requirement, so the status is not restated here — it is unchanged by
+          // this act, and inventing one would be reporting a change that did not
+          // happen.
+          status = 'confirmed';
+          setReviewPhase({
+            kind: 'applied',
+            requirementId,
+            action,
+            status,
+            message: 'confirmed as a human-owned inference. Its status is unchanged by this act.',
+          });
+        } else {
+          const updated = await client.post(
+            `/projects/${projectId}/requirements/${requirementId}/review`,
+            { action },
+            ReviewedRequirement,
+          );
+          // The wording comes from the status the SERVER returned, never from
+          // the action this client sent.
+          setReviewPhase({
+            kind: 'applied',
+            requirementId,
+            action,
+            status: updated.status,
+            message: outcomeWording(updated.status),
+          });
+        }
+
+        const after = await readG1(client, projectId);
+        setG1Message(observeG1(before, after).message);
+
+        // W4: re-read after every mutation, never an optimistic row.
+        requirements.reload();
+      } catch (error) {
+        setReviewPhase(reviewRefusal(requirementId, action, error));
+      }
+      // The client is rebuilt each render; the identity is what actually matters.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [identity.subject, identity.roles.join(','), requirements.reload],
+  );
 
   const loadProjects = useCallback(async (): Promise<void> => {
     setProjects(loading());
@@ -172,8 +346,30 @@ function Workspace({
   const leaveProject = (): void => {
     setProject(undefined);
     setRequirement(undefined);
+    clearReview();
     closeDocument();
   };
+
+  /**
+   * Drop any decision outcome — **U3-d**.
+   *
+   * An outcome belongs to the requirement it was recorded against. Left standing
+   * across a change of selection, project or workspace it would sit under a
+   * heading it does not describe, which is the U3-c *"a requirement outlived its
+   * project"* defect in a new place (§21.7.7 finding 2). The inspector also
+   * checks the id before rendering; this is the other half, so a stale outcome
+   * cannot survive at all rather than merely being hidden.
+   */
+  function clearReview(): void {
+    setReviewPhase({ kind: 'idle' });
+    setG1Message(undefined);
+  }
+
+  /** Select a requirement, dropping the previous one's outcome with it. */
+  function selectRequirement(row: RequirementRow | undefined): void {
+    setRequirement(row);
+    clearReview();
+  }
 
   return (
     <AppShell
@@ -183,7 +379,7 @@ function Workspace({
         // Leaving a workspace closes the document it had open, so the next one
         // does not inherit a reading pane that belongs to the last.
         closeDocument();
-        if (id !== 'requirements') setRequirement(undefined);
+        if (id !== 'requirements') selectRequirement(undefined);
       }}
       regions={{
         projectBar: (
@@ -224,7 +420,7 @@ function Workspace({
               data={requirements.data}
               identity={identity}
               {...(requirement === undefined ? {} : { selectedId: requirement.id })}
-              onSelect={setRequirement}
+              onSelect={selectRequirement}
               onReload={requirements.reload}
             />
           ) : (
@@ -270,7 +466,21 @@ function Workspace({
                     setEvidenceId(evidenceItemId);
                     void loadDocument(projectId, evidenceSourceId, evidenceItemId);
                   }}
-                  onClose={() => setRequirement(undefined)}
+                  onClose={() => selectRequirement(undefined)}
+                  review={{
+                    phase: reviewPhase,
+                    // Affordance only — the API refuses independently (ADR-0027,
+                    // F-U1-b). Disabling a control is a courtesy, never a control.
+                    mayReview: mayInvoke(identity, 'reviewRequirement'),
+                    mayConfirm: mayInvoke(identity, 'confirmInference'),
+                    onReview: (action) => {
+                      void submitDecision(projectId, requirement.id, action);
+                    },
+                    onConfirmInference: () => {
+                      void submitDecision(projectId, requirement.id, 'confirm_inference');
+                    },
+                    ...(g1Message === undefined ? {} : { g1Message }),
+                  }}
                 />
               ),
             }

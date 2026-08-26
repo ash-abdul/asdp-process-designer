@@ -25,7 +25,18 @@
  * is not reachable" are different claims and only the second one holds.
  */
 
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   acknowledgePolicySlot,
   addInferredRequirement,
@@ -79,7 +90,19 @@ export class ReviewController {
     const action = requiredString(body.action, 'action');
     if (!['accept', 'reject', 'defer', 'send_for_clarification'].includes(action)) {
       // `approve` is deliberately not among them: approval is G1's act (U1).
-      throw new Error(`unknown review action '${action}'`);
+      //
+      // **400, not 500** — corrected in U3-d. This threw a plain `Error`, which
+      // falls past every branch of `DomainErrorFilter` to a generic 500, so an
+      // unrecognised action told the caller the server had broken when the
+      // server had worked perfectly and was refusing on purpose. It is the same
+      // defect U3-b corrected for `AnchorVerificationError` (§21.5.6): *a
+      // refusal is not a server failure*.
+      //
+      // `BadRequestException` rather than `ValidationError` because this is a
+      // **transport** check on an unparseable field value, which is what the
+      // other six controllers and this file's own `requiredString` already use.
+      // 409 would be wrong: this fails identically on retry.
+      throw new BadRequestException(`unknown review action '${action}'`);
     }
     return reviewRequirement(this.ctx(correlationId), actor, {
       projectId,

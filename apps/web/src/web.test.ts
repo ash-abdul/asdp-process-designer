@@ -50,10 +50,25 @@ import {
   describeRule,
 } from './features/sources/source-model.ts';
 import { ProjectList, ProjectSummary, SourceContent, HighlightList, labelOf } from './api/contracts.ts';
+import { GateList, InferenceConfirmed, ReviewedRequirement } from './api/contracts.ts';
+import {
+  REVIEW_ACTIONS,
+  confirmInferenceOffered,
+  g1StatusOf,
+  isSending,
+  mayDecide,
+  observeG1,
+  outcomeWording,
+  refusalAdvice,
+  resultingStatus,
+  reviewRefusal,
+  type ReviewPhase,
+} from './features/requirements/review-model.ts';
 import {
   setStateOf,
   evidenceExpectationOf,
   confidenceOf,
+  confirmationOf,
   versionOf,
   derivationOf,
   degradationsOf,
@@ -1122,11 +1137,32 @@ describe('U3-c ordering and read-only scope', () => {
     }
   });
 
-  test('U3-c IS READ-ONLY: no write route is named anywhere in the feature', () => {
-    // Accept, reject, defer, revise and confirm are U3-d/U3-e. Absence is the
-    // enforcement, and a helper that anticipated one would fail here.
+  /**
+   * **NARROWED AT U3-d — an intentional scope transition, not a weakened test.**
+   *
+   * This assertion forbade `/review` and `/confirm-inference` as well, and it was
+   * **correct when written**: U3-c was read-only, and a helper anticipating a
+   * decision would rightly have failed here. **U3-d built both routes under the
+   * approved boundary** (Z4, §12), so the assertion became false about the code
+   * rather than the code becoming wrong.
+   *
+   * The rule it enforces is unchanged — *the feature names no route it has not
+   * built* — and only membership moved. Everything still unauthorised is still
+   * forbidden, and by more files than before: `/revise`, `requirements/inferred`
+   * and `requirement-flags` are asserted absent across four files in
+   * *"NO REVISION AND NO HUMAN-INFERRED AUTHORING ANYWHERE"*, which also covers
+   * the new `review-model.ts`.
+   *
+   * The two routes U3-d added are not simply dropped from scrutiny: they are
+   * asserted **present and correct** against the API's own allow-list, and the
+   * list screen is asserted to name neither (**Z6-a**).
+   *
+   * Recorded here rather than in a commit message because the next person to
+   * read this test needs to know it was narrowed on purpose.
+   */
+  test('U3-c READ-ONLY SCOPE, narrowed at U3-d: no UNAUTHORISED write route in the feature', () => {
     const here = dirname(fileURLToPath(import.meta.url));
-    const forbidden = ['/review', '/revise', '/confirm-inference', 'requirements/inferred', 'requirement-flags'];
+    const forbidden = ['/revise', 'requirements/inferred', 'requirement-flags'];
     for (const file of ['requirement-model.ts', 'Requirements.tsx', 'RequirementInspector.tsx']) {
       const source = readFileSync(
         join(here, '..', 'src', 'features', 'requirements', file),
@@ -1271,14 +1307,33 @@ describe('U3-c amendment: a requirement never outlives its project', () => {
     );
   });
 
+  /**
+   * **Assertion corrected at U3-d, and the previous one was wrong to pin a
+   * setter name.**
+   *
+   * It required the literal `setRequirement(undefined)` in the navigate handler.
+   * U3-d routes the same clearing through `selectRequirement(undefined)`, which
+   * drops the selection **and** the review outcome that belonged to it — so the
+   * old assertion failed while the behaviour it protects got strictly stronger.
+   *
+   * A test that names the setter tests the code's spelling. This one tests the
+   * property: navigating away drops the selection, and whatever does it also
+   * drops the outcome.
+   */
   test('leaving the requirements workspace also clears the selection', () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const source = readFileSync(join(here, '..', 'src', 'app', 'App.tsx'), 'utf8');
     assert.match(
       source,
-      /if \(id !== 'requirements'\) setRequirement\(undefined\);/,
+      /if \(id !== 'requirements'\) (setRequirement|selectRequirement)\(undefined\);/,
       'navigating away from the workspace must drop the selection',
     );
+    // And whichever path does it must also drop the decision outcome, or a
+    // refusal recorded against a requirement outlives the requirement.
+    const select = /function selectRequirement\([\s\S]*?\n {2}\}/.exec(source);
+    assert.ok(select !== null, 'selectRequirement must exist to carry both halves');
+    assert.match(select[0] as string, /setRequirement\(row\)/);
+    assert.match(select[0] as string, /clearReview\(\)/);
   });
 });
 
@@ -1338,5 +1393,615 @@ describe('U3-c amendment: Y21 and the confidence column', () => {
     for (const required of ['confidence.band', 'confidence.score', 'confidence.functionVersion', 'req-degradations']) {
       assert.ok(inspector.includes(required), `the inspector must still render ${required}`);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U3-d — the review actions
+// ---------------------------------------------------------------------------
+
+describe('U3-d the review action vocabulary', () => {
+  test('THE FOUR ACTIONS ARE EXACTLY THE FOUR THE API ACCEPTS', () => {
+    // Parsed from the controller rather than restated, so an action added or
+    // removed there fails here. @asdp/api is not importable from the
+    // presentation layer (ADR-0039 §2), which is why this reads the source.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const controller = readFileSync(
+      join(here, '..', '..', 'api', 'src', 'http', 'review.controller.ts'),
+      'utf8',
+    );
+    const list = /\['accept',([\s\S]*?)\]\.includes\(action\)/.exec(controller);
+    assert.ok(list !== null, 'could not find the review action allow-list in the controller');
+    const api = ['accept', ...[...(list[1] as string).matchAll(/'([a-z_]+)'/g)].map((m) => m[1] as string)].sort();
+    const ui = REVIEW_ACTIONS.map((a) => a.action).sort();
+    assert.deepEqual(ui, api, 'the UI action list and the API allow-list must be equal');
+  });
+
+  test('ACCEPT MAPS TO in_review — never approved', () => {
+    assert.equal(resultingStatus('accept'), 'in_review');
+    for (const spec of REVIEW_ACTIONS) {
+      assert.notEqual(spec.resulting, 'approved', `${spec.action} must not produce 'approved'`);
+    }
+  });
+
+  test('the other three mappings match the command layer', () => {
+    assert.equal(resultingStatus('reject'), 'rejected');
+    assert.equal(resultingStatus('defer'), 'deferred');
+    assert.equal(resultingStatus('send_for_clarification'), 'needs_clarification');
+  });
+
+  test('NO ACTION IS LABELLED WITH THE WORD APPROVE, in any form', () => {
+    for (const spec of REVIEW_ACTIONS) {
+      assert.doesNotMatch(spec.label, /approv/i, `${spec.action} is labelled '${spec.label}'`);
+    }
+  });
+
+  test("accept's OWN DESCRIPTION says it does not approve", () => {
+    // The sentence that carries the distinction to the reviewer. If this ever
+    // reads "approves this requirement" the slice is lying about the ladder.
+    const accept = REVIEW_ACTIONS.find((a) => a.action === 'accept');
+    assert.match(accept?.means ?? '', /ready to be approved/);
+    assert.match(accept?.means ?? '', /does not approve it/i);
+  });
+
+  test('an unknown action THROWS rather than defaulting to a status', () => {
+    // A silent fallback would invent a status the server never returned.
+    assert.throws(() => resultingStatus('approve' as never), /no such review action/);
+  });
+});
+
+describe('U3-d outcome wording', () => {
+  test('in_review SAYS READY TO BE APPROVED and NEVER says it is approved', () => {
+    const words = outcomeWording('in_review');
+    assert.match(words, /ready to be approved/);
+    assert.doesNotMatch(words, /\bis approved\b/);
+    assert.match(words, /Approval is G1/);
+  });
+
+  test('every other status has its own words, and none claims an approval', () => {
+    for (const status of ['rejected', 'deferred', 'needs_clarification', 'draft', 'superseded']) {
+      const words = outcomeWording(status);
+      assert.ok(words.length > 0, `${status} has no wording`);
+      assert.doesNotMatch(words, /ready to be approved/, `${status} must not borrow accept's words`);
+    }
+  });
+
+  test('an UNRECOGNISED status is reported, not swallowed', () => {
+    // U3-a's principle: an unknown value says it is unknown rather than getting
+    // a benign default.
+    assert.match(outcomeWording('teleported'), /teleported/);
+  });
+
+  test('even `approved` is not claimed as this screen\'s doing', () => {
+    // Unreachable from here. If the server ever returned it, the wording must
+    // still not imply this control performed it.
+    assert.match(outcomeWording('approved'), /which this screen cannot do, and did not do/);
+  });
+});
+
+describe('U3-d Z6-a — a decision needs the requirement detail context', () => {
+  test('mayDecide IS FALSE WITHOUT A REQUIREMENT', () => {
+    assert.equal(mayDecide(undefined), false);
+    assert.equal(mayDecide(requirementRow()), true);
+  });
+
+  test('THE LIST NAMES NO REVIEW ROUTE AND NO REVIEW HANDLER', () => {
+    // Z6-a's structural half: no decision from a list row alone. The controls
+    // live in the inspector; the list gains nothing at all.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const list = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'Requirements.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    for (const forbidden of ['/review', '/confirm-inference', 'onReview', 'onConfirmInference', 'ReviewSurface']) {
+      assert.ok(!list.includes(forbidden), `Requirements.tsx names ${forbidden}: no decision from a row`);
+    }
+  });
+
+  test('THE REVIEW SURFACE TAKES ONE REQUIREMENT AND ONE ACTION — no array anywhere', () => {
+    // The shape limitation 70's mitigation depends on. A bulk path would need a
+    // signature to live in, and there must be none.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const inspector = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'RequirementInspector.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    const surface = /export interface ReviewSurface \{([\s\S]*?)\n\}/.exec(inspector);
+    assert.ok(surface !== null, 'could not find the ReviewSurface interface');
+    const body = surface[1] as string;
+    assert.ok(!body.includes('[]'), 'ReviewSurface must take no array');
+    assert.ok(!body.includes('readonly ids'), 'ReviewSurface must take no id list');
+    assert.match(body, /onReview: \(action: ReviewAction\) => void/, 'one action, no list');
+  });
+});
+
+describe('U3-d confirm-inference is offered by RELEVANCE, not by permission', () => {
+  test('offered ONLY for an inferred requirement', () => {
+    assert.equal(confirmInferenceOffered(requirementRow({ derivation: 'inferred' })), true);
+    for (const derivation of ['extracted', 'interpreted']) {
+      assert.equal(
+        confirmInferenceOffered(requirementRow({ derivation })),
+        false,
+        `${derivation} has no inference to confirm`,
+      );
+    }
+  });
+
+  test('a NON-INFERRED requirement gets NO CONTROL AT ALL, not a disabled one', () => {
+    // The API's refusal for that case is "there is nothing to confirm" — about
+    // relevance, not permission. A permanently disabled control on every other
+    // row would imply a capability that does not apply.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const inspector = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'RequirementInspector.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    // The block is rendered behind the relevance predicate, not behind a role.
+    assert.match(
+      inspector,
+      /confirmInferenceOffered\(row\) \? \(/,
+      'the confirm block must be gated on relevance',
+    );
+  });
+});
+
+describe('U3-d the phase machine', () => {
+  test('idle → sending → applied, carrying the requirement it concerns', () => {
+    const sending: ReviewPhase = { kind: 'sending', requirementId: 'REQ-0001', action: 'accept' };
+    assert.equal(isSending(sending), true);
+    assert.equal(isSending({ kind: 'idle' }), false);
+    assert.equal(isSending({
+      kind: 'applied', requirementId: 'REQ-0001', action: 'accept',
+      status: 'in_review', message: 'x',
+    }), false);
+  });
+
+  test('EVERY NON-IDLE PHASE NAMES ITS REQUIREMENT', () => {
+    // Without it, changing selection mid-request shows one requirement's
+    // refusal under another's heading.
+    const phases: ReviewPhase[] = [
+      { kind: 'sending', requirementId: 'REQ-1', action: 'accept' },
+      { kind: 'applied', requirementId: 'REQ-2', action: 'reject', status: 'rejected', message: 'm' },
+      reviewRefusal('REQ-3', 'defer', new ApiError(400, {}, 'no')),
+    ];
+    assert.deepEqual(phases.map((p) => (p.kind === 'idle' ? undefined : p.requirementId)), ['REQ-1', 'REQ-2', 'REQ-3']);
+  });
+
+  test('a REFUSAL QUOTES THE SERVER and is not a crash', () => {
+    const phase = reviewRefusal(
+      'REQ-0001',
+      'accept',
+      new ApiError(400, { error: 'x' }, 'requirement REQ-0001 is approved; changing an approved requirement means revising it'),
+    );
+    assert.equal(phase.kind, 'refused');
+    if (phase.kind !== 'refused') return;
+    assert.match(phase.reason, /is approved; changing an approved requirement means revising it/);
+    assert.equal(phase.status, 400);
+    assert.equal(phase.roleRefusal, false);
+    assert.equal(phase.staleRead, false);
+  });
+
+  test('THE STATUS VOCABULARY IS PRESERVED — 403 and 409 are not the same refusal', () => {
+    // CLAUDE.md §12. A 403 sends the reader to their permissions; a 409 sends
+    // them back to re-read the requirement.
+    const forbidden = reviewRefusal('REQ-1', 'accept', new ApiError(403, {}, 'role'));
+    const conflict = reviewRefusal('REQ-1', 'accept', new ApiError(409, {}, 'changed'));
+    assert.equal(forbidden.kind === 'refused' && forbidden.roleRefusal, true);
+    assert.equal(forbidden.kind === 'refused' && forbidden.staleRead, false);
+    assert.equal(conflict.kind === 'refused' && conflict.staleRead, true);
+    assert.equal(conflict.kind === 'refused' && conflict.roleRefusal, false);
+  });
+
+  test('a NON-API failure is still a refusal, and still not invented', () => {
+    const phase = reviewRefusal('REQ-1', 'accept', new Error('socket closed'));
+    assert.equal(phase.kind === 'refused' && phase.reason, 'socket closed');
+    const nothing = reviewRefusal('REQ-1', 'accept', 'not an error');
+    assert.match(nothing.kind === 'refused' ? nothing.reason : '', /no reason was given/);
+  });
+
+  test('refusalAdvice sends the reader to the RIGHT PLACE for each status', () => {
+    const advice = (status: number): string =>
+      refusalAdvice(reviewRefusal('R', 'accept', new ApiError(status, {}, 'm')) as never);
+    assert.match(advice(403), /BusinessAnalyst or ProcessArchitect/);
+    assert.match(advice(409), /Reload and read it again/);
+    assert.match(advice(404), /removed, or the project may have changed/);
+    // The H6 / limitation 79 caveat: a 503 may be a flattened domain error. The
+    // client reports what it was told and does not diagnose which.
+    assert.match(advice(503), /could not complete the write/);
+    assert.match(advice(400), /Nothing was recorded/);
+  });
+});
+
+describe('U3-d the G1 reopen surface', () => {
+  test('CAUSATION IS CLAIMED ONLY FOR approved → reopened ACROSS THIS ACTION', () => {
+    const o = observeG1('approved', 'reopened');
+    assert.equal(o.causedByThisAction, true);
+    assert.equal(o.reopened, true);
+    assert.match(o.message ?? '', /Your decision reopened G1/);
+  });
+
+  test('AN ALREADY-REOPENED GATE IS REPORTED AS STATE, with NO causal claim', () => {
+    // The distinction the approved decision turns on. A gate reopened before the
+    // reviewer arrived was not reopened by them.
+    for (const before of ['reopened', 'not_ready', 'ready', 'rejected', undefined] as const) {
+      const o = observeG1(before, 'reopened');
+      assert.equal(o.reopened, true, `before=${String(before)}`);
+      assert.equal(o.causedByThisAction, false, `before=${String(before)} must not claim causation`);
+      assert.doesNotMatch(o.message ?? '', /Your decision/, `before=${String(before)}`);
+      assert.match(o.message ?? '', /already the case/);
+    }
+  });
+
+  test('NOTHING IS SAID when G1 did not reopen', () => {
+    for (const after of ['not_ready', 'ready', 'approved', 'rejected', undefined] as const) {
+      const o = observeG1('approved', after);
+      assert.equal(o.reopened, false, `after=${String(after)}`);
+      assert.equal(o.message, undefined, `after=${String(after)} must say nothing`);
+    }
+  });
+
+  test('AN UNKNOWN BEFORE CANNOT PRODUCE A CAUSAL CLAIM', () => {
+    // `readG1` degrades to undefined when the gate list cannot be read, and the
+    // safe consequence is that causation becomes unclaimable rather than guessed.
+    assert.equal(observeG1(undefined, 'reopened').causedByThisAction, false);
+  });
+
+  test('g1StatusOf picks G1 out of the gate list, and tolerates its absence', () => {
+    assert.equal(g1StatusOf([{ code: 'G0', status: 'approved' }, { code: 'G1', status: 'reopened' }]), 'reopened');
+    assert.equal(g1StatusOf([{ code: 'G0', status: 'approved' }]), undefined);
+    assert.equal(g1StatusOf(undefined), undefined);
+    assert.equal(g1StatusOf([]), undefined);
+  });
+});
+
+describe('U3-d role map drift, now that both commands are CONSUMED', () => {
+  test('reviewRequirement AND confirmInference MATCH THE API EXACTLY', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const commands = readFileSync(join(here, '..', '..', 'api', 'src', 'commands.ts'), 'utf8');
+    for (const name of ['reviewRequirement', 'confirmInference']) {
+      const line = commands.split('\n').find((l) => l.includes(`name: '${name}'`));
+      assert.ok(line !== undefined, `the API has no command '${name}'`);
+      const required = [...line.matchAll(/'([A-Za-z]+)'/g)]
+        .map((m) => m[1] as string)
+        .filter((r) => (ROLES as readonly string[]).includes(r));
+      assert.ok(required.length > 0, `no roles parsed for ${name}`);
+      assert.deepEqual(
+        [...(COMMAND_ROLES[name] ?? [])].sort(),
+        [...required].sort(),
+        `${name}: the UI role map disagrees with the API`,
+      );
+    }
+  });
+
+  test('a Viewer may READ requirements and may NOT decide on one', () => {
+    const viewer = { subject: 'u-v', roles: ['Viewer'] as const };
+    assert.equal(mayInvoke(viewer, 'listRequirements'), true);
+    assert.equal(mayInvoke(viewer, 'reviewRequirement'), false);
+    assert.equal(mayInvoke(viewer, 'confirmInference'), false);
+  });
+
+  test('a ComplianceReviewer may read and may NOT decide — the API says so', () => {
+    // Worth asserting explicitly: the name suggests otherwise, and the API's
+    // reviewRequirement grants only BusinessAnalyst and ProcessArchitect.
+    const cr = { subject: 'u-c', roles: ['ComplianceReviewer'] as const };
+    assert.equal(mayInvoke(cr, 'listRequirements'), true);
+    assert.equal(mayInvoke(cr, 'reviewRequirement'), false);
+  });
+
+  test('an analyst and an architect may BOTH decide', () => {
+    for (const role of ['BusinessAnalyst', 'ProcessArchitect'] as const) {
+      assert.equal(mayInvoke({ subject: 'u', roles: [role] }, 'reviewRequirement'), true, role);
+      assert.equal(mayInvoke({ subject: 'u', roles: [role] }, 'confirmInference'), true, role);
+    }
+  });
+});
+
+describe('U3-d integration — the typed client against recorded fixtures', () => {
+  const client = (impl: typeof fetch) =>
+    createClient({ baseUrl: 'http://localhost:3000', headers: () => ({}), fetchImpl: impl });
+
+  const reviewed = {
+    id: 'REQ-0001',
+    requirementSetId: 'rqs-1',
+    projectId: 'prj-1',
+    text: 'The applicant must submit within ninety days.',
+    originalAiText: 'The applicant must submit within ninety days.',
+    category: 'business_rule',
+    rafSlot: 'rules.eligibility',
+    epistemicLevel: 'L2',
+    derivation: 'interpreted',
+    computedConfidence: 0.62,
+    confidenceBand: 'MEDIUM',
+    confidenceFunctionVersion: 'conf-1.2',
+    humanConfirmationRequired: true,
+    status: 'in_review',
+    version: 1,
+    generatedBy: 'ai',
+    degradations: [],
+    classification: 'INTERNAL',
+    language: 'en',
+    createdBy: 'u-analyst',
+    createdAt: '2026-08-26T00:00:00.000Z',
+  };
+
+  test('a review returns the UPDATED REQUIREMENT, validated against the server schema', async () => {
+    const c = client(stubFetch(200, reviewed));
+    const r = await c.post('/projects/prj-1/requirements/REQ-0001/review', { action: 'accept' }, ReviewedRequirement);
+    assert.equal(r.status, 'in_review');
+    assert.equal(outcomeWording(r.status), outcomeWording('in_review'));
+  });
+
+  test('A RESPONSE CLAIMING approved IS STILL PARSED — and still not claimed as ours', async () => {
+    // The schema permits it, because the server's enum does. What must never
+    // happen is this client SAYING it approved something.
+    const c = client(stubFetch(200, { ...reviewed, status: 'approved' }));
+    const r = await c.post('/projects/prj-1/requirements/REQ-0001/review', { action: 'accept' }, ReviewedRequirement);
+    assert.doesNotMatch(outcomeWording(r.status), /ready to be approved/);
+    assert.match(outcomeWording(r.status), /cannot do, and did not do/);
+  });
+
+  test('A CONTRACT DRIFT ON A DECISION IS LOUD', async () => {
+    const c = client(stubFetch(200, { id: 'REQ-0001' }));
+    await assert.rejects(
+      () => c.post('/projects/prj-1/requirements/REQ-0001/review', { action: 'accept' }, ReviewedRequirement),
+      ContractError,
+    );
+  });
+
+  test('a 403 from a Viewer becomes a ROLE refusal', async () => {
+    const c = client(stubFetch(403, { error: 'reviewRequirement requires one of: BusinessAnalyst, ProcessArchitect' }));
+    try {
+      await c.post('/projects/prj-1/requirements/REQ-0001/review', { action: 'accept' }, ReviewedRequirement);
+      assert.fail('should have thrown');
+    } catch (error) {
+      const phase = reviewRefusal('REQ-0001', 'accept', error);
+      assert.equal(phase.kind === 'refused' && phase.roleRefusal, true);
+      assert.match(phase.kind === 'refused' ? phase.reason : '', /BusinessAnalyst, ProcessArchitect/);
+    }
+  });
+
+  test('a 409 becomes a STALE READ, and advises a re-read rather than a retry', async () => {
+    const c = client(stubFetch(409, { error: 'the requirement changed', kind: 'concurrency' }));
+    try {
+      await c.post('/projects/prj-1/requirements/REQ-0001/review', { action: 'accept' }, ReviewedRequirement);
+      assert.fail('should have thrown');
+    } catch (error) {
+      const phase = reviewRefusal('REQ-0001', 'accept', error);
+      assert.equal(phase.kind === 'refused' && phase.staleRead, true);
+      assert.match(refusalAdvice(phase as never), /Reload and read it again/);
+    }
+  });
+
+  test('THE ALREADY-APPROVED REFUSAL IS A 400 AND READS AS A REFUSAL', async () => {
+    const message =
+      'requirement REQ-0001 is approved; changing an approved requirement means revising it, ' +
+      'which creates a new version and reopens the gate (governance §2.3)';
+    const c = client(stubFetch(400, { error: message }));
+    try {
+      await c.post('/projects/prj-1/requirements/REQ-0001/review', { action: 'accept' }, ReviewedRequirement);
+      assert.fail('should have thrown');
+    } catch (error) {
+      const phase = reviewRefusal('REQ-0001', 'accept', error);
+      assert.equal(phase.kind === 'refused' && phase.status, 400);
+      // Verbatim. A paraphrase here is a refusal the reviewer cannot look up.
+      assert.equal(phase.kind === 'refused' && phase.reason, message);
+    }
+  });
+
+  test('confirm-inference returns {requirementId, confirmed} and NOTHING ELSE is assumed', async () => {
+    const c = client(stubFetch(200, { requirementId: 'REQ-0001', confirmed: true }));
+    const r = await c.post('/projects/prj-1/requirements/REQ-0001/confirm-inference', {}, InferenceConfirmed);
+    assert.equal(r.confirmed, true);
+    assert.equal(r.requirementId, 'REQ-0001');
+  });
+
+  test('confirmed:false IS NOT A SHAPE THE SERVER SENDS, and is refused', async () => {
+    const c = client(stubFetch(200, { requirementId: 'REQ-0001', confirmed: false }));
+    await assert.rejects(
+      () => c.post('/projects/prj-1/requirements/REQ-0001/confirm-inference', {}, InferenceConfirmed),
+      ContractError,
+    );
+  });
+
+  test("confirm-inference on a NON-INFERRED requirement is the SERVER's refusal", async () => {
+    const c = client(stubFetch(400, { error: 'requirement REQ-0001 is not inferred; there is nothing to confirm' }));
+    try {
+      await c.post('/projects/prj-1/requirements/REQ-0001/confirm-inference', {}, InferenceConfirmed);
+      assert.fail('should have thrown');
+    } catch (error) {
+      const phase = reviewRefusal('REQ-0001', 'confirm_inference', error);
+      assert.match(phase.kind === 'refused' ? phase.reason : '', /there is nothing to confirm/);
+    }
+  });
+
+  test('THE GATE LIST PARSES, and a reopened G1 is found in it', async () => {
+    // `policy` is a GatePolicy OBJECT, not a label — the fixture says so because
+    // the schema is the server's and a guessed shape is how a client drifts.
+    const policy = { requiredRoles: ['BusinessApprover'] };
+    const c = client(stubFetch(200, [
+      { code: 'G0', projectId: 'prj-1', status: 'approved', policy },
+      { code: 'G1', projectId: 'prj-1', status: 'reopened', policy },
+    ]));
+    const gates = await c.get('/projects/prj-1/gates', GateList);
+    assert.equal(g1StatusOf(gates), 'reopened');
+  });
+
+  test('A GUESSED GATE SHAPE IS REFUSED, not quietly accepted', async () => {
+    // The mistake this fixture originally made, kept as a test: `policy` as a
+    // string parses as nothing and must fail loudly at the boundary.
+    const c = client(stubFetch(200, [{ code: 'G1', projectId: 'prj-1', status: 'reopened', policy: 'blocking' }]));
+    await assert.rejects(() => c.get('/projects/prj-1/gates', GateList), ContractError);
+  });
+});
+
+describe('U3-d scope — what is still absent', () => {
+  test('NO REVISION AND NO HUMAN-INFERRED AUTHORING ANYWHERE — that is U3-e', () => {
+    // Narrowed from U3-c's list, which also forbade /review and
+    // /confirm-inference. U3-d legitimately introduces those two; everything
+    // else on that list is still unauthorised, and §21.7.10's inferred-revision
+    // conflict is deliberately left alone rather than worked around here.
+    const here = dirname(fileURLToPath(import.meta.url));
+    // `changeReason` is deliberately NOT forbidden: it is a field of the CURRENT
+    // row, which U3-c renders under G-e's bound to say *that* an edit happened.
+    // Reading it is not authoring a revision, and banning the word would have
+    // deleted U3-c's accepted history section to make a U3-d test pass.
+    const forbidden = ['/revise', 'requirements/inferred', 'requirement-flags'];
+    for (const file of ['requirement-model.ts', 'review-model.ts', 'Requirements.tsx', 'RequirementInspector.tsx']) {
+      const source = readFileSync(
+        join(here, '..', 'src', 'features', 'requirements', file),
+        'utf8',
+      ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      for (const route of forbidden) {
+        assert.ok(!source.includes(route), `${file} names ${route}: revision is U3-e`);
+      }
+    }
+  });
+
+  test('NO BULK MODEL EXISTS in the list, the inspector OR the review model', () => {
+    // Widened from U3-c, which covered only the list. The inspector is where the
+    // controls now live, so it is where a bulk path would appear.
+    //
+    // `Promise.all` is deliberately NOT among the tokens. `Requirements.tsx`
+    // already uses it to read requirements and evidence in parallel — two
+    // different reads, not one act over many requirements — and forbidding it
+    // would have meant either serialising an accepted read or, worse, rewriting
+    // U3-c's data loading to make a U3-d assertion pass. Concurrency is not
+    // bulk. What matters is that no DECISION path takes more than one id, and
+    // the ReviewSurface shape test asserts exactly that.
+    const here = dirname(fileURLToPath(import.meta.url));
+    for (const file of ['Requirements.tsx', 'RequirementInspector.tsx', 'review-model.ts']) {
+      const source = readFileSync(
+        join(here, '..', 'src', 'features', 'requirements', file),
+        'utf8',
+      ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      for (const f of ['selectAll', 'checkbox', 'selectedIds', 'toggleAll', 'multiSelect']) {
+        assert.ok(!source.includes(f), `${file} contains '${f}': no bulk model may exist`);
+      }
+    }
+  });
+
+  test('NO DECISION PATH ITERATES OVER REQUIREMENTS', () => {
+    // The property the `Promise.all` token was a bad proxy for. The composition
+    // root holds the only decision call; it must act on one id.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const app = readFileSync(join(here, '..', 'src', 'app', 'App.tsx'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    const fn = /const submitDecision = useCallback\([\s\S]*?\n {4}\[identity\.subject/.exec(app);
+    assert.ok(fn !== null, 'could not find submitDecision');
+    const body = fn[0] as string;
+    assert.match(body, /requirementId: string/, 'one requirement id, not a list');
+    for (const bulk of ['.map(', '.forEach(', 'for (', 'Promise.all', '[]']) {
+      assert.ok(!body.includes(bulk), `submitDecision contains '${bulk}': one act, one requirement`);
+    }
+  });
+
+  test('NO CONTROL IN THE FEATURE IS LABELLED APPROVE', () => {
+    // Scoped to CONTROL LABELS, not all prose: the Actions note legitimately
+    // says "accepting does not approve anything", and banning the word outright
+    // would forbid the sentence that makes the distinction.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const inspector = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'RequirementInspector.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+    // The five control labels come from two places, and both are checked: the
+    // four review labels are DATA in review-model.ts, and confirm-inference is
+    // literal JSX. An earlier version of this test tried to extract every
+    // `<Button>…</Button>` body with one regex and matched three of five,
+    // because JSX children nest and a lazy regex stops at the first close tag.
+    // Extracting labels from where they are actually declared is both correct
+    // and readable.
+    const labels = [
+      ...REVIEW_ACTIONS.map((a) => a.label),
+      ...[...inspector.matchAll(/>\s*\{[^}]*\?\s*'[^']*'\s*:\s*'([^']+)'\}\s*</g)].map((m) => m[1] as string),
+    ];
+    assert.ok(labels.length >= 5, `expected at least the five review controls, found ${labels.length}`);
+    assert.ok(labels.includes('Confirm inference'), 'the confirm control must be among the labels');
+    for (const label of labels) {
+      assert.doesNotMatch(label, /approv/i, `a control is labelled with 'approve': ${label.trim()}`);
+    }
+
+    // And the in-flight labels are not a loophole for the word either.
+    for (const busy of [...inspector.matchAll(/'(Recording…|Confirming…)'/g)].map((m) => m[1] as string)) {
+      assert.doesNotMatch(busy, /approv/i);
+    }
+  });
+
+  test('Z2-B HOLDS — no AI-invoking control reached the review surface', () => {
+    // Comments are stripped, as they are in every structural guard here: the
+    // files explain WHY `mutate()`'s G1 reconciliation matters, and prose naming
+    // a thing is not the thing. The repository-wide Z2-B guard in the U1 block
+    // covers every module; this one is the narrow, local restatement for the two
+    // files U3-d touched.
+    const here = dirname(fileURLToPath(import.meta.url));
+    for (const file of ['review-model.ts', 'RequirementInspector.tsx']) {
+      const source = readFileSync(
+        join(here, '..', 'src', 'features', 'requirements', file),
+        'utf8',
+      ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      for (const ai of ['populate-frame', 'extract-evidence', '/profile', '/reconcile']) {
+        assert.ok(!source.includes(ai), `${file} names ${ai}: Z2-B forbids an AI-invoking control`);
+      }
+    }
+  });
+});
+
+describe('U3-d confirmation state — REQUIRED and GIVEN are different facts', () => {
+  test('REQUIRED BUT NOT GIVEN reads as undecided, and says so', () => {
+    const c = confirmationOf(requirementRow({ humanConfirmationRequired: true }));
+    assert.equal(c.state, 'undecided');
+    assert.match(c.detail, /not yet confirmed/);
+  });
+
+  test('GIVEN reads as decided AND NAMES WHO — the defect U3-c had', () => {
+    // `confirmInference` sets inferenceConfirmedBy and deliberately does NOT
+    // clear humanConfirmationRequired: the requirement still required a
+    // confirmation, and now it has one. Rendering only the flag reported
+    // "undecided" forever and made a completed act invisible.
+    const c = confirmationOf(requirementRow({
+      humanConfirmationRequired: true,
+      inferenceConfirmedBy: 'u-analyst',
+      inferenceConfirmedAt: '2026-08-26T10:00:00.000Z',
+    }));
+    assert.equal(c.state, 'decided');
+    assert.match(c.detail, /Confirmed by u-analyst/);
+    // A DATE, not a raw ISO instant — the visual review's finding. The full
+    // instant stays in the audit entry, where millisecond precision matters.
+    assert.match(c.detail, /on 2026-08-26\.$/);
+    assert.doesNotMatch(c.detail, /T\d\d:/, 'no machine timestamp in a human field');
+  });
+
+  test('a confirmation with no timestamp still names its author', () => {
+    const c = confirmationOf(requirementRow({ inferenceConfirmedBy: 'u-arch' }));
+    assert.equal(c.state, 'decided');
+    assert.match(c.detail, /Confirmed by u-arch\.$/);
+  });
+
+  test('NOT REQUIRED is decided, and does not pretend someone confirmed it', () => {
+    const c = confirmationOf(requirementRow({ humanConfirmationRequired: false }));
+    assert.equal(c.state, 'decided');
+    assert.match(c.detail, /No separate confirmation is required/);
+    assert.doesNotMatch(c.detail, /Confirmed by/);
+  });
+});
+
+describe('U3-d the workspace caption no longer claims to be read-only', () => {
+  test('THE SUBTITLE DOES NOT SAY "read-only", and does not promise approval later', () => {
+    // Found by the visual review: the caption still read "Read-only in this
+    // build: reviewing, revising and approving are later slices". Reviewing is
+    // now available, and approving is not a later slice of this screen in ANY
+    // build — it is G1's act and no control here reaches it.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(
+      join(here, '..', 'src', 'features', 'requirements', 'Requirements.tsx'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    assert.ok(!source.includes('Read-only in this build'), 'the workspace is no longer read-only');
+    assert.ok(
+      !/approving are later slices/.test(source),
+      'approving is not a later slice of this screen; it is G1\'s act',
+    );
+    assert.match(source, /approving is never done here/, 'and the caption must say so');
   });
 });
