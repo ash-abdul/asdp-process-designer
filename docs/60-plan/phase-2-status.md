@@ -24,9 +24,10 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| **HEAD at handoff** | **`ad363a6`** — *"Docs: the fresh-session handoff, so no session depends on a conversation"*. The previous entry here read `e9ad1b2` and was one commit behind, because `ad363a6` is the commit that added **this section**; corrected 2026-08-26 rather than deleted |
-| **Working tree** | **Check it.** `git status` is the answer, not this table. As at 2026-08-26 the **U3 boundary approval and U3-a** are written but **not yet accepted** — §21 |
-| **Remote** | Verify with `git ls-remote origin main`, not with the local tracking ref. Everything **accepted** is pushed |
+| **HEAD at handoff** | **`9b2cc88`** — *"U3-c ACCEPTED — the requirements workspace, read-only"*, **pushed**. **Do not trust this cell over `git log`**: it has been one commit behind twice, because the commit that updates it is written before it exists |
+| **Working tree** | **Clean at `9b2cc88`.** `git status` is the answer, not this table — check it first |
+| **Remote** | `origin/main` **equals** local `main` at `9b2cc88`. Verify with `git ls-remote origin main`, **not** with the local tracking ref, which is only as fresh as the last fetch |
+| **The five U3 commits** | `c1c8ddb` boundary · `5f72f83` U3-a · `d88c6f0` U3-b · `a8cc6a2` the anchor-refusal correction · `9b2cc88` U3-c |
 | **In progress** | **Nothing.** **U3-a, U3-b and U3-c are ACCEPTED** (§21.1, §21.5, §21.7) and no step is open. **U3-d is the next permitted action and has not started**; §11 of [CLAUDE.md](../../CLAUDE.md) requires each step to be reported and reviewed before the next begins |
 
 ### What is ACCEPTED
