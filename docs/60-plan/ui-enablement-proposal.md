@@ -5,15 +5,19 @@
 > **U2 IS ACCEPTED** (`8f7d37b` + `c93e05b`, 2026-08-25) — §19, on its own approved boundary
 > [u2-proposal.md](u2-proposal.md) (**X1–X10**) with
 > [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md).
-> **U3–U5 remain NOT authorised.** W13 approved U1→U5 as a **sequence**, which is not
-> authorisation; each boundary must be proposed and approved before it begins, per §11 of
-> [CLAUDE.md](../../CLAUDE.md), as U1's and U2's were.
+> **U3's BOUNDARY IS APPROVED — 2026-08-26** ([u3-proposal.md](u3-proposal.md), **Z1–Z14**),
+> **not yet implemented**; **U4 and U5 remain NOT authorised.** W13 approved U1→U5 as a **sequence**,
+> which is not authorisation; each boundary must be proposed and approved before it begins, per §11 of
+> [CLAUDE.md](../../CLAUDE.md), as U1's, U2's and now U3's were.
 > **The two U1 follow-ups (§18.1): F-U1-a is DISCHARGED** by
 > [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md), taken before U2 rather than before
 > U3; **F-U1-b STANDS permanently** — development header authentication is localhost-only and is
 > never the production authentication solution.
-> **F-U2-b** asks for a **UI/UX design foundation** before U3 —
-> [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), **PROPOSED / NOT APPROVED**.
+> **F-U2-b is DISCHARGED** — it asked for a **UI/UX design foundation** before U3, and
+> [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) was **APPROVED, implemented
+> and ACCEPTED as D-U2.5 on 2026-08-25** ([phase-2-status.md](phase-2-status.md) §20.7). The label
+> here read *"PROPOSED / NOT APPROVED"*, which was true when written and went stale at acceptance; it
+> is corrected on 2026-08-26 rather than deleted.
 > **React + Vite adoption is recorded in [ADR-0039](../adr/ADR-0039-react-presentation-layer.md)**,
 > approved before any UI code was written.
 > **Version:** 1.0 · **Approved:** 2026-08-25 · **Against commit:** `773c82c`
@@ -46,7 +50,7 @@
 | **W10** | The three API gaps (§2.2) | **G-a APPROVED · G-b APPROVED · G-c DEFERRED** — hardcoded role mapping with an **automated drift test**. **G-a and G-b may be built only by the slice that first needs them; U1 needs neither** |
 | **W11** | Acceptance criteria (§13) | **APPROVED** |
 | **W12** | Required tests (§14) | **APPROVED** |
-| **W13** | Slices and sequence, U1 → U5 (§15) | **APPROVED as a sequence.** U1 **accepted** 2026-08-25; U2 **accepted** 2026-08-25 on its own boundary ([u2-proposal.md](u2-proposal.md), X1–X10). **U3–U5 are NOT authorised** |
+| **W13** | Slices and sequence, U1 → U5 (§15) | **APPROVED as a sequence.** U1 **accepted** 2026-08-25; U2 **accepted** 2026-08-25 on its own boundary ([u2-proposal.md](u2-proposal.md), X1–X10); **U3's boundary APPROVED 2026-08-26** on its own boundary ([u3-proposal.md](u3-proposal.md), Z1–Z14) and **not yet implemented**. **U4 and U5 are NOT authorised** |
 | **W14** | Out of scope (§16) | Unchanged |
 
 ### 0.1 U1's approved acceptance boundary
@@ -56,8 +60,9 @@
 
 **Nothing else.** G-a and G-b are approved but **out of U1**, because U1 needs neither.
 
-**As at 2026-08-25: U1 is accepted, and U2 has since been approved, implemented and accepted on its
-own boundary. U3–U5 must not be implemented.**
+**As at 2026-08-26: U1 and U2 are accepted, each on its own boundary. U3's boundary is APPROVED
+([u3-proposal.md](u3-proposal.md), Z1–Z14) and U3 is being implemented one approved step at a time,
+starting with U3-a. U4 and U5 must not be implemented.**
 
 ---
 
