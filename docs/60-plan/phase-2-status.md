@@ -1,13 +1,13 @@
 # Phase 2 — Implementation Status
 
-> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3–U5 are NOT authorised.** · **Version:** 8.2 · **Updated:** 2026-08-25
-> **Checkpoint:** §0 · **Commit:** **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
+> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3's BOUNDARY IS APPROVED 2026-08-26 (§21, Z1–Z14) and U3-a is ACCEPTED (§21.1); U3-b–U3-f, U4 and U5 are NOT authorised.** · **Version:** 8.4 · **Updated:** 2026-08-26
+> **Checkpoint:** §0 · **Commit:** **U3-a ACCEPTED** — §21.1. **U3 boundary approved** — §21, Z1–Z14. **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
 ---
 
-## 0. Checkpoint — 2026-08-25
+## 0. Checkpoint — 2026-08-26
 
 The single place to read to know where this project stands. Everything below is
 traceable to a commit or an approved decision; nothing here is reconstructed.
@@ -24,10 +24,10 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| **HEAD at handoff** | **`e9ad1b2`** — *"D-U2.5 ACCEPTED — the design system becomes the baseline"* |
-| **Working tree** | **Clean.** Nothing uncommitted, nothing untracked |
-| **Remote** | `origin/main` **equals** local `main` at `e9ad1b2`. Everything accepted is pushed |
-| **In progress** | **Nothing.** No slice is open, no branch is pending, no work is half-done |
+| **HEAD at handoff** | **`ad363a6`** — *"Docs: the fresh-session handoff, so no session depends on a conversation"*. The previous entry here read `e9ad1b2` and was one commit behind, because `ad363a6` is the commit that added **this section**; corrected 2026-08-26 rather than deleted |
+| **Working tree** | **Check it.** `git status` is the answer, not this table. As at 2026-08-26 the **U3 boundary approval and U3-a** are written but **not yet accepted** — §21 |
+| **Remote** | Verify with `git ls-remote origin main`, not with the local tracking ref. Everything **accepted** is pushed |
+| **In progress** | **Nothing.** **U3-a is ACCEPTED** (§21.1) and no step is open. **U3-b is the next permitted action and has not started**; §11 of [CLAUDE.md](../../CLAUDE.md) requires each step to be reported and reviewed before the next begins |
 
 ### What is ACCEPTED
 
@@ -40,6 +40,8 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 | **U1** | **ACCEPTED 2026-08-25** — §18. `apps/web`, development sign-in, project and source selection, the source viewer, server-provided highlighting in both reading directions |
 | **U2** | **ACCEPTED 2026-08-25** — §19. Sources: inventory, upload, authority ranking, L0 validation. **The first slice that writes** |
 | **D-U2.5** | **ACCEPTED 2026-08-25** at `99de2a7`, after a **visual review** — §20.7. The UI/UX design foundation (**Y1–Y28**, with the **Y12** clarification) applied to U1 and U2. **Presentation-only: it delivered no capability** |
+| **U3 — the boundary** | **BOUNDARY APPROVED 2026-08-26** — §21, [u3-proposal.md](u3-proposal.md), **Z1–Z14**. **Approval of a boundary is not approval of an implementation:** each step is reported and reviewed |
+| **U3-a** | **ACCEPTED 2026-08-26** — §21.1. Requirement statuses in the semantic vocabulary, with a bidirectional drift guard **proved to fail by mutation**. **It delivered no capability** |
 
 ### The design baseline is SETTLED — §20.8
 
@@ -56,33 +58,46 @@ it and should say **which screens it adds**, not which of these it intends to re
 
 | | |
 |---|---|
-| **U3 — the requirements workspace** | **NOT STARTED and NOT AUTHORISED.** **W13** approved U1→U5 as a **sequence**, which is **not** authorisation. §11 of [CLAUDE.md](../../CLAUDE.md) requires its boundary to be proposed and **approved** first, as U1's, U2's and D-U2.5's each were |
-| **U4 — coverage** · **U5 — reconciliation and G1** | **NOT STARTED, NOT AUTHORISED, and explicitly OUTSIDE U3.** U4 needs API gap **G-a**, U5 needs **G-b**; both gaps are approved and unbuilt. Do not let U3's scope drift into either |
+| **U3-c — the workspace** · **U3-d/e — the decisions** · **U3-f — URL sync and the edit-rate observation** | **NOT STARTED and NOT AUTHORISED.** The **boundary** is approved (§21); each **step** is still reported and reviewed before the next begins. **A green run is not acceptance, and acceptance of one step is not authorisation for the next** |
+| **U4 — coverage** · **U5 — reconciliation and G1** | **NOT STARTED, NOT AUTHORISED, and explicitly OUTSIDE U3.** U4 needs API gap **G-a**, U5 needs **G-b**; both gaps are approved and **deliberately unfilled by U3** (**Z5**). Do not let U3's scope drift into either |
 | **P3 — the Specification Studio** | **NOT STARTED.** Its boundary is **neither proposed nor approved**. It must not begin |
 | **H3 — AI prompt/response retention** | **UNRESOLVED. Limitation 62.** [ADR-0032](../adr/ADR-0032-retain-everything.md) requires prompt and response payloads to be retained; migration 006 stores metadata only. **NO LIVE PROVIDER CALL IS PERMITTED from anywhere, including the UI** — an unretained payload is unrecoverable. **Do not implement it implicitly**, and do not "just try" a model call to see whether something works |
 | **Ask ASDP** | Shipped as an **inert shell**: no `fetch`, no client, no handler that could reach one; every control disabled; **no stub answer**, because a plausible canned reply is how *"no live model has ever been called"* stops being obvious. A browser test records **every** request while the dock is opened, typed into and clicked, asserting **zero**. Keep it that way until H3 is resolved and its own boundary is approved |
 
 ### THE EXACT NEXT PERMITTED ACTION
 
-> **Propose the U3 Requirements Workspace boundary. Propose it — do not implement it.**
+> **Begin U3-b — and U3-b only. Do not roll into U3-c.**
 >
-> Nothing is approved to follow D-U2.5. The proposal should state the screens and journey in scope,
-> what is explicitly out (**U4** coverage, **U5** reconciliation and G1 approval), which decisions
-> need approval, the required tests, and the acceptance criteria — following the shape of
-> [u2-proposal.md](u2-proposal.md) and [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md).
+> **U3-a is ACCEPTED** (§21.1) and nothing else in U3 is authorised to start. **U3-b** is evidence
+> recording, per [u3-proposal.md](u3-proposal.md) §3.2, §3.3 and §12:
 >
-> **Limitation 70 must be considered in that proposal.** *"Nothing measures whether a reviewer
-> reviewed."* U3 is where approval actually happens, so the risk of **approval theatre** (**R-V7-1**)
-> becomes material there. Its only structural mitigation today is that **no bulk-approve path exists
-> anywhere** — that must not be weakened. Whether U3 should additionally **report** the two countable
-> signals V7's proposal offered (approval rate against edit rate) is a **scope decision for the user**,
-> not an assumption to make.
+> - **cite a unit as evidence** from the existing U1 source viewer — `POST …/evidence`
+>   `{ sourceId, sourceUnitId }`, **unit-level only**;
+> - the **evidence inventory** — `GET …/evidence`;
+> - **server refusals rendered honestly**, including a `broken` or `drifted` anchor, which the API
+>   refuses rather than stores.
+>
+> **No character-range citation** minted from a DOM selection (§6), and **no AI-invoking control**
+> (**Z2-B**). When U3-b is complete it is **reported and reviewed**; acceptance is a separate
+> decision and is **never inferred from a green run**.
+>
+> **Three things U3 must not lose, restated because they are the easiest to erode:**
+>
+> - **Z2-B — `apps/web` contains no AI-invoking control.** No `populate-frame`, no `profile`, no
+>   `extract-evidence`, no `reconcile`. A structural test asserts the absence (U3-b onward).
+> - **Z6-a is a friction safeguard, not evidence of review.** Requiring the detail pane to have been
+>   rendered before a decision makes a careless decision harder to record. It is **not** evidence that
+>   meaningful human review occurred, must never be described as such, and **does not close
+>   limitation 70**.
+> - **Limitation 70 stays OPEN.** **Z6-B** reports the edit-rate observation *with its caveat*; it is
+>   **not** a quality metric and **not** a reviewer-attention metric. The conflicts-overturned half is
+>   unmeasurable until U5. **No bulk-approve path exists anywhere, and that must not be weakened.**
 
 ### Other unresolved items the next session must know
 
 | Item | State |
 |---|---|
-| **Limitation 70** | Open and unmeasured. See above — it is a U3 concern |
+| **Limitation 70** | **OPEN, and U3 does not close it.** **Z6-B** adds one observation — proposals edited before approval — reported *with its caveat* and explicitly not a quality or attention metric. The other signal V7 offered, conflicts overturned, needs **G-b** and is **U5**. Nothing counts consideration, and the structural mitigations (no bulk approve, one act per requirement) remain the only real defence |
 | **Limitations 71–76** | V7-era, open: questions ship only their deterministic half (71); a source declaring its own undecided issue is not observed (72); a new validation run over an approved set **reopens G1** by design (73); `blocked_by_policy` only comes from a refused population pass (74); the G1 fixture exercises three of the eight kinds of human work (75); the project `classificationCeiling` is carried but not enforced by `evaluateEgress` (76) |
 | **H6** — limitation **79** | A domain error thrown inside a transaction is flattened to `503 database unavailable`. Recorded, not started |
 | **H7** — limitation **80** | `order by at, id` mis-orders past the ten-thousandth id of any prefix. Recorded, not started |
@@ -102,10 +117,14 @@ it and should say **which screens it adds**, not which of these it intends to re
 npm run verify
 ```
 
-**Green end to end, exit 0** at `e9ad1b2`: **878 pass / 878** · 0 fail · 0 skipped · 0 todo · **177
-suites**; `check:arch` **187 source files**; `check:arch:selftest` **57 cases**; `check:docs` **98
-files / 1206 links**. It is **deterministic, network-free, server-free**, and makes **no live provider
-call**.
+**Green end to end, exit 0** with **U3-a** in the tree: **886 pass / 886** · 0 fail · 0 cancelled ·
+0 skipped · 0 todo · **178 suites**; `check:arch` **187 source files**; `check:arch:selftest`
+**57 cases**; `check:docs` **99 files / 1234 links**. It is **deterministic, network-free,
+server-free**, and makes **no live provider call**.
+
+**U3-a added 8 tests and 1 suite and changed nothing else.** The baseline it was measured against was
+**878 / 878 · 177 suites** at `ad363a6`; `check:arch` is unchanged at 187 source files because
+`semantics.ts` was already counted, and no checker rule was added or weakened.
 
 ```bash
 npm run test:e2e
@@ -171,8 +190,8 @@ curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H '
 ### Where to read next
 
 1. [CLAUDE.md](../../CLAUDE.md) — operating instructions. **§11 governs whether you may start anything at all.**
-2. This §0, then **§16** (Phase 2 closure), **§17** (roadmap reconciliation), **§18**–**§20** (U1, U2, D-U2.5).
-3. [ui-enablement-proposal.md](ui-enablement-proposal.md) **W1–W13** and [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) **Y1–Y28** — the approved UI boundaries.
+2. This §0, then **§16** (Phase 2 closure), **§17** (roadmap reconciliation), **§18**–**§20** (U1, U2, D-U2.5) and **§21** (U3's approved boundary and U3-a).
+3. [ui-enablement-proposal.md](ui-enablement-proposal.md) **W1–W13**, [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) **Y1–Y28** and [u3-proposal.md](u3-proposal.md) **Z1–Z14** — the approved UI boundaries.
 4. [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) and [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) — the presentation boundary and the browser-testing decision. **Read ADR-0039 before touching `apps/web`.**
 
 ---
@@ -180,7 +199,9 @@ curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H '
 > ## If you are a fresh session, read this box first
 >
 > **The whole approved Phase 2 slice sequence — V0 through V7 — is ACCEPTED, and so are both
-> hardening slices, H4 and H5.** Nothing is in progress and the working tree is clean.
+> hardening slices, H4 and H5.** The sentence that stood here added *"nothing is in progress and the
+> working tree is clean"*. It was true when written and is **not** a standing fact: as at 2026-08-26,
+> **U3-a is written and awaiting review** (§21.1). **Check `git status` rather than this box.**
 >
 > **G1 is reachable end to end, by any number of projects in one database, and it survives an
 > application restart.** That is the approved exit condition (*"Phase 2 ends when G1 can be
@@ -222,7 +243,7 @@ curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H '
 > [CLAUDE.md](../../CLAUDE.md) still governs everything after it: **acceptance is always a separate
 > decision, and it is never inferred from a green run.**
 >
-> ## **UI ENABLEMENT — U1 ACCEPTED, U2 ACCEPTED. U3–U5 ARE NOT AUTHORISED.**
+> ## **UI ENABLEMENT — U1 ACCEPTED, U2 ACCEPTED. U3'S BOUNDARY IS APPROVED; U4 AND U5 ARE NOT AUTHORISED.**
 >
 > **U1 IS ACCEPTED — 2026-08-25** (§18). Boundary `da95b56` (**W1–W13**),
 > [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) `5882bb2`, implementation `d4785c1`.
@@ -286,7 +307,7 @@ curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H '
 | | |
 |---|---|
 | **Phase** | **Phase 2** — multimodal intake and structured requirements. It **spans** roadmap **P1 + P2**, and **closing it did NOT close them**: P1 and P2 carry user-facing commitments this repository has not delivered — **§17**, [roadmap.md](roadmap.md) §0 |
-| **Current slice** | **None. D-U2.5 is ACCEPTED** — 2026-08-25, §20.7, at `99de2a7` after a visual review. **U3 is NOT authorised.** **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U2 accepted §19; U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
+| **Current slice** | **None open. U3-a is ACCEPTED** (§21.1) and **U3's boundary is APPROVED** 2026-08-26 (§21, **Z1–Z14**). The next permitted action is **U3-b, and U3-b only**; **U3-c–U3-f, U4 and U5 are NOT authorised.** D-U2.5 is ACCEPTED — 2026-08-25, §20.7, at `99de2a7` after a visual review. **PHASE 2 REMAINS CLOSED** — 2026-08-24, §16; UI enablement does not reopen it. U2 accepted §19; U1 accepted §18; H5 accepted §5.14; H4 accepted §5.13; V7 accepted §10.10 |
 | **Previously** | **U2 ACCEPTED** — 2026-08-25, §19, against decisions **X1–X10** |
 | **Accepted so far** | **V0 · V1 · V2 · V3 · V4a · V4b-core · V5 · V6 · V7 · H4 · H5 · U1 · U2 · D-U2.5 — the whole approved Phase 2 slice sequence, both hardening slices, the first two UI enablement slices, and the design foundation.** D-U2.5 accepted 2026-08-25 (`52ba323` + `90d9297` + `c42f99e` + `99de2a7`) after a **visual review**; U2 accepted 2026-08-25 (`0b7b700` + `8f7d37b` + `c93e05b`); U1 accepted 2026-08-25 (`da95b56` + `5882bb2` + `d4785c1`). H5 accepted 2026-08-24 (`2d04ab1` + `0ba13b7`); H4 accepted 2026-08-24 (`ce15d9d` + `193d295` + `5a5504b`). V7 accepted 2026-08-24; V6 at `a653333`; V5 at `43ab748` (§8.11); V4b-core at `3d5dfb6` (§7.10); V4a at `d82d285`; V3 at `bea4041` |
 | **Commit** | **D-U2.5 `52ba323` + `90d9297` + `c42f99e` + `99de2a7`.** U2 `0b7b700` + `8f7d37b` + `c93e05b`. U1 `da95b56` + `5882bb2` + `d4785c1`. H5 `2d04ab1` + `0ba13b7`. H4 `ce15d9d` + `193d295` + `5a5504b`. V7 `7bfa440` + `f38ef06` + `96f84e4` + `7e50303`. V6 `eebabe0` + `a653333` · V5 `4b148b4` + `43ab748` · V4b-core `34ca68e` + `3d5dfb6` · V4a `09dfc9b` + `d82d285` |
@@ -2791,9 +2812,121 @@ it intends to redecide.
 
 ---
 
+## 21. UI enablement U3 — **BOUNDARY APPROVED 2026-08-26** · U3-a **ACCEPTED**
+
+**The boundary is approved. The slice is not accepted, and no part of it is.**
+
+### 21.0 What was approved
+
+| | |
+|---|---|
+| **Approved** | **2026-08-26**, on an explicit decision |
+| **Boundary** | [u3-proposal.md](u3-proposal.md) — **Z1–Z14**, with **Z2-B**, **Z6-B**, **Z8-a**, **Z8-b-1**, the **Z6-a qualification** and an **amendment to acceptance criterion 5** |
+| **What it authorises** | The requirements workspace as a **six-step sequence** — U3-a … U3-f. **Each step is reported and reviewed before the next begins.** Approval of the boundary is not approval of an implementation |
+| **What it does NOT authorise** | **U4**, **U5**, **G-a**, **G-b**, **H3**, any live AI or provider call, **V4b-eval**, **V2-PDF**, **P3** |
+
+**The four decisions worth reading before touching this slice:**
+
+| Decision | Substance |
+|---|---|
+| **Z2-B** | **`apps/web` gets no AI-invoking control.** No `populate-frame`, `profile`, `extract-evidence` or `reconcile` button. The finding that forced the choice is that **every AI port refuses by default** — `app.module.ts` ships the application unable to reach a provider — so a control whose only behaviour today is a refusal would become a live call by configuration change alone. U3 is built around the **model-free** path instead: human evidence recording → an empty set → human-authored L3 → review |
+| **Z5** | **G-a and G-e are deliberately unfilled.** Flags are therefore **not shown at all**, because `frame-coverage` returns only five of the seven `RequirementFlagKind` values and showing five would hide the **ADR-0038** flag. Version **history** is likewise not retrievable, and **criterion 5 was amended at approval** so no acceptance criterion claims otherwise |
+| **Z6-B / Z6-a** | See §21.2. **Limitation 70 stays open** |
+| **Z8-a** | Requirement statuses **extend** the existing `lifecycle` semantic family — no new family, no new colour token, no new shape. This is what U3-a implements |
+
+### 21.1 U3-a — **ACCEPTED 2026-08-26**
+
+| | |
+|---|---|
+| **Accepted** | **2026-08-26**, on an explicit decision, after the implementation, its **mutation-proof** and its verification were reported |
+| **Accepted at** | **The tree carried by the commit that adds this record.** A commit cannot name itself, so the hash is written into §21.1 by the **next** commit rather than invented here — the same reason a baseline hash is recomputed rather than remembered |
+| **Boundary** | [u3-proposal.md](u3-proposal.md) §12, step **U3-a**, under **Z8-a** |
+| **What acceptance CLAIMS** | That the requirement statuses are in the vocabulary, that the drift guard is bidirectional and **proved to fail**, and that nothing already accepted changed |
+| **What it does NOT claim** | **Any capability.** Nothing renders differently, no screen consumes a requirement status, and **U3 is not implemented** — §21.4 |
+| **Review** | The implementation, the two mutation results and the full verification were reported before the decision. **No defect was found** |
+
+**Scope:** the vocabulary change and its drift guard. **Nothing renders differently**, because no
+screen consumes a requirement status yet — that is U3-c.
+
+| | |
+|---|---|
+| **Changed** | `apps/web/src/design/semantics.ts` — six new `lifecycle` states (`draft`, `in_review`, `needs_clarification`, `deferred`, `rejected`, `approved`), the shared `superseded` entry generalised in wording, and a declared `REQUIREMENT_STATUSES` list · `apps/web/src/design/design.test.ts` — eight new assertions |
+| **Not changed** | The backend. No API, contract, migration, command or domain behaviour. No component, no screen, no route, no CSS, no token |
+| **Dependencies** | **None added.** Runtime dependencies remain **nine** |
+| **Checker rules** | **None weakened, none added, no exemption.** `check:arch` and its self-test are untouched |
+| **Verification** | `npm run verify` **green end to end, exit 0** — **886 pass / 886 · 0 fail · 0 cancelled · 0 skipped · 0 todo · 178 suites**; `check:arch` **187 source files**; `check:arch:selftest` **57 cases**; `check:docs` **99 files / 1234 links**. Against the `ad363a6` baseline of **878 / 878 · 177 suites**, U3-a adds **8 tests and 1 suite** and changes nothing else. **`npm run test:e2e`: 31 passed / 31, UNCHANGED** — the regression bar held, no assertion weakened, and no spec file edited |
+
+**Three properties asserted rather than trusted:**
+
+1. **The status list equals the API's, in both directions.** `REQUIREMENT_STATUSES` is compared with
+   `RequirementStatus` from `@asdp/schemas` as sets. It is **declared, not derived** — deriving it
+   would make the two agree by construction and the guard would then assert that a value equals
+   itself, which is U2-a's *"a one-directional drift test catches half the drift"* taken one step
+   further.
+2. **Every status resolves to a real state**, never to `unknownState`. A status rendering as
+   *"Unrecognised"* to a reviewer would be a defect, not a graceful fallback.
+3. **The extension changed nothing already accepted.** The four source lifecycle states keep their
+   glyph, shape and tone; only `superseded`'s screen-reader wording generalises, because the entry is
+   now shared with a requirement.
+
+**The guard was proved to bite, by mutation, before it was reported:** removing `deferred` from the
+declared list fails the bidirectional test; removing the `draft` vocabulary entry while leaving the
+list intact fails the resolvability test. **A test that cannot fail is a defect too** (§9 of
+[CLAUDE.md](../../CLAUDE.md)), and asserting a green run without checking that is how a vacuous test
+survives.
+
+**A consequence recorded rather than discovered:** `superseded` exists in **both** `SourceStatus` and
+`RequirementStatus`, and one family means one entry. Its screen-reader text changed from *"superseded
+by a later source"* to *"superseded by a later record"*; the badge's `subject` names which. No glyph,
+shape or tone changed. Nothing in the API sets a requirement to `superseded` today — the mapping
+exists because the guard requires **every** status to be renderable, not because the state is
+reachable.
+
+**`approved` does not use `✓`, and `rejected` does not use `✕`**, because both glyphs are already
+taken inside `lifecycle` and the vocabulary's own test requires glyphs to be unique within a family —
+that is what keeps the badges readable in greyscale. `approved` uses the shield, which is not
+decoration: migration 010 refuses `status: 'approved'` without an approver, a timestamp and a
+baseline, so the state a requirement reaches is a **gate** act and the glyph says which.
+
+### 21.2 What U3 claims about limitation 70 — and what it does not
+
+**Limitation 70 remains OPEN.** *"Nothing measures whether a reviewer reviewed."*
+
+| | |
+|---|---|
+| **Z6-B — what is reported** | One observation: **proposals edited before approval**, computable as `version > 1` with `generatedBy: 'human'` over data the screen already reads. Rendered beside the approval-state counts with an explicit on-screen note |
+| **What it is NOT** | **Not a quality metric. Not a reviewer-attention metric. Not a measure of whether review happened.** *"An approval rate of 100% with an edit rate of 0% is a finding, not a success"* — the value of the number is that it can be **bad** |
+| **Z6-a — the safeguard** | No decision may be recorded on a requirement whose detail pane has not been rendered |
+| **The qualification, which is part of the decision** | **Z6-a is a structural / friction safeguard ONLY.** It makes a careless decision harder to record. It is **not evidence that meaningful human review occurred**, it **must never be described as such**, and **it does not close limitation 70** |
+| **Still unmeasured** | **Conflicts overturned** — it needs `chose_alternative` / `not_a_conflict` verdicts, which are **U5** and gated on **G-b**. And consideration itself, which nothing counts |
+| **Z6-C, rejected** | A reviewer-attention measure (dwell time, evidence-opened-before-decision). Telemetry about people, unapproved scope, and declined by V7's own §16: *"V7 claims no human-factors metric it cannot support"* |
+
+### 21.3 Repository findings recorded during the U3 boundary work — **NOT SCHEDULED**
+
+Six findings are recorded in [u3-proposal.md](u3-proposal.md) §15, against commit `ad363a6`: unused
+imports in `review.controller.ts`; read routes without a role check; an unbounded audit read; a
+lexical `order by id` on the requirement read that is the same class as limitations **80 / 81**; a
+**W6** numbering collision in the parent boundary; and this file's own handoff HEAD being one commit
+behind, now corrected in §0.0.
+
+**None is scheduled, and none is to be fixed opportunistically inside U3.** If one becomes strictly
+required by an approved U3 acceptance criterion, **work stops and the conflict is reported before
+scope expands.**
+
+### 21.4 What U3-a does NOT claim
+
+- **No capability.** Nothing renders differently; no screen consumes a requirement status yet.
+- **U3 is not implemented.** The rail still shows *Requirements* as unavailable and names U3, and a
+  test asserts that it does.
+- **No model quality, and no model call.** **No live model has ever been called**, and U3 makes none
+  by scope (**Z2-B**) and by structure.
+- **Limitation 70 is not closed**, and neither is any other open limitation.
+
+---
+
 ## 15. Next step
 
-### V0–V7, H4, H5, U1, U2 and D-U2.5 are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3–U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
+### V0–V7, H4, H5, U1, U2, D-U2.5 and U3-a are ACCEPTED. **Phase 2 is CLOSED — §16.** **U3's boundary is APPROVED (§21); U3-b is the next permitted action; U3-c–U3-f, U4 and U5 are NOT authorised.** V4b-eval, V2-PDF, P3, H1, H2, H3, H6, H7 and H8 have not started.
 
 | | |
 |---|---|
@@ -2816,7 +2949,8 @@ PDF engine import — so the V2-PDF block remains mechanical rather than remembe
 | **U1 — `apps/web` and the source viewer** | **ACCEPTED / COMPLETE**, 2026-08-25 — §18. Boundary **W1–W13**; [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) recorded before any UI code. Two follow-ups: **F-U1-a DISCHARGED** by ADR-0040, **F-U1-b STANDING**. Accepted for **mechanics, governance and RTL/LTR correctness, explicitly not visual or UX design** |
 | **U2 — sources: intake, inventory, authority, L0 validation** | **ACCEPTED / COMPLETE**, 2026-08-25 — §19, after an independent review. **The first slice that writes.** Boundary **X1–X10**; [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) recorded before implementation. Three defects found and corrected (§19.1); follow-ups **F-U2-a** and **F-U2-b** recorded (§19.3). Accepted for **mechanics, governance and the journey, explicitly not visual or UX design** |
 | **D-U2.5 — the design foundation, demonstrated on U1 and U2** | **ACCEPTED / COMPLETE**, 2026-08-25 — §20.7, after a visual review. **Presentation-only: no capability.** Boundary **Y1–Y28** with the **Y12** clarification. Eight defects found across two review passes; the ten U2 browser tests passed **unchanged** throughout. **The accepted design system is the baseline for every later UI slice** — §20.8 |
-| **U3 / U4 / U5 — requirements workspace, coverage, reconciliation and G1 in the browser** | **NOT AUTHORISED.** W13 approved U1→U5 as a **sequence**, which is not authorisation. **U3 must not start.** **F-U2-b** asks for a UI/UX design foundation to be approved first — [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md), **PROPOSED / NOT APPROVED**. U4 needs API gap **G-a**, U5 needs **G-b**; both are approved and unbuilt |
+| **U3 — the requirements workspace** | **BOUNDARY APPROVED 2026-08-26** — §21, [u3-proposal.md](u3-proposal.md), **Z1–Z14**. **U3-a ACCEPTED** (§21.1); **U3-b is next**; U3-c–U3-f not authorised. **F-U2-b is DISCHARGED** — the design foundation was accepted as D-U2.5 on 2026-08-25. **Z2-B**: no AI-invoking control in `apps/web`. **Z5**: **G-a and G-e deliberately unfilled**, so flags and version history are out. **Z6-B**: limitation 70 **stays open** |
+| **U4 / U5 — coverage, reconciliation and G1 in the browser** | **NOT AUTHORISED.** W13 approved U1→U5 as a **sequence**, which is not authorisation. U4 needs API gap **G-a**, U5 needs **G-b**; both are approved and unbuilt, and **U3 fills neither** |
 | **V6 — conflicts, precedence and reconciliation** | **ACCEPTED / COMPLETE**, 2026-08-23 — §9, reviewed in §9.10. Decisions **Q1–Q9**; `L1-CONF-*` and slot-scoped comparison approved at acceptance. **Accepted for mechanics and governance, explicitly not semantic correctness** — §9.8 |
 
 **V0–V7, H4 and H5 are ACCEPTED. The approved Phase 2 exit condition — *"Phase 2 ends when G1 can be

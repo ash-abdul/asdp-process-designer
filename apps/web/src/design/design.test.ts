@@ -13,6 +13,7 @@
  * | **§2.1** — the rail never implies a capability that does not exist | *bidirectional nav drift* |
  * | **Y26** — governance information collapses last | *a width sweep* |
  * | **Y22/H3** — the assistant cannot ask anything | *no export can send a request* |
+ * | **Z8-a** (U3-a) — every requirement status is renderable, in the existing family | *bidirectional status drift* |
  *
  * The colour test is the one worth reading twice. Asserting *"every state has a
  * colour"* proves nothing; asserting *"delete the colour and the states are still
@@ -24,7 +25,11 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { RequirementStatus } from '@asdp/schemas';
+
 import {
+  REQUIREMENT_STATUSES,
+  REQUIREMENT_STATUS_FAMILY,
   VOCABULARY,
   accessibleName,
   badgeClasses,
@@ -174,6 +179,106 @@ describe('Y19 — decidedness, and unknown values', () => {
   test('an ABSENT value is also visibly unrecognised, not defaulted', () => {
     assert.match(semanticState('lifecycle', undefined).label.toLowerCase(), /unrecognised/);
     assert.match(unknownState('gate', 'x').glyph, /⚠/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// U3-a — requirement statuses in the vocabulary, and the drift guard
+// ---------------------------------------------------------------------------
+
+describe('U3-a / Z8-a — every requirement status is renderable', () => {
+  test('THE STATUS LIST EQUALS THE API\'S, IN BOTH DIRECTIONS', () => {
+    // U2-a's lesson, for the third time: a one-directional check catches half
+    // the drift. `UI ⊆ API` would let this build name a status no server can
+    // send; `API ⊆ UI` would let a new server status fall through to
+    // `unknownState`, which is honest but is a fallback rather than a design.
+    const api = [...RequirementStatus.options].sort();
+    const ui = [...REQUIREMENT_STATUSES].sort();
+
+    assert.deepEqual(ui, api, `requirement statuses drifted — UI ${ui.join(', ')} vs API ${api.join(', ')}`);
+  });
+
+  test('every status resolves to a REAL state, never to "Unrecognised"', () => {
+    for (const status of REQUIREMENT_STATUSES) {
+      const state = semanticState(REQUIREMENT_STATUS_FAMILY, status);
+      assert.equal(state.state, status, `${status} did not resolve`);
+      assert.doesNotMatch(
+        state.label.toLowerCase(),
+        /unrecognised/,
+        `${status} renders as unrecognised, which a reviewer would read as a defect`,
+      );
+      assert.notEqual(state.tone, 'unknown', `${status} fell through to the unknown tone`);
+    }
+  });
+
+  test('Z8-a: they extend the EXISTING family — no new family was added', () => {
+    // The approved decision was "extend `lifecycle`". A new family would be an
+    // architectural change needing its own approval (§20.8), so the count of
+    // families is asserted rather than assumed.
+    assert.equal(REQUIREMENT_STATUS_FAMILY, 'lifecycle');
+    assert.equal(FAMILIES.length, 7, 'a semantic family was added or removed');
+    const families = new Set(VOCABULARY.map((s) => s.family));
+    assert.equal(families.size, 7);
+  });
+
+  test('Z8-a: no new tone token, and no new shape', () => {
+    // Colour and shape are the accepted baseline (§20.8). A new tone would need
+    // a token, and `contrast.ts` derives its declared pairs from the tones the
+    // vocabulary uses — so adding one silently would change what is audited.
+    const TONES = new Set(['danger', 'caution', 'neutral', 'fact', 'ai', 'approved', 'ok', 'pending', 'undecided', 'muted']);
+    const SHAPES = new Set(['solid', 'outline', 'dashed', 'double']);
+    for (const status of REQUIREMENT_STATUSES) {
+      const state = semanticState(REQUIREMENT_STATUS_FAMILY, status);
+      assert.ok(TONES.has(state.tone), `${status} introduced a new tone '${state.tone}'`);
+      assert.ok(SHAPES.has(state.shape), `${status} introduced a new shape '${state.shape}'`);
+    }
+  });
+
+  test('Z7.1 — "in review" is NEVER worded as approval', () => {
+    // `reviewRequirement` maps `accept` to `in_review`, and the API has no route
+    // that writes `approved` at all. A badge that read "Accepted" beside a ladder
+    // whose top rung is human approval is exactly the conflation ADR-0007 forbids.
+    const inReview = semanticState('lifecycle', 'in_review');
+    assert.doesNotMatch(inReview.label, /approved/i);
+    assert.match(inReview.srText.toLowerCase(), /not approved/);
+
+    const approved = semanticState('lifecycle', 'approved');
+    assert.notEqual(inReview.label, approved.label);
+    assert.notEqual(inReview.glyph, approved.glyph);
+    assert.match(approved.srText.toLowerCase(), /g1|baseline/);
+  });
+
+  test('the source states survive the extension, unchanged', () => {
+    // U3-a is a vocabulary addition, not a redecoration. The four source states
+    // keep their glyph, shape and tone; only `superseded`'s wording generalises,
+    // because the entry is now shared with a requirement (§7.1).
+    const expected = [
+      ['parsed', '✓', 'solid', 'ok'],
+      ['parsing', '⋯', 'outline', 'pending'],
+      ['parse_failed', '✕', 'solid', 'danger'],
+      ['superseded', '⇥', 'dashed', 'muted'],
+    ] as const;
+    for (const [value, glyph, shape, tone] of expected) {
+      const s = semanticState('lifecycle', value);
+      assert.equal(s.glyph, glyph, `${value} changed glyph`);
+      assert.equal(s.shape, shape, `${value} changed shape`);
+      assert.equal(s.tone, tone, `${value} changed tone`);
+    }
+  });
+
+  test('`superseded` is shared, so its wording names neither half specifically', () => {
+    // One family means one entry, and `RequirementStatus` contains `superseded`
+    // too. The badge's `subject` says which record it describes.
+    const s = semanticState('lifecycle', 'superseded');
+    assert.doesNotMatch(s.srText, /source/i, 'the shared state still reads as source-only');
+    assert.match(accessibleName(s, 'REQ-0007'), /^REQ-0007, Superseded, /);
+  });
+
+  test('U3 is NOT implemented by this slice: the rail still says so', () => {
+    // U3-a is the vocabulary and its guard. The workspace is U3-c, and claiming
+    // it here would be exactly the dishonest navigation §2.1 forbids.
+    assert.equal(isAvailable('requirements'), false);
+    assert.match(unavailableReason('requirements') ?? '', /U3/);
   });
 });
 

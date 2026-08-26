@@ -108,7 +108,49 @@ export const VOCABULARY: readonly SemanticState[] = [
   S('lifecycle', 'parsed', 'Parsed', '✓', 'solid', 'ok', 'parsed successfully'),
   S('lifecycle', 'parsing', 'Parsing', '⋯', 'outline', 'pending', 'parsing in progress'),
   S('lifecycle', 'parse_failed', 'Could not be parsed', '✕', 'solid', 'danger', 'parse failed; the source is still recorded'),
-  S('lifecycle', 'superseded', 'Superseded', '⇥', 'dashed', 'muted', 'superseded by a later source'),
+  /**
+   * **Shared by a source and a requirement**, which is why the wording is not
+   * source-specific any more (**U3-a**, and the consequence of **Z8-a** recorded
+   * in [u3-proposal.md](../../../../docs/60-plan/u3-proposal.md) §7.1).
+   *
+   * `RequirementStatus` also contains `superseded`, and one family means one
+   * entry. The badge's `subject` names which record it describes, so nothing is
+   * lost by saying "record" rather than "source". Glyph, shape and tone are
+   * unchanged.
+   */
+  S('lifecycle', 'superseded', 'Superseded', '⇥', 'dashed', 'muted', 'superseded by a later record'),
+
+  // --- lifecycle, as the requirements API reports it (U3-a) -----------------
+  //
+  // **Z8-a**: these EXTEND the existing family. No new family, no new colour
+  // token, no new shape — a requirement's state is a lifecycle exactly as a
+  // source's is, and splitting them would give the same word two vocabularies.
+  //
+  // Every glyph is unique within the family, which is what makes the badges
+  // readable in greyscale. That constraint is why `approved` is not `✓` (taken by
+  // `parsed`) and `rejected` is not `✕` (taken by `parse_failed`).
+  S('lifecycle', 'draft', 'Draft', '◌', 'dashed', 'undecided', 'proposed; nobody has reviewed it yet'),
+  /**
+   * **`in_review` is what `accept` produces, and it is NOT approval** (**Z7.1**).
+   *
+   * `reviewRequirement` maps `accept` to `in_review`, and the API has no route
+   * that writes `approved` at all — that is the G1 transaction's alone. The label
+   * and the screen-reader text both say so, because a reviewer who reads
+   * "accepted" as "approved" has been misled by the badge.
+   */
+  S('lifecycle', 'in_review', 'In review', '◑', 'outline', 'pending', 'read and marked ready to be approved — not approved'),
+  S('lifecycle', 'needs_clarification', 'Needs clarification', '?', 'outline', 'caution', 'sent for clarification; a question is outstanding'),
+  S('lifecycle', 'deferred', 'Deferred', '⊖', 'dashed', 'muted', 'set aside; no decision has been taken'),
+  S('lifecycle', 'rejected', 'Rejected', '⊘', 'solid', 'danger', 'rejected by a reviewer'),
+  /**
+   * The shield is deliberate rather than decorative.
+   *
+   * `approved` is written **only** by the G1 approval transaction — migration 010
+   * refuses the status without an approver, a timestamp and a baseline, and
+   * refuses all three without it. So the state a requirement reaches here is a
+   * **gate** act, and the glyph says which act.
+   */
+  S('lifecycle', 'approved', 'Approved', '⛉', 'solid', 'approved', 'approved at G1 by a human, over a signed baseline'),
 
   // --- the gate (ADR-0017). "reopened" is its own state --------------------
   S('gate', 'not_ready', 'Not ready', '○', 'dashed', 'undecided', 'gate not ready'),
@@ -120,6 +162,55 @@ export const VOCABULARY: readonly SemanticState[] = [
   S('policy', 'permitted', 'Permitted', '●', 'solid', 'ok', 'egress permitted'),
   S('policy', 'blocked_by_policy', 'Blocked by policy', '⊗', 'solid', 'danger', 'blocked by data classification policy'),
 ];
+
+// ---------------------------------------------------------------------------
+// The requirement-status drift guard — U3-a
+// ---------------------------------------------------------------------------
+
+/**
+ * The requirement statuses this build renders — **the UI's half of a drift
+ * guard**, and the same shape as `ROLES` in `lib/dev-auth.ts`.
+ *
+ * This list must equal `RequirementStatus` in `@asdp/schemas` **exactly**, and
+ * `design.test.ts` asserts equality in **both** directions. The bidirectional
+ * part is U2-a's lesson, and it is not a formality:
+ *
+ * - **UI ⊆ API** alone would let this list name a status the server can never
+ *   send — a badge for a state that does not exist;
+ * - **API ⊆ UI** alone would let a new server status render through
+ *   `unknownState`, which is honest but is a fallback, not a design.
+ *
+ * The list is declared here rather than derived from `@asdp/schemas` at runtime
+ * on purpose. Deriving it would make the two agree **by construction**, which
+ * sounds better and is worse: the drift test would then be asserting that a
+ * value equals itself, and the thing it exists to catch — a vocabulary entry
+ * nobody added — would pass silently. This is the same trade **G-c / W5b**
+ * already took for roles: hardcode, and test the drift.
+ *
+ * **Every entry must resolve to a real `lifecycle` state**, which the same test
+ * asserts. A status that fell through to `unknownState` would render as
+ * *"Unrecognised"* to a reviewer.
+ */
+export const REQUIREMENT_STATUSES = [
+  'draft',
+  'needs_clarification',
+  'in_review',
+  'approved',
+  'rejected',
+  'superseded',
+  'deferred',
+] as const;
+
+export type RequirementStatusValue = (typeof REQUIREMENT_STATUSES)[number];
+
+/**
+ * The family every requirement status is rendered in — **Z8-a**.
+ *
+ * Named rather than inlined at each call site so that "requirement statuses live
+ * in `lifecycle`" is one fact in one place, and so the test asserts the same
+ * thing the components do.
+ */
+export const REQUIREMENT_STATUS_FAMILY: SemanticFamily = 'lifecycle';
 
 /**
  * An unrecognised value gets a state that **says** it is unrecognised.
