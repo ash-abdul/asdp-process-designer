@@ -12,6 +12,8 @@ import assert from 'node:assert/strict';
 import type { BaselineMember } from '@asdp/schemas';
 import { loadConfig, ConfigError } from './config.ts';
 import { listen, type RunningApp } from './http/bootstrap.ts';
+import { DomainErrorFilter } from './http/domain-error.filter.ts';
+import { AnchorVerificationError } from './commands/intake.ts';
 import { createPgliteDatabase } from './persistence/pglite-database.ts';
 import { migrate } from './persistence/migrate.ts';
 import { createFilesystemBlobStore } from './blob/filesystem-blob-store.ts';
@@ -631,6 +633,78 @@ describe('HTTP surface over NestJS + PGlite (ADR-0034, ADR-0035)', () => {
     } finally {
       await running.close();
     }
+  });
+
+  /**
+   * **An unverifiable anchor is a REFUSAL, not a server failure.**
+   *
+   * `AnchorVerificationError` was absent from the filter's mapping chain and
+   * fell through to the generic 500 — telling the caller the server broke when
+   * the server had worked exactly as ADR-0008 requires. Found while building
+   * U3-b, the first surface to expose evidence recording to a human.
+   *
+   * The real `DomainErrorFilter` is exercised here rather than a copy of its
+   * logic, because a test that reimplements the mapping cannot catch the mapping
+   * being wrong.
+   *
+   * **This is asserted at the filter, not over HTTP, and that is deliberate.**
+   * Both anchor-minting paths in `recordEvidence` derive the quote FROM the
+   * stored text, so the anchor always re-resolves and the refusal is currently
+   * unreachable over the wire. It is a guard against a future path — and a guard
+   * that returns the wrong status is still wrong.
+   */
+  test('AN UNVERIFIABLE ANCHOR IS 400, NOT 500 — it is a refusal', () => {
+    const captured: { status?: number; body?: unknown; correlationId?: string } = {};
+    const response = {
+      status(code: number) {
+        captured.status = code;
+        return this;
+      },
+      json(body: unknown) {
+        captured.body = body;
+      },
+      setHeader(name: string, value: string) {
+        if (name === 'x-correlation-id') captured.correlationId = value;
+      },
+    };
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => response,
+        getRequest: () => ({ headers: {} }),
+      }),
+    } as never;
+
+    const reason =
+      'refusing to store evidence with a broken anchor: the quote is no longer present in this source';
+    new DomainErrorFilter().catch(new AnchorVerificationError(reason), host);
+
+    assert.notEqual(captured.status, 500, 'a domain refusal must not be reported as a server failure');
+    assert.equal(captured.status, 400);
+    // The server's own words survive: a refusal the caller cannot read is a
+    // refusal the caller cannot act on.
+    assert.deepEqual(captured.body, { error: reason });
+    assert.ok(captured.correlationId, 'every response still carries a correlation id');
+  });
+
+  test('the 400 mapping is SPECIFIC — an unexpected error is still 500', () => {
+    // The control for the test above. Without it, "everything is 400" would pass.
+    const captured: { status?: number; body?: unknown } = {};
+    const response = {
+      status(code: number) {
+        captured.status = code;
+        return this;
+      },
+      json(body: unknown) {
+        captured.body = body;
+      },
+      setHeader() {},
+    };
+    const host = {
+      switchToHttp: () => ({ getResponse: () => response, getRequest: () => ({ headers: {} }) }),
+    } as never;
+
+    new DomainErrorFilter().catch(new Error('something genuinely unexpected'), host);
+    assert.equal(captured.status, 500);
   });
 
   test('a malformed body yields 400', async () => {

@@ -11,6 +11,7 @@ import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { InvariantViolation } from '@asdp/domain';
 import { AuthorizationError, GateGuardError, ValidationError } from '../commands.ts';
+import { AnchorVerificationError } from '../commands/intake.ts';
 import { ConcurrencyError, NotFoundError } from '../ports.ts';
 import {
   CheckViolationError,
@@ -61,6 +62,27 @@ function classify(err: unknown): { status: number; body: Record<string, unknown>
     return { status: 409, body: { error: err.message, kind: 'invariant', invariant: err.invariant } };
   }
   if (err instanceof ValidationError) return { status: 400, body: { error: err.message } };
+  /**
+   * An unverifiable anchor is a **domain refusal about the submitted citation**,
+   * not an unexpected server failure — so it is a 400, exactly like the
+   * `ValidationError`s it sits between.
+   *
+   * It was absent from this chain and fell through to the generic 500. That is
+   * the wrong answer twice over: it tells the caller the server broke when the
+   * server worked, and it hides a refusal that
+   * [ADR-0008](../../../../docs/adr/ADR-0008-resolvable-anchors.md) exists to
+   * make loud. `recordEvidence` throws `ValidationError` for every one of its
+   * other checks — unknown source, wrong project, parse-failed source, range
+   * outside the unit — and this one is the last check in the same function.
+   *
+   * 409 would be wrong: that is for a conflict with current state which a
+   * caller can resolve by reloading (concurrency, gate guard, invariant). An
+   * anchor that does not resolve fails identically on retry.
+   *
+   * Found while building U3-b, which is the first surface to expose this path
+   * to a human.
+   */
+  if (err instanceof AnchorVerificationError) return { status: 400, body: { error: err.message } };
   if (err instanceof BlobKeyError) return { status: 400, body: { error: err.message } };
   if (err instanceof NotFoundError) return { status: 404, body: { error: err.message } };
   if (err instanceof ConcurrencyError) {

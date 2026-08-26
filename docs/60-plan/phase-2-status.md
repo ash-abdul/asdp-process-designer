@@ -74,9 +74,10 @@ it and should say **which screens it adds**, not which of these it intends to re
 > [CLAUDE.md](../../CLAUDE.md)). What U3-b changed, what it discovered, and the verification behind
 > it, is **§21.5**.
 >
-> **Three findings in §21.5 deserve a decision, not just a read:** an ADR-0038 conflation that was
-> caught before it shipped and is now guarded; a **500** where the API should return 400 for an anchor
-> refusal; and three role-map entries that do not match the API and are consumed by nothing yet.
+> **What §21.5 records:** an ADR-0038 conflation caught before it shipped and now guarded; an
+> **authorised backend correction** mapping an anchor refusal to **400** instead of 500 (§21.5.6);
+> and two findings left deliberately open — the evidence read surface exposing no resolution status,
+> and three role-map entries that do not match the API and are consumed by nothing yet.
 >
 > **On acceptance of U3-b, the next permitted action is U3-c — and U3-c only:** the read-only
 > requirements workspace (list, detail inspector, evidence pane wired to the U1 viewer), per
@@ -2898,10 +2899,11 @@ baseline, so the state a requirement reaches is a **gate** act and the glyph say
 |---|---|
 | **Added** | `apps/web/src/features/evidence/evidence-model.ts` (DOM-free) · `CiteEvidence.tsx` · `Evidence.tsx` · `apps/web/e2e/u3-evidence.spec.ts` |
 | **Changed** | `api/contracts.ts` (evidence schemas, imported from `@asdp/schemas`) · `lib/dev-auth.ts` (`recordEvidence`) · `source-viewer/DocumentView.tsx` (the citation panel in the inspector) · `app/App.tsx` (wiring, and the re-read epoch) · `features/sources/Sources.tsx` (the inventory) · `src/web.test.ts` |
-| **Not changed** | **The backend.** No API, contract, migration, command or domain behaviour. No token, no CSS, no component in `components/` |
+| **Backend** | **One authorised correction** — `apps/api/src/http/domain-error.filter.ts` maps `AnchorVerificationError` to **400**. §21.5.2 |
+| **Not changed** | No API route, contract, migration, command or domain behaviour. No token, no CSS, no component in `components/` |
 | **Dependencies** | **None added.** Runtime dependencies remain **nine** |
 | **Checker rules** | **None weakened, none added, no exemption** |
-| **Verification** | `npm run verify` **green, exit 0** — **902 pass / 902 · 0 fail · 0 skipped · 0 todo · 181 suites**; `check:arch` **190 source files**; `check:arch:selftest` **57 cases**; `check:docs` **99 files / 1238 links**. **`npm run test:e2e`: 39 passed / 39** — the **31 pre-existing browser tests passed UNCHANGED**, no spec edited, no assertion weakened |
+| **Verification** | `npm run verify` **green, exit 0** — **904 pass / 904 · 0 fail · 0 cancelled · 0 skipped · 0 todo · 181 suites**; `check:arch` **190 source files**; `check:arch:selftest` **57 cases**; `check:docs` **99 files / 1238 links**. **`npm run test:e2e`: 39 passed / 39** — the **31 pre-existing browser tests passed UNCHANGED**, with an **empty diff** on both existing spec files |
 
 **Four structural guards, each proved to fail by mutation before this was reported:**
 
@@ -2933,9 +2935,43 @@ backend change and is **not** U3 scope.
 
 | # | Finding | Why it was not fixed here |
 |---|---|---|
-| **1** | **An anchor refusal returns 500, not 400.** `AnchorVerificationError extends Error` and is absent from `domain-error.filter.ts`'s mapping chain, so *"refusing to store evidence with a broken anchor"* falls through to the generic 500. The message survives, so the UI renders the reason faithfully — but a legitimate domain refusal is reported as a server error | A **backend** change. U3 adds no backend capability, and the boundary is explicit about it. **Needs a decision** |
+| **1** | ~~An anchor refusal returns 500, not 400.~~ **FIXED — see §21.5.6.** The correction was authorised as part of U3-b, because U3-b is the slice that exposes the evidence-recording path and its approved behaviour requires domain refusals to be represented honestly | **CLOSED.** The finding is kept on the record rather than deleted, so the sequence stays legible |
 | **2** | **Three role-map entries do not match the API.** `listRequirements`, `frameCoverage` and `g1Readiness` in `dev-auth.ts` each omit roles the API grants, and two name `BusinessApprover`, which it does not. **No screen gates on any of them**, so nothing is currently wrong on screen | Correcting them belongs to **U3-c**, the slice that first consumes them. The new drift test covers **every command a screen actually gates on** — `ingestSource`, `setSourceAuthorityRank`, `validateIntake`, `recordEvidence` — and states its own scope and why |
 | **3** | **The `broken`/`drifted` refusal is unreachable from this UI.** Citing a unit inherits an anchor the server minted and immediately re-verifies; nothing in a browser can make stored text drift | Covered by **unit tests** over `citeRefusal` rather than a browser test, and the browser suite covers the refusal that *is* reachable — a role that may not cite. Stated in the spec's own header |
+
+### 21.5.6 The authorised amendment — an anchor refusal is 400, not 500
+
+**Authorised on review of U3-b, and scoped to this defect alone.** U3-b is the slice that exposes
+evidence recording to a person, and its approved behaviour requires a domain refusal to be
+represented honestly — so the correction belongs with it rather than with a later slice.
+
+| | |
+|---|---|
+| **The defect** | `AnchorVerificationError extends Error` and was **absent from `classify()`'s chain** in `domain-error.filter.ts`, so it fell through to the generic **500**. A caller told *"refusing to store evidence with a broken anchor"* was simultaneously told the server had failed |
+| **The change** | **Two lines of behaviour** in `apps/api/src/http/domain-error.filter.ts`: an import, and `if (err instanceof AnchorVerificationError) return { status: 400, body: { error: err.message } };` **Nothing else in the domain-error system was touched, generalised or refactored** |
+| **Why 400** | Every other check in `recordEvidence` throws `ValidationError` → **400** — unknown source, wrong project, parse-failed source, no stored text, a range outside the unit. The anchor check is the **last check in the same function** and is the same kind of statement: the submitted citation is not acceptable. **409 would be wrong** — that is for a conflict with current state a caller can resolve by reloading (concurrency, gate guard, invariant), and an anchor that does not resolve fails identically on retry. **422 has no precedent anywhere in this filter** |
+| **The test** | `api.test.ts` — *"AN UNVERIFIABLE ANCHOR IS 400, NOT 500 — it is a refusal"*. It drives the **real `DomainErrorFilter`**, not a copy of its logic, and asserts the status is 400, that it is **not** 500, that the server's message survives verbatim, and that the correlation id is still set |
+| **Proved to fail** | Removing the mapping line while keeping the import reproduces the defect exactly, and the test **fails**. A second test — *"the 400 mapping is SPECIFIC"* — asserts an unrecognised error is **still 500**, so *"everything is 400"* cannot pass |
+
+**Why the test is at the filter rather than over HTTP, stated so it is not mistaken for a shortcut.**
+Both anchor-minting paths in `recordEvidence` derive the quote **from the stored text**, so the anchor
+always re-resolves and this refusal is **currently unreachable over the wire**. It is a guard against a
+future path — and a guard that returns the wrong status is still wrong. An end-to-end test would have
+had to fabricate a state the system cannot reach.
+
+**One side effect, recorded rather than left to be found.** `AnchorVerificationError` is thrown at
+**four** sites. Three are *"the submitted content produced an unverifiable anchor"* and are squarely
+400. The fourth — *"the guard admitted an image without dimensions"* — is an **internal consistency
+assertion**, not the caller's fault, and it now reports 400 where it previously reported 500.
+Separating it would mean introducing a second error type, which is the generalisation the amendment
+was explicitly scoped to avoid. It is a defensive branch with no known path to it. **Recorded, not
+fixed.**
+
+**Deliberately NOT done, per the amendment's scope:** the evidence read surface still exposes no
+anchor resolution status (§21.5.1), and the three role-map mismatches are still uncorrected
+(§21.5.2, finding 2) and still belong to U3-c.
+
+---
 
 ### 21.5.3 A sentence narrowed, not deleted
 

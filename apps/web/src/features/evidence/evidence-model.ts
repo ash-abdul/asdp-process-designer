@@ -116,12 +116,13 @@ export type CitePhase =
  * replacing it with friendlier wording is how a precise refusal becomes a vague
  * one.
  *
- * **A note on the anchor refusal, recorded rather than smoothed over.**
- * `AnchorVerificationError` is not in the API's error-mapping chain, so a
- * refusal to store evidence on a `broken` or `drifted` anchor arrives as **500**
- * rather than 400. The message still comes through, so this renders it
- * faithfully — but the status is wrong at the source, and papering over it in the
- * client would hide a defect rather than report it.
+ * **The anchor refusal now arrives as a refusal.** `AnchorVerificationError` was
+ * absent from the API's error-mapping chain and fell through to **500**; it was
+ * corrected to **400** as part of U3-b, because a refusal to store evidence on a
+ * `broken` or `drifted` anchor is a statement about the citation, not a server
+ * failure. This function did not need changing either way — it renders the
+ * server's words whatever the status — and that is the point: the client reports
+ * what it is told rather than repairing it.
  */
 export function citeRefusal(unitId: string, error: unknown): CitePhase {
   if (error instanceof ApiError) {
