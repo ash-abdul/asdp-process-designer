@@ -1,7 +1,7 @@
 # Phase 2 — Implementation Status
 
-> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3's BOUNDARY IS APPROVED 2026-08-26 (§21, Z1–Z14), U3-a, U3-b and U3-c are ACCEPTED (§21.1, §21.5, §21.7); U3-d–U3-f, U4 and U5 are NOT authorised.** · **Version:** 8.7 · **Updated:** 2026-08-26
-> **Checkpoint:** §0 · **Commit:** **U3-c ACCEPTED** — §21.7, after a **visual review**.  **U3-b ACCEPTED** `d88c6f0`, with the anchor-refusal correction `a8cc6a2` — §21.5, §21.5.6. **U3-a ACCEPTED** `5f72f83` — §21.1. **U3 boundary approved** — §21, Z1–Z14. **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
+> **Status:** ## **PHASE 2 IS CLOSED — ACCEPTED 2026-08-24.** V0–V7, H4 and H5 all accepted; limitations **77** and **78** closed; the approved exit condition and K8's restart clarification both satisfied and proved by execution — §16. **Closure validates mechanics, governance, traceability and durable multi-project G1. It makes NO claim about real AI or model quality: no live model has ever been called.** V4b-eval deferred (blocked by H3). V2-PDF blocked. **UI enablement follows Phase 2's closure and does not reopen it: U1 ACCEPTED (§18), U2 ACCEPTED (§19) and D-U2.5 ACCEPTED (§20.7), all 2026-08-25. The accepted design system is the baseline for every later UI slice — §20.8. U3's BOUNDARY IS APPROVED 2026-08-26 (§21, Z1–Z14), U3-a, U3-b and U3-c are ACCEPTED (§21.1, §21.5, §21.7); U3-d–U3-f, U4 and U5 are NOT authorised.** · **Version:** 8.8 · **Updated:** 2026-08-26
+> **Checkpoint:** §0 · **Commit:** **U3-c ACCEPTED** — §21.7, after a **visual review**, at `9b2cc88`.  **U3-b ACCEPTED** `d88c6f0`, with the anchor-refusal correction `a8cc6a2` — §21.5, §21.5.6. **U3-a ACCEPTED** `5f72f83` — §21.1. **U3 boundary approved** — §21, Z1–Z14. **D-U2.5 ACCEPTED** — `99de2a7`, §20.7. U2 accepted `c93e05b`, §19. U1 accepted `d4785c1`, §18. **PHASE 2 CLOSED** — on the corrected record `6dea2ae`. H5 accepted `55b8547` · H4 accepted `530dee3` · V7 accepted `50855bd`
 > **Related:** [phase-2-plan.md](phase-2-plan.md), [phase-1-status.md](phase-1-status.md),
 > [roadmap.md](roadmap.md)
 
@@ -24,10 +24,10 @@ traceable to a commit or an approved decision; nothing here is reconstructed.
 
 | | |
 |---|---|
-| **HEAD at handoff** | **`9b2cc88`** — *"U3-c ACCEPTED — the requirements workspace, read-only"*, **pushed**. **Do not trust this cell over `git log`**: it has been one commit behind twice, because the commit that updates it is written before it exists |
-| **Working tree** | **Clean at `9b2cc88`.** `git status` is the answer, not this table — check it first |
-| **Remote** | `origin/main` **equals** local `main` at `9b2cc88`. Verify with `git ls-remote origin main`, **not** with the local tracking ref, which is only as fresh as the last fetch |
-| **The five U3 commits** | `c1c8ddb` boundary · `5f72f83` U3-a · `d88c6f0` U3-b · `a8cc6a2` the anchor-refusal correction · `9b2cc88` U3-c |
+| **HEAD when this was written** | **`7961d49`** — *"Session tooling: /handoff and /resume"*, pushed. **The commit carrying this handoff follows it**, so HEAD is one ahead by the time you read this. That is structural, not a mistake: the cell is written before the commit exists. **`git log` is the authority; this cell is a hint** |
+| **Working tree** | **Clean at `7961d49`.** `git status` is the answer, not this table — check it first |
+| **Remote** | `origin/main` **equalled** local `main` at `7961d49`. Verify with `git ls-remote origin main`, **not** with the local tracking ref, which is only as fresh as the last fetch |
+| **The U3 commits** *(these do not go stale)* | `c1c8ddb` boundary · `5f72f83` U3-a · `d88c6f0` U3-b · `a8cc6a2` the anchor-refusal correction · `9b2cc88` U3-c · `c18fba3` and `7961d49` docs and session tooling |
 | **In progress** | **Nothing.** **U3-a, U3-b and U3-c are ACCEPTED** (§21.1, §21.5, §21.7) and no step is open. **U3-d is the next permitted action and has not started**; §11 of [CLAUDE.md](../../CLAUDE.md) requires each step to be reported and reviewed before the next begins |
 
 ### What is ACCEPTED
@@ -126,7 +126,7 @@ npm run verify
 
 **Green end to end, exit 0** with **U3-a, U3-b and U3-c** in the tree: **933 pass / 933** · 0 fail ·
 0 cancelled · 0 skipped · 0 todo · **192 suites**; `check:arch` **193 source files**;
-`check:arch:selftest` **57 cases**; `check:docs` **99 files / 1240 links**. It is **deterministic,
+`check:arch:selftest` **57 cases**; `check:docs` **99 files / 1241 links**. It is **deterministic,
 network-free, server-free**, and makes **no live provider call**.
 
 **The baseline was 878 / 878 · 177 suites · 187 source files at `ad363a6`.** U3-a added 8 tests and
@@ -139,20 +139,22 @@ dependencies remain nine.
 npm run test:e2e
 ```
 
-**48 passed / 48.** U3-c added 8. **One pre-existing browser test changed, and it is not a
-weakening** — see §21.7.3.
+**48 passed / 48**, measured at the **U3-c acceptance tree (`9b2cc88`)**. Nothing under `apps/` has
+changed since — the two commits after it are documentation and `.claude/` session tooling — so the
+figure still describes this code. U3-c added 8, and **one pre-existing browser test changed, which is
+not a weakening** (§21.7.3).
 
-```bash
-npm run test:e2e
-```
+> **This block previously carried TWO `test:e2e` sections, and the second still said *"31 passed /
+> 31"*** — a D-U2.5-era figure that contradicted the 48 directly above it. A reader taking the second
+> would have had a stale number. Corrected 2026-08-26 rather than deleted, so the error stays legible.
 
-**31 passed / 31.** A **separately invoked** capability ([ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)),
+It is a **separately invoked** capability ([ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md)),
 never part of `verify`. It drives the **system-installed Chrome** via `channel: 'chrome'` and
 **downloads nothing**; a missing browser is a refusal with instructions. It starts the API and web
 server itself, so **stop anything on ports 3000 and 5173 first**.
 
 **The ten U2 browser tests in `apps/web/e2e/u2-sources.spec.ts` are the regression bar for every
-later UI slice.** They passed **unchanged** through the whole design-foundation slice. Do not weaken
+later UI slice.** They passed **unchanged** through D-U2.5, U3-b and U3-c. Do not weaken
 an assertion to make a change pass; if one fails, either the code is wrong or the test is wrong — say
 which (CLAUDE.md §9).
 
@@ -203,10 +205,22 @@ Seed something to look at — create a project, then add a source with the retur
 curl -s -X POST http://127.0.0.1:3000/projects -H 'x-asdp-subject: u-admin' -H 'x-asdp-roles: PlatformAdmin' -H 'content-type: application/json' -d '{"key":"dev","name":"Licence renewal"}'
 ```
 
+### Session tooling — how to open and close a session
+
+Two project-scoped slash commands, added 2026-08-26 and tracked in `.claude/commands/`:
+
+| | |
+|---|---|
+| **`/resume`** | Run it **first**. Reads [CLAUDE.md](../../CLAUDE.md) then this §0.0, then **verifies rather than believes** — this section is written by the previous session and can be stale. Reports the exact next permitted action and **stops** |
+| **`/handoff`** | Run it **before disconnecting**. Re-measures state, makes this §0.0 true, asks before committing or pushing, emits a resume prompt, and says what will not survive |
+
+Neither may start a slice, commit without authorisation, or make a provider call.
+**`/resume` is a reader**: it never writes.
+
 ### Where to read next
 
 1. [CLAUDE.md](../../CLAUDE.md) — operating instructions. **§11 governs whether you may start anything at all.**
-2. This §0, then **§16** (Phase 2 closure), **§17** (roadmap reconciliation), **§18**–**§20** (U1, U2, D-U2.5) and **§21** (U3's approved boundary and U3-a).
+2. This §0, then **§16** (Phase 2 closure), **§17** (roadmap reconciliation), **§18**–**§20** (U1, U2, D-U2.5) and **§21** (U3 — the boundary, U3-a, U3-b, U3-c, and the findings held for U3-e).
 3. [ui-enablement-proposal.md](ui-enablement-proposal.md) **W1–W13**, [ui-design-foundation-proposal.md](ui-design-foundation-proposal.md) **Y1–Y28** and [u3-proposal.md](u3-proposal.md) **Z1–Z14** — the approved UI boundaries.
 4. [ADR-0039](../adr/ADR-0039-react-presentation-layer.md) and [ADR-0040](../adr/ADR-0040-browser-testing-pinned-browser.md) — the presentation boundary and the browser-testing decision. **Read ADR-0039 before touching `apps/web`.**
 
